@@ -198,6 +198,11 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing }: Inv
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
       
+      <div className="p-6 border-b non-printable flex justify-end">
+            <Button type="submit">
+                {isEditing ? "Save Changes" : "Create Invoice"}
+            </Button>
+        </div>
       <div className="flex-1 overflow-y-auto px-6 py-4 non-printable">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
@@ -458,11 +463,6 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing }: Inv
         </div>
         
         </div>
-        <div className="p-6 border-t non-printable flex justify-end">
-            <Button type="submit">
-                {isEditing ? "Save Changes" : "Create Invoice"}
-            </Button>
-        </div>
       </form>
     </Form>
     <div className="hidden print:block">
@@ -485,3 +485,5 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing }: Inv
     </>
   )
 }
+
+    

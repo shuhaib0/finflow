@@ -187,6 +187,11 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
       
+        <div className="p-6 border-b flex justify-end">
+            <Button type="submit">
+                {isEditing ? "Save Changes" : "Create Quotation"}
+            </Button>
+        </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
@@ -447,13 +452,10 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
         </div>
         
         </div>
-        <div className="p-6 border-t flex justify-end">
-            <Button type="submit">
-                {isEditing ? "Save Changes" : "Create Quotation"}
-            </Button>
-        </div>
       </form>
     </Form>
     </>
   )
 }
+
+    
