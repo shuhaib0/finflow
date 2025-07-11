@@ -53,6 +53,13 @@ const initialClients: Client[] = [
     email: "john.doe@innovate.com",
     phone: "123-456-7890",
     status: "customer",
+    addressLine1: "123 Tech Ave",
+    city: "Silicon Valley",
+    state: "CA",
+    postalCode: "94043",
+    country: "USA",
+    source: "Referral",
+    campaign: "Q2 Partner Program"
   },
   {
     id: "2",
@@ -69,6 +76,7 @@ const initialClients: Client[] = [
     email: "sam.wilson@ff.io",
     phone: "555-555-5555",
     status: "lead",
+    source: "Website",
   },
   {
     id: "4",
@@ -236,7 +244,7 @@ export default function CrmPage() {
       </Card>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-full sm:w-full sm:max-w-full lg:max-w-4xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-full lg:max-w-4xl overflow-y-auto">
             <SheetHeader>
                 <SheetTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</SheetTitle>
                 <SheetDescription>

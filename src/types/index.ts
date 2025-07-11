@@ -5,7 +5,27 @@ export type Client = {
     email: string;
     phone?: string;
     status: 'lead' | 'opportunity' | 'customer';
-    address?: string;
+    // General Info
+    jobTitle?: string;
+    salutation?: string;
+    gender?: string;
+    leadType?: string;
+    requestType?: string;
+    requestTypeOther?: string;
+    mobile?: string;
+    website?: string;
+    whatsapp?: string;
+    phoneExt?: string;
+    // Address Info
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    // Analytics Info
+    source?: string;
+    campaign?: string;
     notes?: string;
 };
 
@@ -29,7 +49,7 @@ export type Invoice = {
 };
 
 export type Payment = {
-    id: string;
+    id:string;
     invoiceRef: string; // Refers to Invoice ID
     amountPaid: number;
     date: string; // ISO string
