@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -23,7 +24,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
 import {
   AlertDialog,
@@ -236,7 +236,7 @@ export default function CrmPage() {
       </Card>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-full sm:max-w-full">
+        <SheetContent className="w-full sm:w-full sm:max-w-full lg:max-w-4xl overflow-y-auto">
             <SheetHeader>
                 <SheetTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</SheetTitle>
                 <SheetDescription>
