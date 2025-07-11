@@ -34,7 +34,6 @@ import type { Invoice, InvoiceItem, Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceTemplate } from "./invoice-template"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
@@ -223,8 +222,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden h-full">
       
-      <div className="flex flex-col h-full non-printable">
-        <header className="p-4 border-b flex-shrink-0 bg-background sticky top-0 z-10">
+      <div className="relative flex flex-col h-full non-printable">
+        <header className="p-4 border-b flex-shrink-0 bg-background z-10">
             <div className="flex flex-row items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
@@ -245,7 +244,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
             </div>
         </header>
         <div className="flex-1 overflow-y-auto">
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 pb-32">
             <Tabs defaultValue="details" className="w-full mb-6">
                   <TabsList>
                       <TabsTrigger value="details">Details</TabsTrigger>
@@ -450,8 +449,6 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                           </FormItem>
                                       )}
                                   />
-                                </div>
-                                <div className="flex gap-2">
                                   <FormField
                                       control={form.control}
                                       name={`items.${index}.discount`}
@@ -517,7 +514,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
               </Tabs>
           </div>
         </div>
-        <footer className="p-6 border-t bg-background flex-shrink-0 sticky bottom-0">
+        <footer className="absolute bottom-0 left-0 right-0 p-6 border-t bg-background">
             <div className="ml-auto w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
@@ -552,5 +549,3 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     </Form>
   )
 }
-
-    
