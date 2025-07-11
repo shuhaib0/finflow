@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Trash } from "lucide-react"
+import { Calendar as CalendarIcon, Trash, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -70,6 +70,7 @@ type QuotationFormProps = {
   defaultValues?: Quotation | null;
   clients: Client[];
   isEditing: boolean;
+  onClose: () => void;
 }
 
 const getInitialValues = (defaultValues?: Quotation | null) => {
@@ -114,7 +115,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
     return baseValues;
 }
 
-export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: QuotationFormProps) {
+export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onClose }: QuotationFormProps) {
   const form = useForm<QuotationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -202,11 +203,21 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
       
-        <div className="p-6 border-b flex justify-end">
-            <Button type="submit">
-                {isEditing ? "Save Changes" : "Create Quotation"}
-            </Button>
-        </div>
+        <header className="p-4 border-b flex-shrink-0 bg-background sticky top-0 z-10">
+            <div className="flex flex-row items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${defaultValues?.quotationNumber}` : "New Quotation"}</h2>
+                    <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new quotation."}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button type="submit">
+                        {isEditing ? "Save Changes" : "Create Quotation"}
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+                </div>
+            </div>
+        </header>
+
       <div className="flex-1 overflow-y-auto px-6 py-4">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
@@ -478,8 +489,9 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
             </TabsContent>
         </Tabs>
         
-        <div className="flex justify-end mt-6">
-            <div className="w-80 space-y-2">
+        </div>
+        <footer className="p-6 border-t bg-background flex-shrink-0 sticky bottom-0">
+            <div className="ml-auto w-full max-w-sm space-y-2">
               <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
@@ -498,10 +510,10 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                   <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
               </div>
             </div>
-        </div>
-        
-        </div>
+        </footer>
       </form>
     </Form>
   )
 }
+
+    

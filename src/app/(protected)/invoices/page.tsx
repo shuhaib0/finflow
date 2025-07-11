@@ -436,7 +436,7 @@ export default function InvoicesPage() {
             </CardContent>
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0">
+            <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
@@ -445,9 +445,12 @@ export default function InvoicesPage() {
                   printRef={invoicePrintRef}
                   onPrint={handlePrint}
                   onDownload={handleDownloadPdf}
+                  onClose={() => setIsDialogOpen(false)}
                 />
             </DialogContent>
         </Dialog>
       </>
     );
 }
+
+    

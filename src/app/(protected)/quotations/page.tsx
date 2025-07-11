@@ -22,9 +22,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -338,19 +335,18 @@ export default function QuotationsPage() {
             </CardContent>
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
-                <DialogHeader className="p-6 border-b">
-                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${selectedQuotation?.quotationNumber}` : "New Quotation"}</DialogTitle>
-                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new quotation."}</DialogDescription>
-                </DialogHeader>
+            <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
                 <QuotationForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedQuotation}
                   clients={clients}
                   isEditing={isEditing}
+                  onClose={() => setIsDialogOpen(false)}
                 />
             </DialogContent>
         </Dialog>
       </>
     );
 }
+
+    

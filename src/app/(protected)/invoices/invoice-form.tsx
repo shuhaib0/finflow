@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
 import { useEffect, useRef } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Trash, Download, Printer } from "lucide-react"
+import { Calendar as CalendarIcon, Trash, Download, Printer, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -76,6 +76,7 @@ type InvoiceFormProps = {
   printRef: React.RefObject<HTMLDivElement>;
   onPrint: () => void;
   onDownload: () => void;
+  onClose: () => void;
 }
 
 const getInitialValues = (defaultValues?: Invoice | null) => {
@@ -120,7 +121,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -220,14 +221,14 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden h-full">
       
       <div className="flex flex-col h-full non-printable">
-        <DialogHeader className="p-6 border-b flex-shrink-0">
+        <header className="p-4 border-b flex-shrink-0 bg-background sticky top-0 z-10">
             <div className="flex flex-row items-center justify-between">
                 <div>
-                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                    <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
+                    <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button type="submit">
@@ -239,10 +240,11 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                         <Button type="button" variant="outline" size="sm" onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
                     </>
                     )}
+                    <Button type="button" variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
                 </div>
             </div>
-        </DialogHeader>
-        <ScrollArea className="flex-1 overflow-y-auto">
+        </header>
+        <div className="flex-1 overflow-y-auto">
           <div className="px-6 py-4">
             <Tabs defaultValue="details" className="w-full mb-6">
                   <TabsList>
@@ -514,8 +516,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                   </TabsContent>
               </Tabs>
           </div>
-        </ScrollArea>
-        <div className="p-6 border-t bg-background flex-shrink-0">
+        </div>
+        <footer className="p-6 border-t bg-background flex-shrink-0 sticky bottom-0">
             <div className="ml-auto w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
@@ -535,7 +537,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                     <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
                 </div>
             </div>
-        </div>
+        </footer>
       </div>
 
       <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
@@ -550,3 +552,5 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     </Form>
   )
 }
+
+    
