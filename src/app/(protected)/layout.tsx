@@ -9,7 +9,6 @@ import {
   LogOut,
   Settings,
   Sparkles,
-  Users,
   Briefcase,
 } from "lucide-react"
 
@@ -67,16 +66,21 @@ export default function ProtectedLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [pageTitle, setPageTitle] = useState("Dashboard");
+  const [activeSubItem, setActiveSubItem] = useState("");
 
   useEffect(() => {
-    // This is a bit of a hack to get the query params on the client side
-    // and correctly set the active state for sub-items.
+    // This logic now runs only on the client-side
     const searchParams = new URLSearchParams(window.location.search);
-    const currentPath = pathname + '?' + searchParams.toString();
+    const currentStatus = searchParams.get('status');
+    if (currentStatus) {
+      setActiveSubItem(`/clients?status=${currentStatus}`);
+    } else {
+      setActiveSubItem("");
+    }
     
     let currentNavItem = navItems.find(item => {
         if (item.subItems) {
-            return pathname.startsWith(item.href) || item.subItems.some(sub => currentPath.endsWith(sub.href.substring(1)));
+            return pathname.startsWith(item.href);
         }
         return pathname.startsWith(item.href);
     });
@@ -109,13 +113,13 @@ export default function ProtectedLayout({
           <SidebarMenu>
             {navItems.map((item) => (
                  item.subItems ? (
-                  <Collapsible key={item.href} asChild>
+                  <Collapsible key={item.href} asChild defaultOpen={pathname.startsWith(item.href)}>
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             href={item.href}
                             tooltip={item.tooltip}
-                            isActive={pathname.startsWith(item.href)}
+                            isActive={pathname.startsWith(item.href) && !activeSubItem}
                         >
                             <item.icon />
                             {item.label}
@@ -127,7 +131,7 @@ export default function ProtectedLayout({
                                   <SidebarMenuSubItem key={subItem.href}>
                                       <SidebarMenuSubButton 
                                           href={subItem.href}
-                                          isActive={window.location.search === `?status=${subItem.href.split('=')[1]}`}
+                                          isActive={activeSubItem === subItem.href}
                                           >
                                           {subItem.label}
                                       </SidebarMenuSubButton>
