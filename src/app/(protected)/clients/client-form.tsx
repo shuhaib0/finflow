@@ -643,7 +643,8 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         </Tabs>
         </div>
         <div className="p-6 border-t flex justify-end gap-2">
-            {isEditing && (
+            {isEditing ? (
+                <>
                 <AlertDialog>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -683,14 +684,13 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                <Button type="submit">Save</Button>
+                </>
+            ) : (
+                <Button type="submit">Create</Button>
             )}
-            <Button type="submit">
-                {isEditing ? "Save" : "Create"}
-            </Button>
         </div>
       </form>
     </Form>
   )
 }
-
-    
