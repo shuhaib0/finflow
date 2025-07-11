@@ -1,8 +1,10 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams } from 'next/navigation'
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
 import {
   Table,
   TableBody,
@@ -21,6 +23,10 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -37,8 +43,9 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Download, Printer } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
+import { InvoiceTemplate } from "./invoice-template"
 import type { Invoice, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
@@ -124,6 +131,8 @@ export default function InvoicesPage() {
     const [clients] = useState<Client[]>(initialClients)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const invoiceTemplateRef = useRef<HTMLDivElement>(null);
+
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -198,6 +207,24 @@ export default function InvoicesPage() {
       }
     }
 
+    const handleDownloadPdf = async () => {
+        const element = invoiceTemplateRef.current;
+        if (!element) return;
+        const canvas = await html2canvas(element, { scale: 2 });
+        const data = canvas.toDataURL('image/png');
+    
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`invoice-${selectedInvoice?.invoiceNumber || 'new'}.pdf`);
+      };
+    
+      const handlePrint = () => {
+        window.print();
+      };
+
     const getStatusVariant = (status: Invoice['status']) => {
         switch (status) {
           case 'paid':
@@ -210,6 +237,8 @@ export default function InvoicesPage() {
             return 'outline'
         }
       }
+
+    const isEditing = !!selectedInvoice?.id;
 
     return (
         <>
@@ -309,14 +338,35 @@ export default function InvoicesPage() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
+                <DialogHeader className="p-6 border-b non-printable">
+                    <div className="flex items-center justify-between">
+                        <div>
+                        <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                        <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isEditing && (
+                            <>
+                                <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                                <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                            </>
+                            )}
+                        </div>
+                    </div>
+                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
                   clients={clients}
-                  onClose={() => setIsDialogOpen(false)}
+                  isEditing={isEditing}
                 />
             </DialogContent>
         </Dialog>
+        <div className="hidden">
+            <div ref={invoiceTemplateRef}>
+            <InvoiceTemplate invoice={selectedInvoice ? { ...selectedInvoice, client: clientMap[selectedInvoice.clientRef] } : null} />
+            </div>
+      </div>
       </>
     );
 }

@@ -71,7 +71,7 @@ type InvoiceFormProps = {
   onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => void;
   defaultValues?: Invoice | null;
   clients: Client[];
-  onClose: () => void;
+  isEditing: boolean;
 }
 
 const getInitialValues = (defaultValues?: Invoice | null) => {
@@ -116,7 +116,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing }: InvoiceFormProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
@@ -186,26 +186,6 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
     })
   }
 
-  const isEditing = !!defaultValues?.id;
-
-  const handleDownloadPdf = async () => {
-    const element = invoiceRef.current;
-    if (!element) return;
-    const canvas = await html2canvas(element, { scale: 2 });
-    const data = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    
-    pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`invoice-${defaultValues?.invoiceNumber || 'new'}.pdf`);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   const clientMap = clients.reduce((acc, client) => {
     acc[client.id] = client;
     return acc;
@@ -217,23 +197,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
     <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
-      <div className="flex items-center justify-between p-6 border-b non-printable">
-        <div>
-          <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
-          <p className="text-muted-foreground text-sm">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
-        </div>
-        <div className="flex items-center gap-2">
-            {isEditing && (
-              <>
-                <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
-                <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-              </>
-            )}
-            <Button type="submit">
-                {isEditing ? "Save Changes" : "Create Invoice"}
-            </Button>
-        </div>
-      </div>
+      
       <div className="flex-1 overflow-y-auto px-6 py-4 non-printable">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
@@ -493,6 +457,11 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
             </div>
         </div>
         
+        </div>
+        <div className="p-6 border-t non-printable flex justify-end">
+            <Button type="submit">
+                {isEditing ? "Save Changes" : "Create Invoice"}
+            </Button>
         </div>
       </form>
     </Form>
