@@ -19,12 +19,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +95,7 @@ export default function CrmPage() {
 
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -106,12 +106,12 @@ export default function CrmPage() {
 
   const handleAddClient = () => {
     setSelectedClient(null)
-    setIsSheetOpen(true)
+    setIsDialogOpen(true)
   }
 
   const handleEditClient = (client: Client) => {
     setSelectedClient(client)
-    setIsSheetOpen(true)
+    setIsDialogOpen(true)
   }
 
   const handleDeleteClient = (clientId: string) => {
@@ -144,7 +144,7 @@ export default function CrmPage() {
         description: "A new contact has been added successfully.",
       })
     }
-    setIsSheetOpen(false)
+    setIsDialogOpen(false)
   }
 
   const getStatusVariant = (status: Client['status']) => {
@@ -243,20 +243,20 @@ export default function CrmPage() {
         </CardContent>
       </Card>
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-full sm:max-w-full lg:max-w-4xl overflow-y-auto">
-            <SheetHeader>
-                <SheetTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</SheetTitle>
-                <SheetDescription>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</DialogTitle>
+                <DialogDescription>
                     {selectedClient ? "Update the contact details below." : "Fill in the details below to create a new contact."}
-                </SheetDescription>
-            </SheetHeader>
+                </DialogDescription>
+            </DialogHeader>
             <ClientForm 
               onSubmit={handleFormSubmit}
               defaultValues={selectedClient} 
             />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
