@@ -245,7 +245,7 @@ export default function InvoicesPage() {
             </CardContent>
         </Card>
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetContent className="sm:max-w-xl">
+            <SheetContent className="w-full sm:max-w-4xl">
                 <SheetHeader>
                     <SheetTitle className="font-headline">{selectedInvoice ? "Edit Invoice" : "New Invoice"}</SheetTitle>
                     <SheetDescription>

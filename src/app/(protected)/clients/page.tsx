@@ -236,7 +236,7 @@ export default function CrmPage() {
       </Card>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent>
+        <SheetContent className="sm:max-w-2xl">
             <SheetHeader>
                 <SheetTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</SheetTitle>
                 <SheetDescription>
