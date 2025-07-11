@@ -84,10 +84,7 @@ const initialInvoices: Invoice[] = [
       invoiceNumber: "INV-001",
       clientRef: "1",
       date: new Date(2024, 6, 15).toISOString(),
-      items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, total: 5000 }],
-      discount: 0,
-      discountType: 'value',
-      tax: 10,
+      items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, tax: 10, discount: 0, total: 5500 }],
       totalAmount: 5500,
       currency: "USD",
       dueDate: new Date(2024, 7, 15).toISOString(),
@@ -99,11 +96,8 @@ const initialInvoices: Invoice[] = [
       invoiceNumber: "INV-002",
       clientRef: "2",
       date: new Date(2024, 5, 30).toISOString(),
-      items: [{ description: "Consulting", quantity: 10, unitPrice: 150, total: 1500 }],
-      discount: 100,
-      discountType: 'value',
-      tax: 10,
-      totalAmount: 1540,
+      items: [{ description: "Consulting", quantity: 10, unitPrice: 150, tax: 10, discount: 5, total: 1485 }],
+      totalAmount: 1485,
       currency: "USD",
       dueDate: new Date(2024, 6, 30).toISOString(),
       status: "overdue",
@@ -114,10 +108,7 @@ const initialInvoices: Invoice[] = [
         invoiceNumber: "INV-003",
         clientRef: "1",
         date: new Date(2024, 7, 1).toISOString(),
-        items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, total: 2000 }],
-        tax: 10,
-        discount: 0,
-        discountType: 'value',
+        items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, tax: 10, discount: 0, total: 2200 }],
         totalAmount: 2200,
         currency: "USD",
         dueDate: new Date(2024, 8, 1).toISOString(),
@@ -136,6 +127,12 @@ export default function InvoicesPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const invoicePrintRef = useRef<HTMLDivElement>(null);
 
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
+
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -145,20 +142,22 @@ export default function InvoicesPage() {
       }, [clients]);
     
     useEffect(() => {
-        const savedInvoices = localStorage.getItem('invoices');
-        if (savedInvoices) {
-            try {
-                const parsedInvoices = JSON.parse(savedInvoices);
-                setInvoices(parsedInvoices);
-            } catch (e) {
-                console.error("Failed to parse invoices from localStorage", e);
-                setInvoices(initialInvoices);
+        if (typeof window !== 'undefined') {
+            const savedInvoices = localStorage.getItem('invoices');
+            if (savedInvoices) {
+                try {
+                    const parsedInvoices = JSON.parse(savedInvoices);
+                    setInvoices(parsedInvoices);
+                } catch (e) {
+                    console.error("Failed to parse invoices from localStorage", e);
+                    setInvoices(initialInvoices);
+                }
             }
         }
     }, []);
 
     useEffect(() => {
-        if (invoices.length > 0 && invoices !== initialInvoices) {
+        if (typeof window !== 'undefined' && invoices.length > 0 && invoices !== initialInvoices) {
             localStorage.setItem('invoices', JSON.stringify(invoices));
         }
     }, [invoices]);
@@ -203,9 +202,6 @@ export default function InvoicesPage() {
                 invoiceNumber: '',
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
-                tax: 0,
-                discount: 0,
-                discountType: 'value',
                 totalAmount: 0,
                 currency: 'USD',
                 date: new Date().toISOString(),
@@ -338,6 +334,10 @@ export default function InvoicesPage() {
       }
 
     const isEditing = !!selectedInvoice;
+
+    if (!isClient) {
+        return null; // Or a loading spinner
+    }
 
     return (
         <>

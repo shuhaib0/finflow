@@ -37,6 +37,8 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
   quantity: z.coerce.number().min(0.01, "Quantity must be positive."),
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive."),
+  tax: z.coerce.number().min(0).optional().default(0),
+  discount: z.coerce.number().min(0).max(100).optional().default(0),
 })
 
 const addressSchema = z.object({
@@ -55,9 +57,6 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: "Expiry date is required."}),
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
-  discount: z.coerce.number().min(0).optional().default(0),
-  discountType: z.enum(['percentage', 'value']).optional().default('value'),
-  tax: z.coerce.number().min(0).optional().default(0),
   currency: z.string().min(1, "Currency is required."),
   billingAddress: addressSchema.optional(),
   terms: z.string().optional(),
@@ -79,10 +78,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
         status: "draft" as const,
         date: new Date(),
         dueDate: new Date(),
-        items: [{ description: "", quantity: 1, unitPrice: 0 }],
-        tax: 0,
-        discount: 0,
-        discountType: 'value' as const,
+        items: [{ description: "", quantity: 1, unitPrice: 0, tax: 0, discount: 0 }],
         currency: 'USD',
         companyTaxId: '',
         terms: '',
@@ -105,7 +101,6 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
             dueDate: new Date(defaultValues.dueDate), 
             items: defaultValues.items.map(item => ({...item})),
             currency: defaultValues.currency || 'USD',
-            discountType: defaultValues.discountType || 'value',
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
@@ -153,43 +148,57 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
     }
   }, [watchedClientRef, clients, form]);
 
-  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number, discountType: 'percentage' | 'value') => {
-    const subtotal = items.reduce((acc, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      return acc + (quantity * unitPrice);
-    }, 0);
-    
-    const discountAmount = discountType === 'percentage' ? subtotal * (discount / 100) : discount;
-    const discountedSubtotal = subtotal - discountAmount;
-    const taxAmount = discountedSubtotal * (taxRate / 100);
-    const totalAmount = discountedSubtotal + taxAmount;
-    return { subtotal, taxAmount, totalAmount, discountAmount };
+  const calculateTotals = (items: (Partial<InvoiceItem>)[]) => {
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+
+    items.forEach(item => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const discountPercent = Number(item.discount) || 0;
+        const taxPercent = Number(item.tax) || 0;
+
+        const itemTotal = quantity * unitPrice;
+        const discountAmount = itemTotal * (discountPercent / 100);
+        const discountedTotal = itemTotal - discountAmount;
+        const taxAmount = discountedTotal * (taxPercent / 100);
+        
+        subtotal += itemTotal;
+        totalDiscount += discountAmount;
+        totalTax += taxAmount;
+    });
+
+    const totalAmount = subtotal - totalDiscount + totalTax;
+    return { subtotal, totalTax, totalAmount, totalDiscount };
   }
   
   const allFormValues = form.watch();
-  const { subtotal, taxAmount, totalAmount, discountAmount } = calculateTotals(allFormValues.items, allFormValues.tax || 0, allFormValues.discount || 0, allFormValues.discountType || 'value');
+  const { subtotal, totalTax, totalAmount, totalDiscount } = calculateTotals(allFormValues.items);
 
   const handleFormSubmit = (values: QuotationFormValues) => {
-    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0, values.discountType || 'value');
-    const itemsWithTotal = values.items.map(item => ({
-        ...item,
-        total: item.quantity * item.unitPrice
-    }));
+    const { totalAmount: finalTotal } = calculateTotals(values.items);
+    const itemsWithTotal = values.items.map(item => {
+      const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
+      const discountAmount = itemTotal * ((item.discount || 0) / 100);
+      const discountedTotal = itemTotal - discountAmount;
+      const taxAmount = discountedTotal * ((item.tax || 0) / 100);
+      return {
+          ...item,
+          total: discountedTotal + taxAmount
+      }
+  });
     
     onSubmit({
       ...values,
       date: values.date.toISOString(),
       dueDate: values.dueDate.toISOString(),
       items: itemsWithTotal,
-      tax: values.tax || 0,
-      discount: values.discount || 0,
       totalAmount: finalTotal,
     })
   }
 
   return (
-    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
       
@@ -341,58 +350,84 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                 <Separator className="my-6" />
         
                 <div>
-                    <h3 className="text-lg font-medium mb-2">Particulars</h3>
-                    <div className="space-y-4">
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-end gap-2 p-3 border rounded-md">
-                            <div className="grid flex-1 gap-2">
+                  <h3 className="text-lg font-medium mb-2">Particulars</h3>
+                  <div className="space-y-4">
+                  {fields.map((field, index) => (
+                      <div key={field.id} className="flex items-start gap-2 p-3 border rounded-md">
+                          <div className="flex-1 space-y-2">
+                            <FormField
+                                control={form.control}
+                                name={`items.${index}.description`}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="sr-only">Description</FormLabel>
+                                    <FormControl><Textarea placeholder="Item description" {...field} rows={1} className="min-h-0" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <div className="flex gap-2">
                                 <FormField
                                     control={form.control}
-                                    name={`items.${index}.description`}
+                                    name={`items.${index}.tax`}
                                     render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className={cn(index !== 0 && "sr-only")}>Description</FormLabel>
-                                        <FormControl><Input {...field} placeholder="Item description" /></FormControl>
+                                        <FormItem className="flex-1">
+                                        <FormLabel className="sr-only">Tax</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="Tax (%)"/></FormControl>
                                         <FormMessage />
-                                    </FormItem>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.discount`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                        <FormLabel className="sr-only">Discount</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="Discount (%)"/></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
                                     )}
                                 />
                             </div>
-                            <div className="grid w-24 gap-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`items.${index}.quantity`}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className={cn(index !== 0 && "sr-only")}>Qty</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="grid w-32 gap-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`items.${index}.unitPrice`}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className={cn(index !== 0 && "sr-only")}>Price</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                            </div>
+                          </div>
+                          <div className="grid w-20 gap-2">
+                              <FormField
+                                  control={form.control}
+                                  name={`items.${index}.quantity`}
+                                  render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Qty</FormLabel>
+                                      <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                                  )}
+                              />
+                          </div>
+                          <div className="grid w-28 gap-2">
+                              <FormField
+                                  control={form.control}
+                                  name={`items.${index}.unitPrice`}
+                                  render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Price</FormLabel>
+                                      <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                                  )}
+                              />
+                          </div>
+                          <div className="pt-7">
                             <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
                                 <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
                             </Button>
-                        </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
-                        Add Item
-                    </Button>
-                    </div>
+                          </div>
+                      </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0, tax: 0, discount: 0 })}>
+                      Add Item
+                  </Button>
+                  </div>
                 </div>
             </TabsContent>
             <TabsContent value="address" className="mt-4">
@@ -441,67 +476,28 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
         
         <div className="flex justify-end mt-6">
             <div className="w-80 space-y-2">
-                <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <FormField
-                            control={form.control}
-                            name="discount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="discountType"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger className="w-[80px] h-8 text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="value">$</SelectItem>
-                                            <SelectItem value="percentage">%</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(discountAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <FormField
-                        control={form.control}
-                        name="tax"
-                        render={({ field }) => (
-                            <FormItem className="flex items-center gap-2">
-                                <FormLabel className="text-sm">Tax (%)</FormLabel>
-                                <FormControl><Input type="number" {...field} className="w-20 h-8" placeholder="0" /></FormControl>
-                            </FormItem>
-                        )}
-                    />
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(taxAmount)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
-                </div>
+              <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                  <span>Discount</span>
+                  <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalDiscount)}</span>
+              </div>
+              <div className="flex justify-between">
+                  <span>Tax</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalTax)}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
+              </div>
             </div>
         </div>
         
         </div>
       </form>
     </Form>
-    </>
   )
 }

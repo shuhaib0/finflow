@@ -96,9 +96,7 @@ const initialQuotations: Quotation[] = [
       quotationNumber: "QUO-001",
       clientRef: "3",
       date: new Date(2024, 6, 10).toISOString(),
-      items: [{ description: "Initial Consultation", quantity: 1, unitPrice: 500, total: 500 }],
-      discount: 0,
-      tax: 10,
+      items: [{ description: "Initial Consultation", quantity: 1, unitPrice: 500, tax: 10, total: 550 }],
       totalAmount: 550,
       dueDate: new Date(2024, 7, 10).toISOString(),
       status: "sent",
@@ -109,10 +107,8 @@ const initialQuotations: Quotation[] = [
         quotationNumber: "QUO-002",
         clientRef: "4",
         date: new Date(2024, 7, 1).toISOString(),
-        items: [{ description: "Enterprise Software License", quantity: 1, unitPrice: 12000, total: 12000 }],
-        tax: 10,
-        discount: 1000,
-        totalAmount: 12100,
+        items: [{ description: "Enterprise Software License", quantity: 1, unitPrice: 12000, tax: 10, discount: 10, total: 11880 }],
+        totalAmount: 11880,
         dueDate: new Date(2024, 8, 1).toISOString(),
         status: "draft",
         createdAt: new Date(2024, 7, 1).toISOString(),
@@ -143,8 +139,6 @@ export default function QuotationsPage() {
                 quotationNumber: '',
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
-                tax: 0,
-                discount: 0,
                 totalAmount: 0,
                 date: new Date().toISOString(),
                 dueDate: new Date().toISOString(),
@@ -276,7 +270,7 @@ export default function QuotationsPage() {
                             {q.quotationNumber}
                         </TableCell>
                         <TableCell>{clientMap[q.clientRef]?.name || 'Unknown Client'}</TableCell>
-                        <TableCell>${q.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: q.currency || 'USD' }).format(q.totalAmount)}</TableCell>
                         <TableCell>{format(new Date(q.dueDate), "MMM d, yyyy")}</TableCell>
                         <TableCell>
                             <Badge variant={getStatusVariant(q.status)} className="capitalize">

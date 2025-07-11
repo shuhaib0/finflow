@@ -32,9 +32,6 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
     date,
     dueDate,
     items,
-    tax,
-    discount,
-    discountType,
     currency,
     totalAmount,
     status,
@@ -43,10 +40,31 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
 
   const currencySymbol = getCurrencySymbol(currency || 'USD');
 
-  const subtotal = items.reduce((acc, item) => acc + (item.quantity || 0) * (item.unitPrice || 0), 0);
-  const discountAmount = discountType === 'percentage' ? subtotal * ((discount || 0) / 100) : (discount || 0);
-  const discountedSubtotal = subtotal - discountAmount;
-  const taxAmount = discountedSubtotal * ((tax || 0) / 100);
+  const calculateTotals = (items: Invoice['items']) => {
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+
+    items.forEach(item => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const discountPercent = Number(item.discount) || 0;
+        const taxPercent = Number(item.tax) || 0;
+
+        const itemTotal = quantity * unitPrice;
+        const discountAmount = itemTotal * (discountPercent / 100);
+        const discountedTotal = itemTotal - discountAmount;
+        const taxAmount = discountedTotal * (taxPercent / 100);
+        
+        subtotal += itemTotal;
+        totalDiscount += discountAmount;
+        totalTax += taxAmount;
+    });
+
+    return { subtotal, totalTax, totalDiscount };
+  }
+
+  const { subtotal, totalTax, totalDiscount } = calculateTotals(items);
 
   const getStatusInfo = (status: Invoice['status']) => {
     switch (status) {
@@ -117,10 +135,13 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
           <tbody>
             {items.map((item, index) => (
               <tr key={index} className="border-b border-gray-100 text-sm">
-                <td className="p-3">{item.description}</td>
+                <td className="p-3">
+                  {item.description}
+                  {item.discount > 0 && <span className="text-xs text-gray-500 block"> (Discount: {item.discount}%)</span>}
+                </td>
                 <td className="p-3 text-center">{item.quantity}</td>
                 <td className="p-3 text-right">{currencySymbol}{(item.unitPrice || 0).toFixed(2)}</td>
-                <td className="p-3 text-right">{currencySymbol}{((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
+                <td className="p-3 text-right">{currencySymbol}{((item.quantity || 0) * (item.unitPrice || 0) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -133,15 +154,15 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
             <span className="text-gray-600">Subtotal</span>
             <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
           </div>
-          {discountAmount > 0 ? (
+          {totalDiscount > 0 ? (
             <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-gray-600">Discount {discountType === 'percentage' ? `(${(discount || 0)}%)` : ''}</span>
-              <span className="font-medium">-{currencySymbol}{discountAmount.toFixed(2)}</span>
+              <span className="text-gray-600">Total Discount</span>
+              <span className="font-medium">-{currencySymbol}{totalDiscount.toFixed(2)}</span>
             </div>
           ) : null}
           <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Tax ({tax || 0}%)</span>
-            <span className="font-medium">{currencySymbol}{taxAmount.toFixed(2)}</span>
+            <span className="text-gray-600">Total Tax</span>
+            <span className="font-medium">{currencySymbol}{totalTax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between py-3 bg-gray-100 px-3 mt-2 rounded-md">
             <span className="font-bold text-base">Total Amount</span>
