@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -10,6 +11,8 @@ import {
   Settings,
   Sparkles,
   Briefcase,
+  DollarSign,
+  FileQuestion,
 } from "lucide-react"
 
 import {
@@ -31,7 +34,6 @@ import {
   SidebarTrigger,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { usePathname, useRouter } from "next/navigation"
@@ -52,7 +54,16 @@ const navItems = [
         { href: "/clients?status=customer", label: "Customers" },
       ]
     },
-    { href: "/invoices", icon: FileText, label: "Invoices", tooltip: "Invoices" },
+    {
+      href: "/sales",
+      icon: DollarSign,
+      label: "Sales",
+      tooltip: "Sales",
+      subItems: [
+        { href: "/quotations", label: "Quotations", icon: FileQuestion },
+        { href: "/invoices", label: "Invoices", icon: FileText },
+      ]
+    },
     { href: "/transactions", icon: ArrowLeftRight, label: "Transactions", tooltip: "Transactions" },
     { href: "/reports", icon: BarChart3, label: "Reports", tooltip: "Reports" },
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
@@ -72,28 +83,32 @@ export default function ProtectedLayout({
     // This logic now runs only on the client-side
     const searchParams = new URLSearchParams(window.location.search);
     const currentStatus = searchParams.get('status');
-    if (currentStatus) {
+    if (pathname === '/clients' && currentStatus) {
       setActiveSubItem(`/clients?status=${currentStatus}`);
     } else {
       setActiveSubItem("");
     }
     
-    let currentNavItem = navItems.find(item => {
-        if (item.subItems) {
-            return pathname.startsWith(item.href);
-        }
-        return pathname.startsWith(item.href);
-    });
+    let currentNavItem = navItems.find(item => pathname.startsWith(item.href));
+    let currentPageTitle = currentNavItem?.label || "Dashboard";
 
-    if (currentNavItem) {
-        setPageTitle(currentNavItem.label);
+    if (currentNavItem?.subItems) {
+      const activeSub = currentNavItem.subItems.find(sub => pathname.startsWith(sub.href));
+      if (activeSub) {
+        currentPageTitle = activeSub.label;
+      }
     }
+    
+    setPageTitle(currentPageTitle);
+
   }, [pathname]);
 
   const onLogout = async () => {
     await handleLogout();
     router.push('/login');
   }
+
+  const isSalesPath = (path: string) => path === '/quotations' || path === '/invoices';
 
   return (
     <SidebarProvider>
@@ -117,9 +132,9 @@ export default function ProtectedLayout({
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                            href={item.href}
+                            href={item.href === '/clients' || item.href === '/sales' ? undefined : item.href}
                             tooltip={item.tooltip}
-                            isActive={pathname.startsWith(item.href) && !activeSubItem}
+                            isActive={pathname.startsWith(item.href) && !activeSubItem && !isSalesPath(pathname)}
                         >
                             <item.icon />
                             {item.label}
@@ -131,9 +146,10 @@ export default function ProtectedLayout({
                                   <SidebarMenuSubItem key={subItem.href}>
                                       <SidebarMenuSubButton 
                                           href={subItem.href}
-                                          isActive={activeSubItem === subItem.href}
+                                          isActive={activeSubItem ? activeSubItem === subItem.href : pathname.startsWith(subItem.href)}
                                           >
-                                          {subItem.label}
+                                            {subItem.icon && <subItem.icon />}
+                                            {subItem.label}
                                       </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                               ))}

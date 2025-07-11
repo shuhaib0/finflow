@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 import {
@@ -23,10 +23,9 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -91,7 +90,7 @@ const initialInvoices: Invoice[] = [
       date: new Date(2024, 6, 15).toISOString(),
       items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, total: 5000 }],
       discount: 0,
-      tax: 500,
+      tax: 10,
       totalAmount: 5500,
       dueDate: new Date(2024, 7, 15).toISOString(),
       status: "paid",
@@ -104,7 +103,7 @@ const initialInvoices: Invoice[] = [
       date: new Date(2024, 5, 30).toISOString(),
       items: [{ description: "Consulting", quantity: 10, unitPrice: 150, total: 1500 }],
       discount: 100,
-      tax: 140,
+      tax: 10,
       totalAmount: 1540,
       dueDate: new Date(2024, 6, 30).toISOString(),
       status: "overdue",
@@ -116,7 +115,8 @@ const initialInvoices: Invoice[] = [
         clientRef: "1",
         date: new Date(2024, 7, 1).toISOString(),
         items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, total: 2000 }],
-        tax: 200,
+        tax: 10,
+        discount: 0,
         totalAmount: 2200,
         dueDate: new Date(2024, 8, 1).toISOString(),
         status: "sent",
@@ -126,8 +126,17 @@ const initialInvoices: Invoice[] = [
 
 export default function InvoicesPage() {
     const { toast } = useToast()
+    const router = useRouter()
     const searchParams = useSearchParams()
-    const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices)
+    const [invoices, setInvoices] = useState<Invoice[]>(() => {
+        if (typeof window !== 'undefined') {
+            const savedInvoices = localStorage.getItem('invoices');
+            if (savedInvoices) {
+                return JSON.parse(savedInvoices);
+            }
+        }
+        return initialInvoices;
+    });
     const [clients] = useState<Client[]>(initialClients)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -140,6 +149,12 @@ export default function InvoicesPage() {
           return acc;
         }, {} as { [key: string]: Client });
       }, [clients]);
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+        }
+    }, [invoices]);
 
     useEffect(() => {
         const createForClient = searchParams.get('createForClient');
@@ -150,6 +165,7 @@ export default function InvoicesPage() {
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
                 tax: 0,
+                discount: 0,
                 totalAmount: 0,
                 date: new Date().toISOString(),
                 dueDate: new Date().toISOString(),
@@ -157,8 +173,23 @@ export default function InvoicesPage() {
                 createdAt: new Date().toISOString(),
             });
             setIsDialogOpen(true);
+            // Clean the URL
+            router.replace('/invoices', undefined);
         }
-    }, [searchParams]);
+
+        const fromQuotation = searchParams.get('fromQuotation');
+        if (fromQuotation) {
+            const quotation = JSON.parse(fromQuotation);
+            const newInvoice: Omit<Invoice, "id" | "invoiceNumber" | "createdAt" | "status"> = {
+                ...quotation,
+                dueDate: new Date().toISOString(), // set new due date
+                quotationRef: quotation.id,
+            }
+            handleFormSubmit(newInvoice, true);
+            // Clean the URL
+            router.replace('/invoices', undefined);
+        }
+    }, [searchParams, router]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -178,8 +209,8 @@ export default function InvoicesPage() {
       })
     }
   
-    const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => {
-      if (selectedInvoice && selectedInvoice.id) { // Check if it's a real edit
+    const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
+      if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
         const updatedInvoice = { ...selectedInvoice, ...invoiceData };
         setInvoices(
           invoices.map((inv) =>
@@ -194,14 +225,17 @@ export default function InvoicesPage() {
       } else {
         const newInvoice = {
           ...invoiceData,
-          id: (invoices.length + 1).toString(),
+          id: `inv_${Date.now()}`,
           invoiceNumber: `INV-00${invoices.length + 1}`,
           createdAt: new Date().toISOString(),
+          status: 'draft' as const,
         }
-        setInvoices([...invoices, newInvoice])
+        setInvoices(prev => [...prev, newInvoice])
         toast({
-          title: "Invoice Created",
-          description: "The new invoice has been added successfully.",
+          title: fromConversion ? "Invoice Converted" : "Invoice Created",
+          description: fromConversion 
+            ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
+            : "The new invoice has been added successfully.",
         })
         setIsDialogOpen(false)
       }
@@ -341,8 +375,8 @@ export default function InvoicesPage() {
                 <DialogHeader className="p-6 border-b non-printable">
                     <div className="flex items-center justify-between">
                         <div>
-                        <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                        <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                            <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                            <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
                         </div>
                         <div className="flex items-center gap-2">
                             {isEditing && (

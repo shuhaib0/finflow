@@ -54,25 +54,34 @@ export type Address = {
     country?: string;
 };
 
-export type Invoice = {
+export type SalesDocument = {
     id: string;
-    invoiceNumber: string;
-    clientRef: string; // Refers to Client ID
+    clientRef: string;
     companyTaxId?: string;
     date: string; // ISO string
-    dueDate: string; // ISO string
     items: InvoiceItem[];
     discount?: number;
     tax: number;
     totalAmount: number;
     billingAddress?: Address;
-    shippingAddress?: Address;
     terms?: string;
     purchaseOrderNumber?: string;
-    purchaseOrderDate?: string;
-    status: 'draft' | 'sent' | 'paid' | 'overdue';
     createdAt: string; // ISO string
+}
+
+export type Quotation = SalesDocument & {
+    quotationNumber: string;
+    dueDate: string; // Expiry Date
+    status: 'draft' | 'sent' | 'won' | 'lost';
 };
+
+export type Invoice = SalesDocument & {
+    invoiceNumber: string;
+    dueDate: string; // Due Date
+    status: 'draft' | 'sent' | 'paid' | 'overdue';
+    quotationRef?: string; // Optional reference to the original quotation
+};
+
 
 export type Payment = {
     id:string;
