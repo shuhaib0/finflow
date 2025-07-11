@@ -200,7 +200,10 @@ export default function CrmPage() {
             <TableBody>
               {filteredClients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">
+                  <TableCell 
+                    className="font-medium cursor-pointer hover:underline"
+                    onClick={() => handleOpenDialog('edit', client)}
+                  >
                     {client.name}
                   </TableCell>
                   <TableCell>{client.contactPerson}</TableCell>
@@ -215,10 +218,9 @@ export default function CrmPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <AlertDialog>
-                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog('edit', client)}>Edit</Button>
-                        <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive" className="ml-2">Delete</Button>
-                        </AlertDialogTrigger>
+                      <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="destructive" className="ml-2">Delete</Button>
+                      </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
