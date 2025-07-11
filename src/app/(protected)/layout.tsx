@@ -32,6 +32,7 @@ import {
   SidebarTrigger,
   SidebarMenuSub,
   SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { usePathname, useRouter } from "next/navigation"
@@ -42,14 +43,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
     { 
-      href: "/crm", 
+      href: "/clients", 
       icon: Briefcase, 
       label: "CRM", 
       tooltip: "CRM",
       subItems: [
-        { href: "/crm?status=lead", label: "Leads" },
-        { href: "/crm?status=opportunity", label: "Opportunities" },
-        { href: "/crm?status=customer", label: "Customers" },
+        { href: "/clients?status=lead", label: "Leads" },
+        { href: "/clients?status=opportunity", label: "Opportunities" },
+        { href: "/clients?status=customer", label: "Customers" },
       ]
     },
     { href: "/invoices", icon: FileText, label: "Invoices", tooltip: "Invoices" },
@@ -68,7 +69,18 @@ export default function ProtectedLayout({
   const [pageTitle, setPageTitle] = useState("Dashboard");
 
   useEffect(() => {
-    const currentNavItem = navItems.find(item => pathname.startsWith(item.href));
+    // This is a bit of a hack to get the query params on the client side
+    // and correctly set the active state for sub-items.
+    const searchParams = new URLSearchParams(window.location.search);
+    const currentPath = pathname + '?' + searchParams.toString();
+    
+    let currentNavItem = navItems.find(item => {
+        if (item.subItems) {
+            return pathname.startsWith(item.href) || item.subItems.some(sub => currentPath.endsWith(sub.href.substring(1)));
+        }
+        return pathname.startsWith(item.href);
+    });
+
     if (currentNavItem) {
         setPageTitle(currentNavItem.label);
     }
@@ -115,7 +127,7 @@ export default function ProtectedLayout({
                                   <SidebarMenuSubItem key={subItem.href}>
                                       <SidebarMenuSubButton 
                                           href={subItem.href}
-                                          isActive={pathname === subItem.href.split('?')[0] && router.query?.status === subItem.href.split('=')[1]}
+                                          isActive={window.location.search === `?status=${subItem.href.split('=')[1]}`}
                                           >
                                           {subItem.label}
                                       </SidebarMenuSubButton>
