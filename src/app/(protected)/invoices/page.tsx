@@ -23,9 +23,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -256,7 +253,7 @@ export default function InvoicesPage() {
         if (!element) return;
     
         const canvas = await html2canvas(element, { 
-            scale: 2, 
+            scale: 2, // Higher scale for better quality
             useCORS: true,
             allowTaint: true,
             logging: true
@@ -265,26 +262,41 @@ export default function InvoicesPage() {
     
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvasWidth / canvasHeight;
+        const pdfAspectRatio = pdfWidth / pdfHeight;
+        
+        let finalWidth, finalHeight;
+
+        if (canvasAspectRatio > pdfAspectRatio) {
+            finalWidth = pdfWidth;
+            finalHeight = pdfWidth / canvasAspectRatio;
+        } else {
+            finalHeight = pdfHeight;
+            finalWidth = pdfHeight * canvasAspectRatio;
+        }
+
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = (pdfHeight - finalHeight) / 2;
+        
+        pdf.addImage(data, 'PNG', x, y, finalWidth, finalHeight);
         pdf.save(`invoice-${selectedInvoice?.invoiceNumber || 'new'}.pdf`);
       };
     
       const handlePrint = () => {
         const node = invoicePrintRef.current;
         if (!node) return;
+        
+        const printableContent = node.innerHTML;
+        const originalContent = document.body.innerHTML;
 
-        const domClone = node.cloneNode(true) as HTMLElement;
-        const $print = document.createElement("div");
-        $print.style.position = "absolute";
-        $print.style.left = "-10000px";
-        $print.appendChild(domClone);
-        document.body.appendChild($print);
-        
+        document.body.innerHTML = printableContent;
         window.print();
-        
-        document.body.removeChild($print);
+        document.body.innerHTML = originalContent;
+        window.location.reload(); // To re-attach event listeners
       };
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -400,10 +412,10 @@ export default function InvoicesPage() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0">
-                <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
-                    <div>
-                        <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                        <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                <div className="p-6 border-b flex flex-row items-center justify-between non-printable">
+                    <div className="flex flex-col">
+                         <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</h2>
+                         <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {isEditing && (
@@ -413,7 +425,7 @@ export default function InvoicesPage() {
                         </>
                         )}
                     </div>
-                </DialogHeader>
+                </div>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}

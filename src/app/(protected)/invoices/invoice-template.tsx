@@ -13,7 +13,7 @@ type InvoiceTemplateProps = {
 
 export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
   if (!invoice || !invoice.client) {
-    return <div className="p-10 text-center">No invoice data to display. Select a client and fill in the details.</div>;
+    return <div className="p-10 text-center text-muted-foreground a4-container flex items-center justify-center">No invoice data to display. Select a client and fill in the details.</div>;
   }
 
   const {
@@ -49,7 +49,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
   const statusInfo = getStatusInfo(status);
 
   return (
-    <div className="bg-white text-gray-900 p-8 font-sans printable-area">
+    <div className="bg-white text-gray-900 font-sans a4-container printable-area">
       <header className="flex justify-between items-start mb-10">
         <div>
           <Icons.logo className="h-10 w-10 text-gray-800" />
@@ -141,7 +141,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
         </section>
       )}
 
-      <footer className="text-center text-xs text-gray-500 pt-6 border-t border-gray-200">
+      <footer className="text-center text-xs text-gray-500 pt-6 border-t border-gray-200 mt-auto">
         <p>Thank you for your business!</p>
         <p>Ailutions Inc. | (123) 456-7890 | www.ailutions.com</p>
       </footer>

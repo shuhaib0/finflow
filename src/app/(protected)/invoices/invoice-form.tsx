@@ -201,7 +201,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden">
       
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full non-printable">
         <div className="p-6 border-b">
             <Button type="submit">
                 {isEditing ? "Save Changes" : "Create Invoice"}
@@ -472,7 +472,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
 
       <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
         <ScrollArea className="h-full w-full">
-            <div ref={printRef} className="p-4 sm:p-8 md:p-12 lg:p-16 scale-[0.8] origin-top">
+            <div ref={printRef} className="my-6 scale-[0.8] origin-top">
                 <InvoiceTemplate invoice={constructedInvoice} />
             </div>
         </ScrollArea>
