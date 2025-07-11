@@ -217,7 +217,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
     <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
-      <div className="flex items-center justify-between p-6 border-b">
+      <div className="flex items-center justify-between p-6 border-b non-printable">
         <div>
           <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
           <p className="text-muted-foreground text-sm">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
@@ -234,7 +234,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
             </Button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-6 py-4 non-printable">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
                 <TabsTrigger value="details">Details</TabsTrigger>
@@ -495,7 +495,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
         </div>
       </form>
     </Form>
-    <div className="hidden">
+    <div className="hidden print:block">
       <div ref={invoiceRef}>
         <InvoiceTemplate 
           invoice={defaultValues ? {
@@ -503,7 +503,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
             ...form.getValues(),
             totalAmount: totalAmount,
             client: currentClient,
-          } : null}
+          } : {
+            ...getInitialValues(),
+            ...form.getValues(),
+            totalAmount: totalAmount,
+            client: currentClient
+          }}
         />
       </div>
     </div>
