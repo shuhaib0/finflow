@@ -12,6 +12,7 @@ export type Client = {
     email: string;
     phone?: string;
     status: 'lead' | 'opportunity' | 'customer';
+    opportunityWorth?: number;
     // General Info
     jobTitle?: string;
     salutation?: string;

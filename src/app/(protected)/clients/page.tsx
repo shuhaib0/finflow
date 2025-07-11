@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState, useMemo, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   Table,
   TableBody,
@@ -14,9 +14,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -46,6 +43,7 @@ const initialClients: Client[] = [
     email: "john.doe@innovate.com",
     phone: "123-456-7890",
     status: "customer",
+    opportunityWorth: 25000,
     jobTitle: "CEO",
     salutation: "Mr.",
     gender: "Male",
@@ -94,6 +92,7 @@ const initialClients: Client[] = [
     email: "emily.b@legacysys.com",
     phone: "111-222-3333",
     status: "opportunity",
+    opportunityWorth: 10000,
     notes: [],
   },
 ]
@@ -102,12 +101,29 @@ type DialogState = 'closed' | 'edit' | 'new';
 
 export default function CrmPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
+  const createForClient = searchParams.get('createForClient'); // For quotation creation
 
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
+
+  useEffect(() => {
+    if (createForClient) {
+      const client = clients.find(c => c.id === createForClient);
+      if (client) {
+        // This is a placeholder for redirecting to an actual quotation page
+        toast({
+            title: `Creating Quotation for ${client.name}`,
+            description: "You would be redirected to the quotation creation page.",
+        });
+        // Clear the search param
+        router.replace('/clients');
+      }
+    }
+  }, [createForClient, clients, router, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -128,6 +144,24 @@ export default function CrmPage() {
       description: "The contact has been successfully deleted.",
     })
   }
+
+  const handleStatusChange = (status: 'opportunity' | 'customer', worth?: number) => {
+    if (!selectedClient) return;
+
+    const updatedClient: Client = {
+      ...selectedClient,
+      status,
+      opportunityWorth: status === 'opportunity' ? worth : selectedClient.opportunityWorth,
+    };
+    
+    setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
+    setSelectedClient(updatedClient); // Keep dialog open with updated data
+    toast({
+        title: `Contact converted to ${status}`,
+        description: `${selectedClient.name} is now a ${status}.`,
+    });
+  }
+
 
   const handleFormSubmit = (clientData: Omit<Client, "id"> & { newNote?: string }) => {
     if (selectedClient) {
@@ -182,14 +216,6 @@ export default function CrmPage() {
     }
   }
 
-  const getDialogTitle = () => {
-    switch (dialogState) {
-        case 'edit': return 'Edit Contact';
-        case 'new': return 'Add New Contact';
-        default: return '';
-    }
-  }
-
   return (
     <>
       <Card>
@@ -213,6 +239,7 @@ export default function CrmPage() {
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Opportunity Worth</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -234,6 +261,11 @@ export default function CrmPage() {
                     >
                       {client.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {client.status === 'opportunity' && client.opportunityWorth
+                      ? `$${client.opportunityWorth.toLocaleString()}`
+                      : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <AlertDialog>
@@ -265,17 +297,11 @@ export default function CrmPage() {
       </Card>
 
       <Dialog open={dialogState !== 'closed'} onOpenChange={(isOpen) => !isOpen && setDialogState('closed')}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-                <DialogTitle className="font-headline">{getDialogTitle()}</DialogTitle>
-                <DialogDescription>
-                    {dialogState === 'edit' && "Update the contact details below."}
-                    {dialogState === 'new' && "Fill in the details below to create a new contact."}
-                </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
             {(dialogState === 'new' || dialogState === 'edit') && (
                 <ClientForm 
                   onSubmit={handleFormSubmit}
+                  onStatusChange={handleStatusChange}
                   defaultValues={selectedClient} 
                 />
             )}

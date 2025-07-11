@@ -4,10 +4,28 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useEffect } from "react"
+import { useEffect, useState, useRef } from "react"
 import { format } from "date-fns"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -40,6 +58,7 @@ const formSchema = z.object({
   salutation: z.string().optional(),
   gender: z.string().optional(),
   status: z.enum(["lead", "opportunity", "customer"]),
+  opportunityWorth: z.coerce.number().optional(),
   leadType: z.string().optional(),
   requestType: z.string().optional(),
   requestTypeOther: z.string().optional(),
@@ -78,6 +97,7 @@ type ClientFormValues = z.infer<typeof formSchema>
 
 type ClientFormProps = {
   onSubmit: (values: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string, newNote?: string }) => void;
+  onStatusChange: (status: 'opportunity' | 'customer', worth?: number) => void;
   defaultValues?: Client | null;
 }
 
@@ -91,7 +111,11 @@ const parseContactPerson = (contactPerson?: string) => {
 }
 
 
-export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
+export function ClientForm({ onSubmit, onStatusChange, defaultValues }: ClientFormProps) {
+    const router = useRouter();
+    const [opportunityWorth, setOpportunityWorth] = useState("");
+    const opportunityAlertDialogTrigger = useRef<HTMLButtonElement>(null);
+
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
 
     const form = useForm<ClientFormValues>({
@@ -105,6 +129,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
       jobTitle: "",
       gender: "",
       status: "lead",
+      opportunityWorth: 0,
       leadType: "",
       requestType: "",
       requestTypeOther: "",
@@ -142,6 +167,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
         jobTitle: "",
         gender: "",
         status: "lead",
+        opportunityWorth: 0,
         leadType: "",
         requestType: "",
         requestTypeOther: "",
@@ -172,9 +198,69 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
   const existingNotes = form.watch("notes") || [];
   const isEditing = !!defaultValues;
 
+  const handleCreateQuotation = () => {
+    if (defaultValues) {
+        router.push(`/invoices?createForClient=${defaultValues.id}`)
+    }
+  }
+  const handleCreateOpportunityConfirm = () => {
+    onStatusChange('opportunity', parseFloat(opportunityWorth));
+  };
+
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-lg font-semibold">{isEditing ? "Edit Contact" : "Create Contact"}</h2>
+            <div className="flex items-center gap-2">
+            {isEditing && (
+                <AlertDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">Create <span className="sr-only">Create menu</span></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <AlertDialogTrigger asChild ref={opportunityAlertDialogTrigger}>
+                                <DropdownMenuItem>Opportunity</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <DropdownMenuItem onClick={() => onStatusChange('customer')}>
+                                Customer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleCreateQuotation}>
+                                Quotation
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Create Opportunity</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Enter the estimated worth of this opportunity.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <Input 
+                            type="number"
+                            placeholder="e.g., 5000.00"
+                            value={opportunityWorth}
+                            onChange={(e) => setOpportunityWorth(e.target.value)}
+                            className="mt-2"
+                        />
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCreateOpportunityConfirm}>
+                            Create
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <Button type="submit">
+                {isEditing ? "Save" : "Create"}
+            </Button>
+            </div>
+      </div>
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         <Tabs defaultValue="general">
             <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general">General</TabsTrigger>
@@ -256,7 +342,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Status *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled>
                                 <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select contact status" />
@@ -351,6 +437,21 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                                 <FormLabel>Please specify</FormLabel>
                                 <FormControl>
                                 <Textarea placeholder="Describe the request..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    )}
+                    {form.getValues('status') === 'opportunity' && (
+                         <FormField
+                            control={form.control}
+                            name="opportunityWorth"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Opportunity Worth</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="e.g. 5000" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -589,10 +690,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                 </div>
             </TabsContent>
         </Tabs>
-        
-        <Button type="submit" className="w-full mt-8">
-          {isEditing ? "Update Contact" : "Create Contact"}
-        </Button>
+        </div>
       </form>
     </Form>
   )

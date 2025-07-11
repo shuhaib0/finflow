@@ -1,6 +1,8 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from 'next/navigation'
 import {
   Table,
   TableBody,
@@ -91,9 +93,28 @@ const clientNames: { [key: string]: string } = {
 
 export default function InvoicesPage() {
     const { toast } = useToast()
+    const searchParams = useSearchParams()
     const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+    useEffect(() => {
+        const createForClient = searchParams.get('createForClient');
+        if (createForClient) {
+            setSelectedInvoice({
+                id: '',
+                invoiceNumber: '',
+                clientRef: createForClient,
+                items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
+                tax: 0,
+                totalAmount: 0,
+                dueDate: new Date().toISOString(),
+                status: 'draft',
+                createdAt: new Date().toISOString(),
+            });
+            setIsSheetOpen(true);
+        }
+    }, [searchParams]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -114,7 +135,7 @@ export default function InvoicesPage() {
     }
   
     const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => {
-      if (selectedInvoice) {
+      if (selectedInvoice && selectedInvoice.id) { // Check if it's a real edit
         setInvoices(
           invoices.map((inv) =>
             inv.id === selectedInvoice.id ? { ...selectedInvoice, ...invoiceData } : inv
@@ -245,11 +266,11 @@ export default function InvoicesPage() {
             </CardContent>
         </Card>
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetContent className="w-full sm:max-w-full">
-                <SheetHeader>
-                    <SheetTitle className="font-headline">{selectedInvoice ? "Edit Invoice" : "New Invoice"}</SheetTitle>
+            <SheetContent className="sm:max-w-full h-full p-0">
+                <SheetHeader className="p-6">
+                    <SheetTitle className="font-headline">{selectedInvoice && selectedInvoice.id ? "Edit Invoice" : "New Invoice"}</SheetTitle>
                     <SheetDescription>
-                        {selectedInvoice ? "Update the invoice details below." : "Fill in the details to create a new invoice."}
+                        {selectedInvoice && selectedInvoice.id ? "Update the invoice details below." : "Fill in the details to create a new invoice."}
                     </SheetDescription>
                 </SheetHeader>
                 <InvoiceForm 
