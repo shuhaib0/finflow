@@ -23,6 +23,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -152,6 +155,8 @@ export default function InvoicesPage() {
                     console.error("Failed to parse invoices from localStorage", e);
                     setInvoices(initialInvoices);
                 }
+            } else {
+                setInvoices(initialInvoices);
             }
         }
     }, []);
@@ -437,6 +442,12 @@ export default function InvoicesPage() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>{isEditing ? "Edit Invoice" : "Create Invoice"}</DialogTitle>
+                    <DialogDescription>
+                    {isEditing ? "Update the details of your invoice." : "Fill out the form to create a new invoice."}
+                    </DialogDescription>
+                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
@@ -452,5 +463,3 @@ export default function InvoicesPage() {
       </>
     );
 }
-
-    
