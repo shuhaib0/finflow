@@ -35,7 +35,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PlusCircle } from "lucide-react"
 import { ClientForm } from "./client-form"
-import { ClientView } from "./client-view"
 import type { Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -93,7 +92,7 @@ const initialClients: Client[] = [
   },
 ]
 
-type DialogState = 'closed' | 'view' | 'edit' | 'new';
+type DialogState = 'closed' | 'edit' | 'new';
 
 export default function CrmPage() {
   const { toast } = useToast()
@@ -166,7 +165,6 @@ export default function CrmPage() {
 
   const getDialogTitle = () => {
     switch (dialogState) {
-        case 'view': return 'Contact Details';
         case 'edit': return 'Edit Contact';
         case 'new': return 'Add New Contact';
         default: return '';
@@ -202,10 +200,8 @@ export default function CrmPage() {
             <TableBody>
               {filteredClients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell>
-                    <Button variant="link" className="p-0 h-auto font-medium" onClick={() => handleOpenDialog('view', client)}>
-                        {client.name}
-                    </Button>
+                  <TableCell className="font-medium">
+                    {client.name}
                   </TableCell>
                   <TableCell>{client.contactPerson}</TableCell>
                   <TableCell>{client.email}</TableCell>
@@ -252,17 +248,10 @@ export default function CrmPage() {
             <DialogHeader>
                 <DialogTitle className="font-headline">{getDialogTitle()}</DialogTitle>
                 <DialogDescription>
-                    {dialogState === 'view' && "Review the contact's information."}
                     {dialogState === 'edit' && "Update the contact details below."}
                     {dialogState === 'new' && "Fill in the details below to create a new contact."}
                 </DialogDescription>
             </DialogHeader>
-            {dialogState === 'view' && selectedClient && (
-                <ClientView 
-                    client={selectedClient} 
-                    onEdit={() => handleOpenDialog('edit', selectedClient)}
-                />
-            )}
             {(dialogState === 'new' || dialogState === 'edit') && (
                 <ClientForm 
                   onSubmit={handleFormSubmit}
