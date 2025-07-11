@@ -12,13 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -40,8 +33,9 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { PlusCircle } from "lucide-react"
 import { ClientForm } from "./client-form"
+import { ClientView } from "./client-view"
 import type { Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -53,13 +47,24 @@ const initialClients: Client[] = [
     email: "john.doe@innovate.com",
     phone: "123-456-7890",
     status: "customer",
+    jobTitle: "CEO",
+    salutation: "Mr.",
+    gender: "Male",
+    leadType: "client",
+    requestType: "enquiry",
+    mobile: "123-456-7890",
+    website: "https://innovate.com",
+    whatsapp: "123-456-7890",
+    phoneExt: "123",
     addressLine1: "123 Tech Ave",
+    addressLine2: "Suite 100",
     city: "Silicon Valley",
     state: "CA",
     postalCode: "94043",
     country: "USA",
     source: "Referral",
-    campaign: "Q2 Partner Program"
+    campaign: "Q2 Partner Program",
+    notes: "Initial contact made through referral from Existing Corp."
   },
   {
     id: "2",
@@ -88,6 +93,8 @@ const initialClients: Client[] = [
   },
 ]
 
+type DialogState = 'closed' | 'view' | 'edit' | 'new';
+
 export default function CrmPage() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -95,7 +102,7 @@ export default function CrmPage() {
 
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [dialogState, setDialogState] = useState<DialogState>('closed');
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -103,15 +110,10 @@ export default function CrmPage() {
     }
     return clients.filter(client => client.status === statusFilter);
   }, [clients, statusFilter]);
-
-  const handleAddClient = () => {
-    setSelectedClient(null)
-    setIsDialogOpen(true)
-  }
-
-  const handleEditClient = (client: Client) => {
-    setSelectedClient(client)
-    setIsDialogOpen(true)
+  
+  const handleOpenDialog = (state: DialogState, client: Client | null = null) => {
+    setSelectedClient(client);
+    setDialogState(state);
   }
 
   const handleDeleteClient = (clientId: string) => {
@@ -124,6 +126,7 @@ export default function CrmPage() {
 
   const handleFormSubmit = (clientData: Omit<Client, "id">) => {
     if (selectedClient) {
+      // Editing existing client
       setClients(
         clients.map((c) =>
           c.id === selectedClient.id ? { ...c, ...clientData, id: c.id } : c
@@ -134,6 +137,7 @@ export default function CrmPage() {
         description: "The contact details have been updated.",
       })
     } else {
+      // Adding new client
       const newClient = {
         ...clientData,
         id: (clients.length + 1).toString(),
@@ -144,7 +148,7 @@ export default function CrmPage() {
         description: "A new contact has been added successfully.",
       })
     }
-    setIsDialogOpen(false)
+    setDialogState('closed');
   }
 
   const getStatusVariant = (status: Client['status']) => {
@@ -160,6 +164,15 @@ export default function CrmPage() {
     }
   }
 
+  const getDialogTitle = () => {
+    switch (dialogState) {
+        case 'view': return 'Contact Details';
+        case 'edit': return 'Edit Contact';
+        case 'new': return 'Add New Contact';
+        default: return '';
+    }
+  }
+
   return (
     <>
       <Card>
@@ -169,7 +182,7 @@ export default function CrmPage() {
                   <CardTitle className="font-headline">Customer Relationship Management</CardTitle>
                   <CardDescription>Manage your contacts and sales pipeline.</CardDescription>
               </div>
-              <Button size="sm" className="gap-1" onClick={handleAddClient}>
+              <Button size="sm" className="gap-1" onClick={() => handleOpenDialog('new')}>
                   <PlusCircle className="h-4 w-4" />
                   Add Contact
               </Button>
@@ -183,15 +196,17 @@ export default function CrmPage() {
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredClients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell>
+                    <Button variant="link" className="p-0 h-auto font-medium" onClick={() => handleOpenDialog('view', client)}>
+                        {client.name}
+                    </Button>
+                  </TableCell>
                   <TableCell>{client.contactPerson}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>
@@ -202,23 +217,12 @@ export default function CrmPage() {
                       {client.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => handleEditClient(client)}>Edit</DropdownMenuItem>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog('edit', client)}>Edit</Button>
+                        <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive" className="ml-2">Delete</Button>
+                        </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -243,18 +247,28 @@ export default function CrmPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={dialogState !== 'closed'} onOpenChange={(isOpen) => !isOpen && setDialogState('closed')}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-                <DialogTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</DialogTitle>
+                <DialogTitle className="font-headline">{getDialogTitle()}</DialogTitle>
                 <DialogDescription>
-                    {selectedClient ? "Update the contact details below." : "Fill in the details below to create a new contact."}
+                    {dialogState === 'view' && "Review the contact's information."}
+                    {dialogState === 'edit' && "Update the contact details below."}
+                    {dialogState === 'new' && "Fill in the details below to create a new contact."}
                 </DialogDescription>
             </DialogHeader>
-            <ClientForm 
-              onSubmit={handleFormSubmit}
-              defaultValues={selectedClient} 
-            />
+            {dialogState === 'view' && selectedClient && (
+                <ClientView 
+                    client={selectedClient} 
+                    onEdit={() => handleOpenDialog('edit', selectedClient)}
+                />
+            )}
+            {(dialogState === 'new' || dialogState === 'edit') && (
+                <ClientForm 
+                  onSubmit={handleFormSubmit}
+                  defaultValues={selectedClient} 
+                />
+            )}
         </DialogContent>
       </Dialog>
     </>
