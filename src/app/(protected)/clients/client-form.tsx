@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
+import type { Client } from "@/types"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -31,10 +32,15 @@ const formSchema = z.object({
   status: z.enum(["lead", "active", "inactive"]),
 })
 
-export function ClientForm() {
-  const { toast } = useToast()
+type ClientFormValues = z.infer<typeof formSchema>
 
-  const form = useForm<z.infer<typeof formSchema>>({
+type ClientFormProps = {
+  onSubmit: (values: ClientFormValues) => void;
+  defaultValues?: Client | null;
+}
+
+export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
+  const form = useForm<ClientFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -42,16 +48,22 @@ export function ClientForm() {
       email: "",
       phone: "",
       status: "lead",
+      ...defaultValues,
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Client Created",
-      description: "The new client has been added successfully.",
+  useEffect(() => {
+    form.reset({
+        name: "",
+        contactPerson: "",
+        email: "",
+        phone: "",
+        status: "lead",
+        ...defaultValues,
     })
-  }
+  }, [defaultValues, form])
+
+  const isEditing = !!defaultValues;
 
   return (
     <Form {...form}>
@@ -131,7 +143,7 @@ export function ClientForm() {
           )}
         />
         <Button type="submit" className="w-full">
-          Create Client
+          {isEditing ? "Update Client" : "Create Client"}
         </Button>
       </form>
     </Form>
