@@ -410,7 +410,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
                             </FormItem>
                         )}
                     />
-                    <span>-${(form.getValues("discount") || 0).toFixed(2)}</span>
+                    <span>-${(Number(form.getValues("discount")) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <FormField
@@ -443,3 +443,5 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
     </Form>
   )
 }
+
+    
