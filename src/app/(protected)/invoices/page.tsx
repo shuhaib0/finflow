@@ -130,19 +130,7 @@ export default function InvoicesPage() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [invoices, setInvoices] = useState<Invoice[]>(() => {
-        if (typeof window !== 'undefined') {
-            const savedInvoices = localStorage.getItem('invoices');
-            if (savedInvoices) {
-                try {
-                    return JSON.parse(savedInvoices);
-                } catch (e) {
-                    return initialInvoices;
-                }
-            }
-        }
-        return initialInvoices;
-    });
+    const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
     const [clients] = useState<Client[]>(initialClients)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -157,7 +145,20 @@ export default function InvoicesPage() {
       }, [clients]);
     
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        const savedInvoices = localStorage.getItem('invoices');
+        if (savedInvoices) {
+            try {
+                const parsedInvoices = JSON.parse(savedInvoices);
+                setInvoices(parsedInvoices);
+            } catch (e) {
+                console.error("Failed to parse invoices from localStorage", e);
+                setInvoices(initialInvoices);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (invoices.length > 0 && invoices !== initialInvoices) {
             localStorage.setItem('invoices', JSON.stringify(invoices));
         }
     }, [invoices]);
@@ -288,6 +289,9 @@ export default function InvoicesPage() {
                   margin: 0;
                   padding: 0;
                   background: #fff;
+              }
+              .non-printable {
+                display: none !important;
               }
               .printable-area {
                   visibility: visible;
