@@ -133,17 +133,23 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              const quantity = Number(item.quantity) || 0;
+              const unitPrice = Number(item.unitPrice) || 0;
+              const discount = Number(item.discount) || 0;
+              const itemTotal = quantity * unitPrice * (1 - discount / 100);
+
+              return (
               <tr key={index} className="border-b border-gray-100 text-sm">
                 <td className="p-3">
                   {item.description}
                   {item.discount > 0 && <span className="text-xs text-gray-500 block"> (Discount: {item.discount}%)</span>}
                 </td>
-                <td className="p-3 text-center">{item.quantity}</td>
-                <td className="p-3 text-right">{currencySymbol}{(item.unitPrice || 0).toFixed(2)}</td>
-                <td className="p-3 text-right">{currencySymbol}{((item.quantity || 0) * (item.unitPrice || 0) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                <td className="p-3 text-center">{quantity}</td>
+                <td className="p-3 text-right">{currencySymbol}{unitPrice.toFixed(2)}</td>
+                <td className="p-3 text-right">{currencySymbol}{itemTotal.toFixed(2)}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </section>
@@ -166,7 +172,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
           </div>
           <div className="flex justify-between py-3 bg-gray-100 px-3 mt-2 rounded-md">
             <span className="font-bold text-base">Total Amount</span>
-            <span className="font-bold text-base">{currencySymbol}{totalAmount.toFixed(2)}</span>
+            <span className="font-bold text-base">{currencySymbol}{(Number(totalAmount) || 0).toFixed(2)}</span>
           </div>
         </div>
       </section>
