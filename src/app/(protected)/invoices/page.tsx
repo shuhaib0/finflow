@@ -132,7 +132,11 @@ export default function InvoicesPage() {
         if (typeof window !== 'undefined') {
             const savedInvoices = localStorage.getItem('invoices');
             if (savedInvoices) {
-                return JSON.parse(savedInvoices);
+                try {
+                    return JSON.parse(savedInvoices);
+                } catch (e) {
+                    return initialInvoices;
+                }
             }
         }
         return initialInvoices;
@@ -156,59 +160,6 @@ export default function InvoicesPage() {
         }
     }, [invoices]);
 
-    useEffect(() => {
-        const createForClient = searchParams.get('createForClient');
-        if (createForClient) {
-            setSelectedInvoice({
-                id: '',
-                invoiceNumber: '',
-                clientRef: createForClient,
-                items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
-                tax: 0,
-                discount: 0,
-                totalAmount: 0,
-                date: new Date().toISOString(),
-                dueDate: new Date().toISOString(),
-                status: 'draft',
-                createdAt: new Date().toISOString(),
-            });
-            setIsDialogOpen(true);
-            // Clean the URL
-            router.replace('/invoices', undefined);
-        }
-
-        const fromQuotation = searchParams.get('fromQuotation');
-        if (fromQuotation) {
-            const quotation = JSON.parse(fromQuotation);
-            const newInvoice: Omit<Invoice, "id" | "invoiceNumber" | "createdAt" | "status"> = {
-                ...quotation,
-                dueDate: new Date().toISOString(), // set new due date
-                quotationRef: quotation.id,
-            }
-            handleFormSubmit(newInvoice, true);
-            // Clean the URL
-            router.replace('/invoices', undefined);
-        }
-    }, [searchParams, router]);
-  
-    const handleAddInvoice = () => {
-      setSelectedInvoice(null)
-      setIsDialogOpen(true)
-    }
-  
-    const handleEditInvoice = (invoice: Invoice) => {
-      setSelectedInvoice(invoice)
-      setIsDialogOpen(true)
-    }
-  
-    const handleDeleteInvoice = (invoiceId: string) => {
-      setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId))
-      toast({
-        title: "Invoice Deleted",
-        description: "The invoice has been successfully deleted.",
-      })
-    }
-  
     const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
       if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
         const updatedInvoice = { ...selectedInvoice, ...invoiceData };
@@ -226,7 +177,7 @@ export default function InvoicesPage() {
         const newInvoice = {
           ...invoiceData,
           id: `inv_${Date.now()}`,
-          invoiceNumber: `INV-00${invoices.length + 1}`,
+          invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
           createdAt: new Date().toISOString(),
           status: 'draft' as const,
         }
@@ -237,8 +188,68 @@ export default function InvoicesPage() {
             ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
             : "The new invoice has been added successfully.",
         })
-        setIsDialogOpen(false)
       }
+      setIsDialogOpen(false);
+    }
+
+    useEffect(() => {
+        const createForClient = searchParams.get('createForClient');
+        if (createForClient) {
+            setSelectedInvoice({
+                id: '',
+                invoiceNumber: '',
+                clientRef: createForClient,
+                items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
+                tax: 0,
+                discount: 0,
+                totalAmount: 0,
+                date: new Date().toISOString(),
+                dueDate: new Date().toISOString(),
+                status: 'draft',
+                createdAt: new Date().toISOString(),
+            });
+            setIsDialogOpen(true);
+            router.replace('/invoices', undefined);
+        }
+
+        const fromQuotation = searchParams.get('fromQuotation');
+        if (fromQuotation) {
+            try {
+                const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
+                const newInvoice: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "status"> = {
+                    ...quotationData,
+                    dueDate: new Date().toISOString(), // set new due date
+                    quotationRef: quotationData.id,
+                };
+                handleFormSubmit(newInvoice, true);
+            } catch (error) {
+                console.error("Failed to parse quotation data:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Conversion Failed",
+                    description: "There was an error converting the quotation to an invoice."
+                });
+            }
+            router.replace('/invoices', undefined);
+        }
+    }, [searchParams, router, toast]); // handleFormSubmit dependency removed to avoid re-triggering
+  
+    const handleAddInvoice = () => {
+      setSelectedInvoice(null)
+      setIsDialogOpen(true)
+    }
+  
+    const handleEditInvoice = (invoice: Invoice) => {
+      setSelectedInvoice(invoice)
+      setIsDialogOpen(true)
+    }
+  
+    const handleDeleteInvoice = (invoiceId: string) => {
+      setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId))
+      toast({
+        title: "Invoice Deleted",
+        description: "The invoice has been successfully deleted.",
+      })
     }
 
     const handleDownloadPdf = async () => {
@@ -272,7 +283,7 @@ export default function InvoicesPage() {
         }
       }
 
-    const isEditing = !!selectedInvoice?.id;
+    const isEditing = !!selectedInvoice;
 
     return (
         <>
@@ -396,7 +407,7 @@ export default function InvoicesPage() {
                 />
             </DialogContent>
         </Dialog>
-        <div className="hidden">
+        <div className="hidden print:block">
             <div ref={invoiceTemplateRef}>
             <InvoiceTemplate invoice={selectedInvoice ? { ...selectedInvoice, client: clientMap[selectedInvoice.clientRef] } : null} />
             </div>

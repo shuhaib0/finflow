@@ -78,6 +78,16 @@ const initialClients: Client[] = [
     phone: "555-555-5555",
     status: "lead",
   },
+  {
+    id: "4",
+    name: "Legacy Systems",
+    contactPerson: "Emily Brown",
+    email: "emily.b@legacysys.com",
+    phone: "111-222-3333",
+    status: "opportunity",
+    opportunityWorth: 10000,
+    notes: [],
+  },
 ];
 
 const initialQuotations: Quotation[] = [
@@ -142,7 +152,6 @@ export default function QuotationsPage() {
                 createdAt: new Date().toISOString(),
             });
             setIsDialogOpen(true);
-            // Clean the URL
             router.replace('/quotations', undefined);
         }
     }, [searchParams, router]);
@@ -175,7 +184,8 @@ export default function QuotationsPage() {
 
     const handleConvertToInvoice = (quotation: Quotation) => {
         const { quotationNumber, ...invoiceData } = quotation;
-        router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(invoiceData))}`);
+        const fullInvoiceData = { ...invoiceData, quotationRef: quotation.id };
+        router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
     }
   
     const handleFormSubmit = (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {

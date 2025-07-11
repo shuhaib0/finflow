@@ -107,20 +107,10 @@ export default function CrmPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
-  const createForClient = searchParams.get('createForClient'); // For quotation creation
-
+  
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
-
-  useEffect(() => {
-    const createForQuotation = searchParams.get('createForClient');
-    if (createForQuotation) {
-        router.push(`/quotations?createForClient=${createForQuotation}`)
-        // Clean the search param
-        router.replace('/clients');
-    }
-  }, [searchParams, clients, router, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
