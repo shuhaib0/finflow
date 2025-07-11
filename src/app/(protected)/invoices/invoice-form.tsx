@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Trash, Download, Printer } from "lucide-react"
 
@@ -408,8 +408,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                             name={`items.${index}.tax`}
                                             render={({ field }) => (
                                                 <FormItem className="flex-1">
-                                                <FormLabel className="sr-only">Tax</FormLabel>
-                                                <FormControl><Input type="number" {...field} placeholder="Tax (%)"/></FormControl>
+                                                <FormLabel>Tax (%)</FormLabel>
+                                                <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -419,8 +419,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                             name={`items.${index}.discount`}
                                             render={({ field }) => (
                                                 <FormItem className="flex-1">
-                                                <FormLabel className="sr-only">Discount</FormLabel>
-                                                <FormControl><Input type="number" {...field} placeholder="Discount (%)"/></FormControl>
+                                                <FormLabel>Discount (%)</FormLabel>
+                                                <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}

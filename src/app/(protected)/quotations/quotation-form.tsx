@@ -372,8 +372,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                                     name={`items.${index}.tax`}
                                     render={({ field }) => (
                                         <FormItem className="flex-1">
-                                        <FormLabel className="sr-only">Tax</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="Tax (%)"/></FormControl>
+                                        <FormLabel>Tax (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
                                         <FormMessage />
                                         </FormItem>
                                     )}
@@ -383,8 +383,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                                     name={`items.${index}.discount`}
                                     render={({ field }) => (
                                         <FormItem className="flex-1">
-                                        <FormLabel className="sr-only">Discount</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="Discount (%)"/></FormControl>
+                                        <FormLabel>Discount (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
                                         <FormMessage />
                                         </FormItem>
                                     )}
