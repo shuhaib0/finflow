@@ -4,9 +4,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Trash } from "lucide-react"
+import { Calendar as CalendarIcon, Trash, Download, Printer } from "lucide-react"
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { Invoice, InvoiceItem, Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
+import { InvoiceTemplate } from "./invoice-template"
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
@@ -68,6 +71,7 @@ type InvoiceFormProps = {
   onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => void;
   defaultValues?: Invoice | null;
   clients: Client[];
+  onClose: () => void;
 }
 
 const getInitialValues = (defaultValues?: Invoice | null) => {
@@ -112,7 +116,8 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: InvoiceFormProps) {
+  const invoiceRef = useRef<HTMLDivElement>(null);
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -183,9 +188,52 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
 
   const isEditing = !!defaultValues?.id;
 
+  const handleDownloadPdf = async () => {
+    const element = invoiceRef.current;
+    if (!element) return;
+    const canvas = await html2canvas(element, { scale: 2 });
+    const data = canvas.toDataURL('image/png');
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    
+    pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`invoice-${defaultValues?.invoiceNumber || 'new'}.pdf`);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const clientMap = clients.reduce((acc, client) => {
+    acc[client.id] = client;
+    return acc;
+  }, {} as { [key: string]: Client });
+  const currentClient = clientMap[watchedClientRef];
+
+
   return (
+    <>
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
+      <div className="flex items-center justify-between p-6 border-b">
+        <div>
+          <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
+          <p className="text-muted-foreground text-sm">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
+        </div>
+        <div className="flex items-center gap-2">
+            {isEditing && (
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+              </>
+            )}
+            <Button type="submit">
+                {isEditing ? "Save Changes" : "Create Invoice"}
+            </Button>
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
       <Tabs defaultValue="details" className="w-full mb-6">
             <TabsList>
@@ -195,12 +243,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
                 <TabsTrigger value="more-info">More Info</TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 @[60rem]:grid-cols-4 gap-4 mb-6">
                     <FormField
                         control={form.control}
                         name="clientRef"
                         render={({ field }) => (
-                            <FormItem className="md:col-span-2">
+                            <FormItem className="@[60rem]:col-span-2">
                             <FormLabel>Client</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -445,12 +493,20 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
         </div>
         
         </div>
-        <div className="p-6 border-t mt-auto">
-            <Button type="submit" className="w-full">
-            {isEditing ? "Update Invoice" : "Create Invoice"}
-            </Button>
-        </div>
       </form>
     </Form>
+    <div className="hidden">
+      <div ref={invoiceRef}>
+        <InvoiceTemplate 
+          invoice={defaultValues ? {
+            ...defaultValues,
+            ...form.getValues(),
+            totalAmount: totalAmount,
+            client: currentClient,
+          } : null}
+        />
+      </div>
+    </div>
+    </>
   )
 }

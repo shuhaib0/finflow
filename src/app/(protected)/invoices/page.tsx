@@ -21,9 +21,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -174,11 +171,13 @@ export default function InvoicesPage() {
   
     const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => {
       if (selectedInvoice && selectedInvoice.id) { // Check if it's a real edit
+        const updatedInvoice = { ...selectedInvoice, ...invoiceData };
         setInvoices(
           invoices.map((inv) =>
-            inv.id === selectedInvoice.id ? { ...selectedInvoice, ...invoiceData } : inv
+            inv.id === selectedInvoice.id ? updatedInvoice : inv
           )
         )
+        setSelectedInvoice(updatedInvoice); // Keep dialog open with updated data
         toast({
           title: "Invoice Updated",
           description: "The invoice details have been updated.",
@@ -195,8 +194,8 @@ export default function InvoicesPage() {
           title: "Invoice Created",
           description: "The new invoice has been added successfully.",
         })
+        setIsDialogOpen(false)
       }
-      setIsDialogOpen(false)
     }
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -247,7 +246,12 @@ export default function InvoicesPage() {
                     <TableBody>
                     {invoices.map((invoice) => (
                         <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                        <TableCell 
+                            className="font-medium cursor-pointer hover:underline"
+                            onClick={() => handleEditInvoice(invoice)}
+                        >
+                            {invoice.invoiceNumber}
+                        </TableCell>
                         <TableCell>{clientMap[invoice.clientRef]?.name || 'Unknown Client'}</TableCell>
                         <TableCell>${invoice.totalAmount.toFixed(2)}</TableCell>
                         <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
@@ -305,16 +309,11 @@ export default function InvoicesPage() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
-                <DialogHeader className="p-6">
-                    <DialogTitle className="font-headline">{selectedInvoice && selectedInvoice.id ? "Edit Invoice" : "New Invoice"}</DialogTitle>
-                    <DialogDescription>
-                        {selectedInvoice && selectedInvoice.id ? "Update the invoice details below." : "Fill in the details to create a new invoice."}
-                    </DialogDescription>
-                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
                   clients={clients}
+                  onClose={() => setIsDialogOpen(false)}
                 />
             </DialogContent>
         </Dialog>
