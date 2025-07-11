@@ -4,6 +4,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import Link from "next/link"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -535,28 +536,38 @@ const sidebarMenuButtonVariants = cva(
 
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    asChild?: boolean
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
+  Omit<React.ComponentProps<"button">, "href"> & {
+    href?: string;
+    asChild?: boolean;
+    isActive?: boolean;
+    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
     {
       asChild = false,
+      href,
       isActive = false,
       variant = "default",
       size = "default",
       tooltip,
       className,
+      children,
       ...props
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
+    const Comp = asChild ? Slot : href ? 'a' : 'button';
+
+    const buttonContent = (
+      <>
+        {children}
+      </>
+    );
 
     const button = (
+      // @ts-ignore
       <Comp
         ref={ref}
         data-sidebar="menu-button"
@@ -564,11 +575,15 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
-      />
-    )
+      >
+        {buttonContent}
+      </Comp>
+    );
+    
+    const linkedButton = href ? <Link href={href} passHref legacyBehavior>{button}</Link> : button;
 
     if (!tooltip) {
-      return button
+      return linkedButton
     }
 
     if (typeof tooltip === "string") {
@@ -579,7 +594,7 @@ const SidebarMenuButton = React.forwardRef<
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger asChild>{linkedButton}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
@@ -591,6 +606,7 @@ const SidebarMenuButton = React.forwardRef<
   }
 )
 SidebarMenuButton.displayName = "SidebarMenuButton"
+
 
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
