@@ -44,7 +44,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle, Download, Printer } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
-import { InvoiceTemplate } from "./invoice-template"
 import type { Invoice, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
@@ -144,7 +143,7 @@ export default function InvoicesPage() {
     const [clients] = useState<Client[]>(initialClients)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const invoiceTemplateRef = useRef<HTMLDivElement>(null);
+    const invoicePrintRef = useRef<HTMLDivElement>(null);
 
 
     const clientMap = useMemo(() => {
@@ -253,9 +252,15 @@ export default function InvoicesPage() {
     }
 
     const handleDownloadPdf = async () => {
-        const element = invoiceTemplateRef.current;
+        const element = invoicePrintRef.current;
         if (!element) return;
-        const canvas = await html2canvas(element, { scale: 2 });
+    
+        const canvas = await html2canvas(element, { 
+            scale: 2, 
+            useCORS: true,
+            allowTaint: true,
+            logging: true
+        });
         const data = canvas.toDataURL('image/png');
     
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -267,7 +272,19 @@ export default function InvoicesPage() {
       };
     
       const handlePrint = () => {
+        const node = invoicePrintRef.current;
+        if (!node) return;
+
+        const domClone = node.cloneNode(true) as HTMLElement;
+        const $print = document.createElement("div");
+        $print.style.position = "absolute";
+        $print.style.left = "-10000px";
+        $print.appendChild(domClone);
+        document.body.appendChild($print);
+        
         window.print();
+        
+        document.body.removeChild($print);
       };
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -382,21 +399,19 @@ export default function InvoicesPage() {
             </CardContent>
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
-                <DialogHeader className="p-6 border-b non-printable">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                            <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {isEditing && (
-                            <>
-                                <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
-                                <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                            </>
-                            )}
-                        </div>
+            <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0">
+                <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
+                    <div>
+                        <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                        <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {isEditing && (
+                        <>
+                            <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                        </>
+                        )}
                     </div>
                 </DialogHeader>
                 <InvoiceForm 
@@ -404,14 +419,10 @@ export default function InvoicesPage() {
                   defaultValues={selectedInvoice}
                   clients={clients}
                   isEditing={isEditing}
+                  printRef={invoicePrintRef}
                 />
             </DialogContent>
         </Dialog>
-        <div className="hidden print:block">
-            <div ref={invoiceTemplateRef}>
-            <InvoiceTemplate invoice={selectedInvoice ? { ...selectedInvoice, client: clientMap[selectedInvoice.clientRef] } : null} />
-            </div>
-      </div>
       </>
     );
 }
