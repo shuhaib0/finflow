@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import type { Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 
 const formSchema = z.object({
   name: z.string().min(1, "Company name is required."),
@@ -37,6 +38,7 @@ const formSchema = z.object({
   status: z.enum(["lead", "opportunity", "customer"]),
   leadType: z.string().optional(),
   requestType: z.string().optional(),
+  requestTypeOther: z.string().optional(),
   email: z.string().email("Invalid email address.").optional().or(z.literal('')),
   mobile: z.string().optional(),
   phone: z.string().optional(),
@@ -46,7 +48,10 @@ const formSchema = z.object({
 }).transform(data => ({
     ...data,
     contactPerson: `${data.firstName} ${data.middleName || ''} ${data.lastName || ''}`.replace(/\s+/g, ' ').trim()
-}));
+})).refine(data => {
+    if (data.requestType === 'other') return !!data.requestTypeOther && data.requestTypeOther.length > 0;
+    return true;
+}, { message: "Please specify the 'other' request type.", path: ["requestTypeOther"]});
 
 type ClientFormValues = z.infer<typeof formSchema>
 
@@ -81,6 +86,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
       status: "lead",
       leadType: "",
       requestType: "",
+      requestTypeOther: "",
       email: "",
       mobile: "",
       phone: "",
@@ -107,6 +113,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
         status: "lead",
         leadType: "",
         requestType: "",
+        requestTypeOther: "",
         email: "",
         mobile: "",
         phone: "",
@@ -120,6 +127,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
     })
   }, [defaultValues, form])
 
+  const watchedRequestType = form.watch("requestType");
   const isEditing = !!defaultValues;
 
   return (
@@ -240,9 +248,9 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="web">Web</SelectItem>
-                            <SelectItem value="referral">Referral</SelectItem>
+                            <SelectItem value="client">Client</SelectItem>
                             <SelectItem value="partner">Partner</SelectItem>
+                            <SelectItem value="consultant">Consultant</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -275,15 +283,30 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="demo">Demo</SelectItem>
-                            <SelectItem value="quote">Quote</SelectItem>
-                            <SelectItem value="info">Information</SelectItem>
+                            <SelectItem value="enquiry">Enquiry</SelectItem>
+                            <SelectItem value="rfi">Request for Information</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
                 </FormItem>
                 )}
             />
+            {watchedRequestType === 'other' && (
+                <FormField
+                    control={form.control}
+                    name="requestTypeOther"
+                    render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                        <FormLabel>Please specify</FormLabel>
+                        <FormControl>
+                        <Textarea placeholder="Describe the request..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            )}
         </div>
 
         <div className="space-y-4">
@@ -378,3 +401,5 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
     </Form>
   )
 }
+
+    
