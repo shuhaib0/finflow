@@ -31,19 +31,47 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
+import { usePathname, useRouter } from "next/navigation"
+import { handleLogout } from "@/app/login/actions"
+import { useEffect, useState } from "react"
+
+const navItems = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
+    { href: "/clients", icon: Users, label: "Clients", tooltip: "Clients" },
+    { href: "/invoices", icon: FileText, label: "Invoices", tooltip: "Invoices" },
+    { href: "/transactions", icon: ArrowLeftRight, label: "Transactions", tooltip: "Transactions" },
+    { href: "/reports", icon: BarChart3, label: "Reports", tooltip: "Reports" },
+    { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
+]
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [pageTitle, setPageTitle] = useState("Dashboard");
+
+  useEffect(() => {
+    const currentNavItem = navItems.find(item => pathname.startsWith(item.href));
+    if (currentNavItem) {
+        setPageTitle(currentNavItem.label);
+    }
+  }, [pathname]);
+
+  const onLogout = async () => {
+    await handleLogout();
+    router.push('/login');
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="p-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 font-headline text-lg font-semibold text-primary-foreground"
+            className="flex items-center gap-2 font-headline text-lg font-semibold text-sidebar-foreground"
           >
             <Icons.logo className="h-8 w-8 text-accent" />
             <span className="group-data-[collapsible=icon]:hidden">
@@ -53,67 +81,24 @@ export default function ProtectedLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/dashboard"
-                tooltip="Dashboard"
-                isActive
-              >
-                <LayoutDashboard />
-                Dashboard
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/clients"
-                tooltip="Clients"
-              >
-                <Users />
-                Clients
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/invoices"
-                tooltip="Invoices"
-              >
-                <FileText />
-                Invoices
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/transactions"
-                tooltip="Transactions"
-              >
-                <ArrowLeftRight />
-                Transactions
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/reports"
-                tooltip="Reports"
-              >
-                <BarChart3 />
-                Reports
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/qna"
-                tooltip="AI Q&A"
-              >
-                <Sparkles />
-                AI Q&A
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {navItems.map((item) => (
+                 <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                        href={item.href}
+                        tooltip={item.tooltip}
+                        isActive={pathname.startsWith(item.href)}
+                    >
+                        <item.icon />
+                        {item.label}
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
           <div className="flex items-center gap-2">
             <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" />
+              <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="avatar person" />
               <AvatarFallback>AD</AvatarFallback>
             </Avatar>
             <div className="flex flex-col group-data-[collapsible=icon]:hidden">
@@ -133,7 +118,7 @@ export default function ProtectedLayout({
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Log Out">
+              <SidebarMenuButton tooltip="Log Out" onClick={onLogout}>
                 <LogOut />
                 Log Out
               </SidebarMenuButton>
@@ -145,11 +130,8 @@ export default function ProtectedLayout({
         <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
           <SidebarTrigger className="hidden md:flex" />
           <div className="flex-1">
-            <h1 className="font-headline text-lg font-semibold">Dashboard</h1>
+            <h1 className="font-headline text-lg font-semibold">{pageTitle}</h1>
           </div>
-          <Button variant="outline" size="sm">
-            + New Action
-          </Button>
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
           {children}
