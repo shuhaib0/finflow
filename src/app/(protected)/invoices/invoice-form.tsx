@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Trash } from "lucide-react"
+import { Calendar as CalendarIcon, Trash, Download, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +34,7 @@ import type { Invoice, InvoiceItem, Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceTemplate } from "./invoice-template"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
@@ -58,7 +59,9 @@ const formSchema = z.object({
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
   discount: z.coerce.number().min(0).optional().default(0),
+  discountType: z.enum(['percentage', 'value']).optional().default('value'),
   tax: z.coerce.number().min(0).optional().default(0),
+  currency: z.string().min(1, "Currency is required."),
   billingAddress: addressSchema.optional(),
   terms: z.string().optional(),
   purchaseOrderNumber: z.string().optional(),
@@ -72,6 +75,8 @@ type InvoiceFormProps = {
   clients: Client[];
   isEditing: boolean;
   printRef: React.RefObject<HTMLDivElement>;
+  onPrint: () => void;
+  onDownload: () => void;
 }
 
 const getInitialValues = (defaultValues?: Invoice | null) => {
@@ -83,6 +88,8 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
         items: [{ description: "", quantity: 1, unitPrice: 0 }],
         tax: 0,
         discount: 0,
+        discountType: 'value' as const,
+        currency: 'USD',
         companyTaxId: '',
         terms: '',
         purchaseOrderNumber: '',
@@ -103,6 +110,8 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
             date: new Date(defaultValues.date), 
             dueDate: new Date(defaultValues.dueDate), 
             items: defaultValues.items.map(item => ({...item})),
+            currency: defaultValues.currency || 'USD',
+            discountType: defaultValues.discountType || 'value',
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
@@ -116,7 +125,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -150,23 +159,25 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     }
   }, [watchedClientRef, clients, form]);
 
-  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number) => {
+  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number, discountType: 'percentage' | 'value') => {
     const subtotal = items.reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const unitPrice = Number(item.unitPrice) || 0;
       return acc + (quantity * unitPrice);
     }, 0);
-    const discountedSubtotal = subtotal - discount;
+
+    const discountAmount = discountType === 'percentage' ? subtotal * (discount / 100) : discount;
+    const discountedSubtotal = subtotal - discountAmount;
     const taxAmount = discountedSubtotal * (taxRate / 100);
     const totalAmount = discountedSubtotal + taxAmount;
-    return { subtotal, taxAmount, totalAmount };
+    return { subtotal, taxAmount, totalAmount, discountAmount };
   }
   
   const allFormValues = form.watch();
-  const { subtotal, taxAmount, totalAmount } = calculateTotals(allFormValues.items, allFormValues.tax || 0, allFormValues.discount || 0);
+  const { subtotal, taxAmount, totalAmount, discountAmount } = calculateTotals(allFormValues.items, allFormValues.tax || 0, allFormValues.discount || 0, allFormValues.discountType || 'value');
 
   const handleFormSubmit = (values: InvoiceFormValues) => {
-    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0);
+    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0, values.discountType || 'value');
     const itemsWithTotal = values.items.map(item => ({
         ...item,
         total: item.quantity * item.unitPrice
@@ -202,11 +213,23 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden">
       
       <div className="flex flex-col h-full non-printable">
-        <div className="p-6 border-b">
-            <Button type="submit">
-                {isEditing ? "Save Changes" : "Create Invoice"}
-            </Button>
-        </div>
+        <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
+            <div>
+                <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button type="submit">
+                    {isEditing ? "Save Changes" : "Create Invoice"}
+                </Button>
+                {isEditing && (
+                <>
+                    <Button type="button" variant="outline" size="sm" onClick={onDownload}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                </>
+                )}
+            </div>
+        </DialogHeader>
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="px-6 py-4">
             <Tabs defaultValue="details" className="w-full mb-6">
@@ -274,7 +297,29 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                   </FormItem>
                               )}
                           />
-                          <div /> 
+                           <FormField
+                            control={form.control}
+                            name="currency"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Currency</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="USD">USD ($)</SelectItem>
+                                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                                      <SelectItem value="INR">INR (₹)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                           <FormField
                               control={form.control}
                               name="date"
@@ -431,20 +476,40 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                   <div className="w-80 space-y-2">
                       <div className="flex justify-between">
                           <span>Subtotal</span>
-                          <span>${subtotal.toFixed(2)}</span>
+                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                          <FormField
-                              control={form.control}
-                              name="discount"
-                              render={({ field }) => (
-                                  <FormItem className="flex items-center gap-2">
-                                      <FormLabel className="text-sm">Discount ($)</FormLabel>
-                                      <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
-                                  </FormItem>
-                              )}
-                          />
-                          <span>-${(Number(form.getValues("discount")) || 0).toFixed(2)}</span>
+                            <div className="flex items-center gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name="discount"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="discountType"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger className="w-[80px] h-8 text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="value">$</SelectItem>
+                                                    <SelectItem value="percentage">%</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(discountAmount)}</span>
                       </div>
                       <div className="flex items-center justify-between">
                           <FormField
@@ -457,12 +522,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                   </FormItem>
                               )}
                           />
-                          <span>${taxAmount.toFixed(2)}</span>
+                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(taxAmount)}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between font-bold text-lg">
                           <span>Total</span>
-                          <span>${totalAmount.toFixed(2)}</span>
+                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
                       </div>
                   </div>
               </div>
@@ -472,7 +537,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
 
       <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
         <ScrollArea className="h-full w-full">
-            <div ref={printRef} className="my-6 scale-[0.8] origin-top">
+            <div ref={printRef} className="my-6">
                 <InvoiceTemplate invoice={constructedInvoice} />
             </div>
         </ScrollArea>

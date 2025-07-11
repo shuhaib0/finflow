@@ -86,8 +86,10 @@ const initialInvoices: Invoice[] = [
       date: new Date(2024, 6, 15).toISOString(),
       items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, total: 5000 }],
       discount: 0,
+      discountType: 'value',
       tax: 10,
       totalAmount: 5500,
+      currency: "USD",
       dueDate: new Date(2024, 7, 15).toISOString(),
       status: "paid",
       createdAt: new Date(2024, 6, 15).toISOString(),
@@ -99,8 +101,10 @@ const initialInvoices: Invoice[] = [
       date: new Date(2024, 5, 30).toISOString(),
       items: [{ description: "Consulting", quantity: 10, unitPrice: 150, total: 1500 }],
       discount: 100,
+      discountType: 'value',
       tax: 10,
       totalAmount: 1540,
+      currency: "USD",
       dueDate: new Date(2024, 6, 30).toISOString(),
       status: "overdue",
       createdAt: new Date(2024, 5, 30).toISOString(),
@@ -113,7 +117,9 @@ const initialInvoices: Invoice[] = [
         items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, total: 2000 }],
         tax: 10,
         discount: 0,
+        discountType: 'value',
         totalAmount: 2200,
+        currency: "USD",
         dueDate: new Date(2024, 8, 1).toISOString(),
         status: "sent",
         createdAt: new Date(2024, 7, 1).toISOString(),
@@ -198,7 +204,9 @@ export default function InvoicesPage() {
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
                 tax: 0,
                 discount: 0,
+                discountType: 'value',
                 totalAmount: 0,
+                currency: 'USD',
                 date: new Date().toISOString(),
                 dueDate: new Date().toISOString(),
                 status: 'draft',
@@ -228,7 +236,7 @@ export default function InvoicesPage() {
             }
             router.replace('/invoices', undefined);
         }
-    }, [searchParams, router, toast]); // handleFormSubmit dependency removed to avoid re-triggering
+    }, [searchParams, router]); // handleFormSubmit dependency removed to avoid re-triggering
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -253,10 +261,9 @@ export default function InvoicesPage() {
         if (!element) return;
     
         const canvas = await html2canvas(element, { 
-            scale: 2, // Higher scale for better quality
+            scale: 2,
             useCORS: true,
             allowTaint: true,
-            logging: true
         });
         const data = canvas.toDataURL('image/png');
     
@@ -264,25 +271,7 @@ export default function InvoicesPage() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const canvasAspectRatio = canvasWidth / canvasHeight;
-        const pdfAspectRatio = pdfWidth / pdfHeight;
-        
-        let finalWidth, finalHeight;
-
-        if (canvasAspectRatio > pdfAspectRatio) {
-            finalWidth = pdfWidth;
-            finalHeight = pdfWidth / canvasAspectRatio;
-        } else {
-            finalHeight = pdfHeight;
-            finalWidth = pdfHeight * canvasAspectRatio;
-        }
-
-        const x = (pdfWidth - finalWidth) / 2;
-        const y = (pdfHeight - finalHeight) / 2;
-        
-        pdf.addImage(data, 'PNG', x, y, finalWidth, finalHeight);
+        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`invoice-${selectedInvoice?.invoiceNumber || 'new'}.pdf`);
       };
     
@@ -293,10 +282,42 @@ export default function InvoicesPage() {
         const printableContent = node.innerHTML;
         const originalContent = document.body.innerHTML;
 
+        const printStyles = `
+            @media print {
+              body, html {
+                  margin: 0;
+                  padding: 0;
+                  background: #fff;
+              }
+              .printable-area {
+                  visibility: visible;
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                  height: auto;
+                  padding: 0;
+                  margin: 0;
+                  border: none;
+                  box-shadow: none;
+                  transform: scale(1) !important;
+              }
+              @page {
+                size: A4;
+                margin: 0;
+              }
+            }
+        `;
+        
+        const styleEl = document.createElement('style');
+        styleEl.innerHTML = printStyles;
+        document.head.appendChild(styleEl);
+
         document.body.innerHTML = printableContent;
         window.print();
         document.body.innerHTML = originalContent;
-        window.location.reload(); // To re-attach event listeners
+        styleEl.remove();
+        window.location.reload();
       };
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -356,7 +377,7 @@ export default function InvoicesPage() {
                             {invoice.invoiceNumber}
                         </TableCell>
                         <TableCell>{clientMap[invoice.clientRef]?.name || 'Unknown Client'}</TableCell>
-                        <TableCell>${invoice.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'USD' }).format(invoice.totalAmount)}</TableCell>
                         <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
                         <TableCell>
                             <Badge variant={getStatusVariant(invoice.status)} className="capitalize">
@@ -412,26 +433,14 @@ export default function InvoicesPage() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0">
-                <div className="p-6 border-b flex flex-row items-center justify-between non-printable">
-                    <div className="flex flex-col">
-                         <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</h2>
-                         <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {isEditing && (
-                        <>
-                            <Button type="button" variant="outline" size="sm" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                        </>
-                        )}
-                    </div>
-                </div>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
                   clients={clients}
                   isEditing={isEditing}
                   printRef={invoicePrintRef}
+                  onPrint={handlePrint}
+                  onDownload={handleDownloadPdf}
                 />
             </DialogContent>
         </Dialog>

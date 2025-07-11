@@ -61,7 +61,9 @@ export type SalesDocument = {
     date: string; // ISO string
     items: InvoiceItem[];
     discount?: number;
+    discountType?: 'percentage' | 'value';
     tax: number;
+    currency?: string;
     totalAmount: number;
     billingAddress?: Address;
     terms?: string;

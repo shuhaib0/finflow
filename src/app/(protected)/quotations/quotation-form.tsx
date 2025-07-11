@@ -56,7 +56,9 @@ const formSchema = z.object({
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
   discount: z.coerce.number().min(0).optional().default(0),
+  discountType: z.enum(['percentage', 'value']).optional().default('value'),
   tax: z.coerce.number().min(0).optional().default(0),
+  currency: z.string().min(1, "Currency is required."),
   billingAddress: addressSchema.optional(),
   terms: z.string().optional(),
   purchaseOrderNumber: z.string().optional(),
@@ -80,6 +82,8 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
         items: [{ description: "", quantity: 1, unitPrice: 0 }],
         tax: 0,
         discount: 0,
+        discountType: 'value' as const,
+        currency: 'USD',
         companyTaxId: '',
         terms: '',
         purchaseOrderNumber: '',
@@ -100,6 +104,8 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
             date: new Date(defaultValues.date), 
             dueDate: new Date(defaultValues.dueDate), 
             items: defaultValues.items.map(item => ({...item})),
+            currency: defaultValues.currency || 'USD',
+            discountType: defaultValues.discountType || 'value',
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
@@ -147,25 +153,25 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
     }
   }, [watchedClientRef, clients, form]);
 
-  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number) => {
+  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number, discountType: 'percentage' | 'value') => {
     const subtotal = items.reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const unitPrice = Number(item.unitPrice) || 0;
       return acc + (quantity * unitPrice);
     }, 0);
-    const discountedSubtotal = subtotal - discount;
+    
+    const discountAmount = discountType === 'percentage' ? subtotal * (discount / 100) : discount;
+    const discountedSubtotal = subtotal - discountAmount;
     const taxAmount = discountedSubtotal * (taxRate / 100);
     const totalAmount = discountedSubtotal + taxAmount;
-    return { subtotal, taxAmount, totalAmount };
+    return { subtotal, taxAmount, totalAmount, discountAmount };
   }
   
-  const watchedItems = form.watch("items");
-  const watchedTax = form.watch("tax");
-  const watchedDiscount = form.watch("discount");
-  const { subtotal, taxAmount, totalAmount } = calculateTotals(watchedItems, watchedTax || 0, watchedDiscount || 0);
+  const allFormValues = form.watch();
+  const { subtotal, taxAmount, totalAmount, discountAmount } = calculateTotals(allFormValues.items, allFormValues.tax || 0, allFormValues.discount || 0, allFormValues.discountType || 'value');
 
   const handleFormSubmit = (values: QuotationFormValues) => {
-    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0);
+    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0, values.discountType || 'value');
     const itemsWithTotal = values.items.map(item => ({
         ...item,
         total: item.quantity * item.unitPrice
@@ -258,7 +264,29 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                             </FormItem>
                         )}
                     />
-                    <div /> 
+                     <FormField
+                        control={form.control}
+                        name="currency"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Currency</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="USD">USD ($)</SelectItem>
+                                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                                    <SelectItem value="INR">INR (₹)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField
                         control={form.control}
                         name="date"
@@ -415,20 +443,40 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
             <div className="w-80 space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <FormField
-                        control={form.control}
-                        name="discount"
-                        render={({ field }) => (
-                            <FormItem className="flex items-center gap-2">
-                                <FormLabel className="text-sm">Discount ($)</FormLabel>
-                                <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
-                            </FormItem>
-                        )}
-                    />
-                    <span>-${(Number(form.getValues("discount")) || 0).toFixed(2)}</span>
+                    <div className="flex items-center gap-2">
+                        <FormField
+                            control={form.control}
+                            name="discount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="discountType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger className="w-[80px] h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="value">$</SelectItem>
+                                            <SelectItem value="percentage">%</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(discountAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <FormField
@@ -441,12 +489,12 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                             </FormItem>
                         )}
                     />
-                    <span>${taxAmount.toFixed(2)}</span>
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(taxAmount)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${totalAmount.toFixed(2)}</span>
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
                 </div>
             </div>
         </div>
@@ -457,5 +505,3 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
     </>
   )
 }
-
-    

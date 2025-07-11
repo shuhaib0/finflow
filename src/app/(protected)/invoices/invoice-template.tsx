@@ -3,7 +3,6 @@
 
 import { Icons } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import type { Client, Invoice } from "@/types";
 import { format } from "date-fns";
 
@@ -11,9 +10,20 @@ type InvoiceTemplateProps = {
   invoice: (Omit<Invoice, 'clientRef'> & { client?: Client | null }) | null;
 }
 
+const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'INR': '₹'
+    };
+    return symbols[currencyCode] || '$';
+}
+
+
 export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
   if (!invoice || !invoice.client) {
-    return <div className="p-10 text-center text-muted-foreground a4-container flex items-center justify-center">No invoice data to display. Select a client and fill in the details.</div>;
+    return <div className="p-10 text-center text-muted-foreground a4-container flex items-center justify-center bg-white">No invoice data to display. Select a client and fill in the details.</div>;
   }
 
   const {
@@ -24,13 +34,19 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
     items,
     tax,
     discount,
+    discountType,
+    currency,
     totalAmount,
     status,
     terms
   } = invoice;
 
+  const currencySymbol = getCurrencySymbol(currency || 'USD');
+
   const subtotal = items.reduce((acc, item) => acc + (item.quantity || 0) * (item.unitPrice || 0), 0);
-  const taxAmount = (subtotal - (discount || 0)) * ((tax || 0) / 100);
+  const discountAmount = discountType === 'percentage' ? subtotal * ((discount || 0) / 100) : (discount || 0);
+  const discountedSubtotal = subtotal - discountAmount;
+  const taxAmount = discountedSubtotal * ((tax || 0) / 100);
 
   const getStatusInfo = (status: Invoice['status']) => {
     switch (status) {
@@ -103,8 +119,8 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
               <tr key={index} className="border-b border-gray-100 text-sm">
                 <td className="p-3">{item.description}</td>
                 <td className="p-3 text-center">{item.quantity}</td>
-                <td className="p-3 text-right">${(item.unitPrice || 0).toFixed(2)}</td>
-                <td className="p-3 text-right">${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
+                <td className="p-3 text-right">{currencySymbol}{(item.unitPrice || 0).toFixed(2)}</td>
+                <td className="p-3 text-right">{currencySymbol}{((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -115,21 +131,21 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
         <div className="w-full max-w-xs text-sm">
           <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-gray-600">Subtotal</span>
-            <span className="font-medium">${subtotal.toFixed(2)}</span>
+            <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
           </div>
-          {discount ? (
+          {discountAmount > 0 ? (
             <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-gray-600">Discount</span>
-              <span className="font-medium">-${(discount || 0).toFixed(2)}</span>
+              <span className="text-gray-600">Discount {discountType === 'percentage' ? `(${(discount || 0)}%)` : ''}</span>
+              <span className="font-medium">-{currencySymbol}{discountAmount.toFixed(2)}</span>
             </div>
           ) : null}
           <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-gray-600">Tax ({tax || 0}%)</span>
-            <span className="font-medium">${taxAmount.toFixed(2)}</span>
+            <span className="font-medium">{currencySymbol}{taxAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between py-3 bg-gray-100 px-3 mt-2 rounded-md">
             <span className="font-bold text-base">Total Amount</span>
-            <span className="font-bold text-base">${totalAmount.toFixed(2)}</span>
+            <span className="font-bold text-base">{currencySymbol}{totalAmount.toFixed(2)}</span>
           </div>
         </div>
       </section>
