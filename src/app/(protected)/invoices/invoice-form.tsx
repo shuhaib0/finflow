@@ -213,21 +213,23 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden">
       
       <div className="flex flex-col h-full non-printable">
-        <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
-            <div>
-                <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
-            </div>
-            <div className="flex items-center gap-2">
-                <Button type="submit">
-                    {isEditing ? "Save Changes" : "Create Invoice"}
-                </Button>
-                {isEditing && (
-                <>
-                    <Button type="button" variant="outline" size="sm" onClick={onDownload}><Download className="mr-2 h-4 w-4" /> PDF</Button>
-                    <Button type="button" variant="outline" size="sm" onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                </>
-                )}
+        <DialogHeader className="p-6 border-b flex-shrink-0">
+            <div className="flex flex-row items-center justify-between">
+                <div>
+                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button type="submit">
+                        {isEditing ? "Save Changes" : "Create Invoice"}
+                    </Button>
+                    {isEditing && (
+                    <>
+                        <Button type="button" variant="outline" size="sm" onClick={onDownload}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                    </>
+                    )}
+                </div>
             </div>
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-y-auto">
@@ -471,68 +473,68 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                       />
                   </TabsContent>
               </Tabs>
-              
-              <div className="flex justify-end mt-6">
-                  <div className="w-80 space-y-2">
-                      <div className="flex justify-between">
-                          <span>Subtotal</span>
-                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <FormField
-                                    control={form.control}
-                                    name="discount"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="discountType"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                <SelectTrigger className="w-[80px] h-8 text-xs">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="value">$</SelectItem>
-                                                    <SelectItem value="percentage">%</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(discountAmount)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
+          </div>
+        </ScrollArea>
+        <div className="p-6 border-t bg-background flex-shrink-0">
+            <div className="ml-auto w-full max-w-sm space-y-2">
+                <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                          <FormLabel>Discount</FormLabel>
                           <FormField
                               control={form.control}
-                              name="tax"
+                              name="discount"
                               render={({ field }) => (
-                                  <FormItem className="flex items-center gap-2">
-                                      <FormLabel className="text-sm">Tax (%)</FormLabel>
-                                      <FormControl><Input type="number" {...field} className="w-20 h-8" placeholder="0" /></FormControl>
+                                  <FormItem>
+                                      <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
                                   </FormItem>
                               )}
                           />
-                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(taxAmount)}</span>
+                          <FormField
+                              control={form.control}
+                              name="discountType"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                          <FormControl>
+                                          <SelectTrigger className="w-[80px] h-8 text-xs">
+                                              <SelectValue />
+                                          </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                              <SelectItem value="value">$</SelectItem>
+                                              <SelectItem value="percentage">%</SelectItem>
+                                          </SelectContent>
+                                      </Select>
+                                  </FormItem>
+                              )}
+                          />
                       </div>
-                      <Separator />
-                      <div className="flex justify-between font-bold text-lg">
-                          <span>Total</span>
-                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
-                      </div>
-                  </div>
-              </div>
+                      <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(discountAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <FormField
+                        control={form.control}
+                        name="tax"
+                        render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                                <FormLabel className="text-sm">Tax (%)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="w-20 h-8" placeholder="0" /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(taxAmount)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
+                </div>
             </div>
-        </ScrollArea>
+        </div>
       </div>
 
       <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
