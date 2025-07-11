@@ -558,15 +558,9 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const { isMobile, state } = useSidebar()
-    const Comp = asChild ? Slot : href ? 'a' : 'button';
+    const Comp = asChild ? Slot : 'button';
 
     const buttonContent = (
-      <>
-        {children}
-      </>
-    );
-
-    const button = (
       // @ts-ignore
       <Comp
         ref={ref}
@@ -576,11 +570,11 @@ const SidebarMenuButton = React.forwardRef<
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
       >
-        {buttonContent}
+        {children}
       </Comp>
     );
     
-    const linkedButton = href ? <Link href={href} passHref legacyBehavior>{button}</Link> : button;
+    const linkedButton = href ? <Link href={href}>{buttonContent}</Link> : buttonContent;
 
     if (!tooltip) {
       return linkedButton
