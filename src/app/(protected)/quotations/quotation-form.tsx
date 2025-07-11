@@ -353,75 +353,79 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing }: Q
                   <h3 className="text-lg font-medium mb-2">Particulars</h3>
                   <div className="space-y-4">
                   {fields.map((field, index) => (
-                      <div key={field.id} className="flex items-start gap-2 p-3 border rounded-md">
-                          <div className="flex-1 space-y-2">
-                            <FormField
-                                control={form.control}
-                                name={`items.${index}.description`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="sr-only">Description</FormLabel>
-                                    <FormControl><Textarea placeholder="Item description" {...field} rows={1} className="min-h-0" /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <div className="flex gap-2">
+                      <div key={field.id} className="flex flex-col gap-2 p-3 border rounded-md">
+                        <div className="flex items-start gap-2">
+                            <div className="flex-1 space-y-2">
                                 <FormField
                                     control={form.control}
-                                    name={`items.${index}.tax`}
+                                    name={`items.${index}.description`}
                                     render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                        <FormLabel>Tax (%)</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
+                                    <FormItem>
+                                        <FormLabel className="sr-only">Description</FormLabel>
+                                        <FormControl><Textarea placeholder="Item description" {...field} rows={1} className="min-h-0" /></FormControl>
                                         <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`items.${index}.discount`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                        <FormLabel>Discount (%)</FormLabel>
-                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
-                                        <FormMessage />
-                                        </FormItem>
+                                    </FormItem>
                                     )}
                                 />
                             </div>
-                          </div>
-                          <div className="grid w-20 gap-2">
-                              <FormField
-                                  control={form.control}
-                                  name={`items.${index}.quantity`}
-                                  render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Qty</FormLabel>
-                                      <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
-                                      <FormMessage />
+                            <div className="grid w-20 gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.quantity`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Qty</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="grid w-28 gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.unitPrice`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Price</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="pt-7">
+                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                    <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <FormField
+                              control={form.control}
+                              name={`items.${index}.tax`}
+                              render={({ field }) => (
+                                  <FormItem className="flex-1">
+                                  <FormLabel>Tax (%)</FormLabel>
+                                  <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
+                                  <FormMessage />
                                   </FormItem>
-                                  )}
-                              />
-                          </div>
-                          <div className="grid w-28 gap-2">
-                              <FormField
-                                  control={form.control}
-                                  name={`items.${index}.unitPrice`}
-                                  render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Price</FormLabel>
-                                      <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
-                                      <FormMessage />
+                              )}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <FormField
+                              control={form.control}
+                              name={`items.${index}.discount`}
+                              render={({ field }) => (
+                                  <FormItem className="flex-1">
+                                  <FormLabel>Discount (%)</FormLabel>
+                                  <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
+                                  <FormMessage />
                                   </FormItem>
-                                  )}
-                              />
-                          </div>
-                          <div className="pt-7">
-                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                                <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
-                            </Button>
-                          </div>
+                              )}
+                          />
+                        </div>
                       </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0, tax: 0, discount: 0 })}>
