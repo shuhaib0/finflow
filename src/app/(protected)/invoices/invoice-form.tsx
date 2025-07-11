@@ -514,7 +514,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
               </Tabs>
           </div>
         </div>
-        <footer className="absolute bottom-0 left-0 right-0 p-6 border-t bg-background">
+        <footer className="p-6 border-t bg-background flex-shrink-0">
             <div className="ml-auto w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
