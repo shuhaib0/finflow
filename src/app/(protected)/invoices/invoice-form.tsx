@@ -243,12 +243,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
                 <TabsTrigger value="more-info">More Info</TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="mt-6">
-                <div className="grid grid-cols-1 @[60rem]:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
                     <FormField
                         control={form.control}
                         name="clientRef"
                         render={({ field }) => (
-                            <FormItem className="@[60rem]:col-span-2">
+                            <FormItem>
                             <FormLabel>Client</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -300,6 +300,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, onClose }: Invoi
                             </FormItem>
                         )}
                     />
+                    <div /> 
                     <FormField
                         control={form.control}
                         name="date"
