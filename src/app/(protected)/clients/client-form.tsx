@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
+import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,9 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Client } from "@/types"
+import type { Client, Note } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
   // General
@@ -57,7 +59,13 @@ const formSchema = z.object({
   // Analytics
   source: z.string().optional(),
   campaign: z.string().optional(),
-  notes: z.string().optional(),
+  // Notes
+  newNote: z.string().optional(),
+  notes: z.array(z.object({
+    content: z.string(),
+    author: z.string(),
+    createdAt: z.string(),
+  })).optional(),
 }).transform(data => ({
     ...data,
     contactPerson: `${data.firstName} ${data.middleName || ''} ${data.lastName || ''}`.replace(/\s+/g, ' ').trim()
@@ -69,7 +77,7 @@ const formSchema = z.object({
 type ClientFormValues = z.infer<typeof formSchema>
 
 type ClientFormProps = {
-  onSubmit: (values: Omit<Client, "id" | "contactPerson"> & {contactPerson: string}) => void;
+  onSubmit: (values: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string, newNote?: string }) => void;
   defaultValues?: Client | null;
 }
 
@@ -114,7 +122,8 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
       country: "",
       source: "",
       campaign: "",
-      notes: "",
+      newNote: "",
+      notes: [],
       ...defaultValues,
       firstName: defaultValues ? firstName : "",
       middleName: defaultValues ? middleName : "",
@@ -150,7 +159,8 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
         country: "",
         source: "",
         campaign: "",
-        notes: "",
+        newNote: "",
+        notes: [],
         ...defaultValues,
         firstName: defaultValues ? firstName : "",
         middleName: defaultValues ? middleName : "",
@@ -159,16 +169,18 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
   }, [defaultValues, form])
 
   const watchedRequestType = form.watch("requestType");
+  const existingNotes = form.watch("notes") || [];
   const isEditing = !!defaultValues;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-6">
         <Tabs defaultValue="general">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="address">Address</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
             <TabsContent value="general" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -541,14 +553,34 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
                         </FormItem>
                         )}
                     />
+                </div>
+            </TabsContent>
+            <TabsContent value="notes" className="mt-6">
+                <div className="space-y-4">
+                    {existingNotes.length > 0 && (
+                        <div className="space-y-4">
+                             <h3 className="text-lg font-medium">Notes History</h3>
+                            <ScrollArea className="h-48 w-full rounded-md border p-4">
+                                {existingNotes.map((note, index) => (
+                                <div key={index} className="mb-4">
+                                    <p className="text-sm">{note.content}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        By {note.author} on {format(new Date(note.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                    {index < existingNotes.length -1 && <Separator className="mt-2" />}
+                                </div>
+                                ))}
+                            </ScrollArea>
+                        </div>
+                    )}
                     <FormField
                         control={form.control}
-                        name="notes"
+                        name="newNote"
                         render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                            <FormLabel>Notes</FormLabel>
+                        <FormItem>
+                            <FormLabel>{existingNotes.length > 0 ? 'Add a new note' : 'Add a note'}</FormLabel>
                             <FormControl>
-                            <Textarea placeholder="Additional notes about the contact..." {...field} />
+                            <Textarea placeholder="Add a note..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -558,7 +590,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
             </TabsContent>
         </Tabs>
         
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full mt-8">
           {isEditing ? "Update Contact" : "Create Contact"}
         </Button>
       </form>

@@ -1,3 +1,10 @@
+
+export type Note = {
+    content: string;
+    author: string;
+    createdAt: string; // ISO string
+};
+
 export type Client = {
     id: string;
     name: string;
@@ -26,7 +33,7 @@ export type Client = {
     // Analytics Info
     source?: string;
     campaign?: string;
-    notes?: string;
+    notes?: Note[];
 };
 
 export type InvoiceItem = {

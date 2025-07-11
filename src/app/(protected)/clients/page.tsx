@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PlusCircle } from "lucide-react"
 import { ClientForm } from "./client-form"
-import type { Client } from "@/types"
+import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
 const initialClients: Client[] = [
@@ -63,7 +63,10 @@ const initialClients: Client[] = [
     country: "USA",
     source: "Referral",
     campaign: "Q2 Partner Program",
-    notes: "Initial contact made through referral from Existing Corp."
+    notes: [
+        { content: "Initial contact made through referral from Existing Corp.", author: "Admin User", createdAt: new Date(2024, 5, 1).toISOString() },
+        { content: "Followed up with a demo call.", author: "Admin User", createdAt: new Date(2024, 5, 5).toISOString() }
+    ]
   },
   {
     id: "2",
@@ -72,6 +75,7 @@ const initialClients: Client[] = [
     email: "jane.smith@solutions.com",
     phone: "098-765-4321",
     status: "customer",
+    notes: [],
   },
   {
     id: "3",
@@ -81,6 +85,7 @@ const initialClients: Client[] = [
     phone: "555-555-5555",
     status: "lead",
     source: "Website",
+    notes: [],
   },
   {
     id: "4",
@@ -89,6 +94,7 @@ const initialClients: Client[] = [
     email: "emily.b@legacysys.com",
     phone: "111-222-3333",
     status: "opportunity",
+    notes: [],
   },
 ]
 
@@ -123,12 +129,22 @@ export default function CrmPage() {
     })
   }
 
-  const handleFormSubmit = (clientData: Omit<Client, "id">) => {
+  const handleFormSubmit = (clientData: Omit<Client, "id"> & { newNote?: string }) => {
     if (selectedClient) {
-      // Editing existing client
+      const existingNotes = selectedClient.notes || [];
+      const newNoteEntry: Note[] = clientData.newNote ? 
+        [{ content: clientData.newNote, author: "Admin User", createdAt: new Date().toISOString() }] 
+        : [];
+      
+      const updatedClientData = {
+        ...clientData,
+        notes: [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      };
+      delete updatedClientData.newNote;
+
       setClients(
         clients.map((c) =>
-          c.id === selectedClient.id ? { ...c, ...clientData, id: c.id } : c
+          c.id === selectedClient.id ? { ...c, ...updatedClientData, id: c.id } : c
         )
       )
       toast({
@@ -136,10 +152,13 @@ export default function CrmPage() {
         description: "The contact details have been updated.",
       })
     } else {
-      // Adding new client
+      const { newNote, ...restOfClientData } = clientData;
+      const notes: Note[] = newNote ? [{ content: newNote, author: 'Admin User', createdAt: new Date().toISOString() }] : [];
+      
       const newClient = {
-        ...clientData,
+        ...restOfClientData,
         id: (clients.length + 1).toString(),
+        notes,
       }
       setClients([...clients, newClient])
       toast({
