@@ -285,6 +285,56 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
             />
         </div>
 
+        <Tabs defaultValue="address" className="w-full mb-6">
+            <TabsList>
+                <TabsTrigger value="address">Address</TabsTrigger>
+                <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
+                <TabsTrigger value="more-info">More Info</TabsTrigger>
+            </TabsList>
+            <TabsContent value="address" className="mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="billingAddress.addressLine1"
+                        render={({ field }) => (
+                            <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}
+                    />
+                    <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+            </TabsContent>
+            <TabsContent value="terms" className="mt-4">
+                <FormField
+                    control={form.control}
+                    name="terms"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Terms and Conditions</FormLabel>
+                            <FormControl><Textarea placeholder="e.g., Payment is due within 30 days." {...field} rows={5} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </TabsContent>
+            <TabsContent value="more-info" className="mt-4">
+                 <FormField
+                    control={form.control}
+                    name="purchaseOrderNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Purchase Order (PO) Number</FormLabel>
+                            <FormControl><Input placeholder="Enter PO Number" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </TabsContent>
+        </Tabs>
+        
         <Separator className="my-6" />
         
         <div>
@@ -382,57 +432,6 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
             </div>
         </div>
         
-        <Separator className="my-6" />
-
-        <Tabs defaultValue="address" className="w-full">
-            <TabsList>
-                <TabsTrigger value="address">Address</TabsTrigger>
-                <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
-                <TabsTrigger value="more-info">More Info</TabsTrigger>
-            </TabsList>
-            <TabsContent value="address" className="mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="billingAddress.addressLine1"
-                        render={({ field }) => (
-                            <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}
-                    />
-                    <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-            </TabsContent>
-            <TabsContent value="terms" className="mt-4">
-                <FormField
-                    control={form.control}
-                    name="terms"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Terms and Conditions</FormLabel>
-                            <FormControl><Textarea placeholder="e.g., Payment is due within 30 days." {...field} rows={5} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </TabsContent>
-            <TabsContent value="more-info" className="mt-4">
-                 <FormField
-                    control={form.control}
-                    name="purchaseOrderNumber"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Purchase Order (PO) Number</FormLabel>
-                            <FormControl><Input placeholder="Enter PO Number" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </TabsContent>
-        </Tabs>
         </div>
         <div className="p-6 border-t mt-auto">
             <Button type="submit" className="w-full">
@@ -443,3 +442,6 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
     </Form>
   )
 }
+
+
+    
