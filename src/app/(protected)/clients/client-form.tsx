@@ -99,6 +99,7 @@ type ClientFormProps = {
   onSubmit: (values: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string, newNote?: string }) => void;
   onStatusChange: (status: 'opportunity' | 'customer', worth?: number) => void;
   defaultValues?: Client | null;
+  isEditing: boolean;
 }
 
 const parseContactPerson = (contactPerson?: string) => {
@@ -111,7 +112,7 @@ const parseContactPerson = (contactPerson?: string) => {
 }
 
 
-export function ClientForm({ onSubmit, onStatusChange, defaultValues }: ClientFormProps) {
+export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing }: ClientFormProps) {
     const router = useRouter();
     const [opportunityWorth, setOpportunityWorth] = useState("");
     const opportunityAlertDialogTrigger = useRef<HTMLButtonElement>(null);
@@ -196,11 +197,10 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues }: ClientFo
 
   const watchedRequestType = form.watch("requestType");
   const existingNotes = form.watch("notes") || [];
-  const isEditing = !!defaultValues;
 
   const handleCreateQuotation = () => {
     if (defaultValues) {
-        router.push(`/invoices?createForClient=${defaultValues.id}`)
+        router.push(`/quotations?createForClient=${defaultValues.id}`)
     }
   }
   const handleCreateOpportunityConfirm = () => {
@@ -211,55 +211,6 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues }: ClientFo
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-lg font-semibold">{isEditing ? "Edit Contact" : "Create Contact"}</h2>
-            <div className="flex items-center gap-2">
-            {isEditing && (
-                <AlertDialog>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">Create <span className="sr-only">Create menu</span></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <AlertDialogTrigger asChild ref={opportunityAlertDialogTrigger}>
-                                <DropdownMenuItem>Opportunity</DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <DropdownMenuItem onClick={() => onStatusChange('customer')}>
-                                Customer
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleCreateQuotation}>
-                                Quotation
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Create Opportunity</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Enter the estimated worth of this opportunity.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <Input 
-                            type="number"
-                            placeholder="e.g., 5000.00"
-                            value={opportunityWorth}
-                            onChange={(e) => setOpportunityWorth(e.target.value)}
-                            className="mt-2"
-                        />
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCreateOpportunityConfirm}>
-                            Create
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-            <Button type="submit">
-                {isEditing ? "Save" : "Create"}
-            </Button>
-            </div>
-      </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <Tabs defaultValue="general">
             <TabsList className="grid w-full grid-cols-4">
@@ -690,6 +641,52 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues }: ClientFo
                 </div>
             </TabsContent>
         </Tabs>
+        </div>
+        <div className="p-6 border-t flex justify-end gap-2">
+            {isEditing && (
+                <AlertDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="outline">Create</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <AlertDialogTrigger asChild ref={opportunityAlertDialogTrigger}>
+                                <DropdownMenuItem>Opportunity</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <DropdownMenuItem onClick={() => onStatusChange('customer')}>
+                                Customer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleCreateQuotation}>
+                                Quotation
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Create Opportunity</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Enter the estimated worth of this opportunity.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <Input 
+                            type="number"
+                            placeholder="e.g., 5000.00"
+                            value={opportunityWorth}
+                            onChange={(e) => setOpportunityWorth(e.target.value)}
+                            className="mt-2"
+                        />
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCreateOpportunityConfirm}>
+                            Create
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <Button type="submit">
+                {isEditing ? "Save" : "Create"}
+            </Button>
         </div>
       </form>
     </Form>

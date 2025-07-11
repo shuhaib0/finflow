@@ -14,6 +14,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -111,19 +114,13 @@ export default function CrmPage() {
   const [dialogState, setDialogState] = useState<DialogState>('closed');
 
   useEffect(() => {
-    if (createForClient) {
-      const client = clients.find(c => c.id === createForClient);
-      if (client) {
-        // This is a placeholder for redirecting to an actual quotation page
-        toast({
-            title: `Creating Quotation for ${client.name}`,
-            description: "You would be redirected to the quotation creation page.",
-        });
-        // Clear the search param
+    const createForQuotation = searchParams.get('createForClient');
+    if (createForQuotation) {
+        router.push(`/quotations?createForClient=${createForQuotation}`)
+        // Clean the search param
         router.replace('/clients');
-      }
     }
-  }, [createForClient, clients, router, toast]);
+  }, [searchParams, clients, router, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -216,6 +213,8 @@ export default function CrmPage() {
     }
   }
 
+  const isEditing = dialogState === 'edit';
+
   return (
     <>
       <Card>
@@ -298,11 +297,16 @@ export default function CrmPage() {
 
       <Dialog open={dialogState !== 'closed'} onOpenChange={(isOpen) => !isOpen && setDialogState('closed')}>
         <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
+            <DialogHeader className="p-6 border-b">
+                <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? "Edit Contact" : "Create Contact"}</DialogTitle>
+                <DialogDescription>{isEditing ? "Update the contact's details below." : "Fill in the details for the new contact."}</DialogDescription>
+            </DialogHeader>
             {(dialogState === 'new' || dialogState === 'edit') && (
                 <ClientForm 
                   onSubmit={handleFormSubmit}
                   onStatusChange={handleStatusChange}
-                  defaultValues={selectedClient} 
+                  defaultValues={selectedClient}
+                  isEditing={isEditing}
                 />
             )}
         </DialogContent>

@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Table,
   TableBody,
@@ -112,6 +112,7 @@ const initialQuotations: Quotation[] = [
 export default function QuotationsPage() {
     const { toast } = useToast()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations)
     const [clients] = useState<Client[]>(initialClients)
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
@@ -123,6 +124,28 @@ export default function QuotationsPage() {
           return acc;
         }, {} as { [key: string]: Client });
       }, [clients]);
+
+    useEffect(() => {
+        const createForClient = searchParams.get('createForClient');
+        if (createForClient) {
+            setSelectedQuotation({
+                id: '',
+                quotationNumber: '',
+                clientRef: createForClient,
+                items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
+                tax: 0,
+                discount: 0,
+                totalAmount: 0,
+                date: new Date().toISOString(),
+                dueDate: new Date().toISOString(),
+                status: 'draft',
+                createdAt: new Date().toISOString(),
+            });
+            setIsDialogOpen(true);
+            // Clean the URL
+            router.replace('/quotations', undefined);
+        }
+    }, [searchParams, router]);
 
     const handleAddQuotation = () => {
       setSelectedQuotation(null)
@@ -156,7 +179,7 @@ export default function QuotationsPage() {
     }
   
     const handleFormSubmit = (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
-      if (selectedQuotation) {
+      if (selectedQuotation && selectedQuotation.id) {
         const updatedQuotation = { ...selectedQuotation, ...quotationData };
         setQuotations(
           quotations.map((q) =>
@@ -174,6 +197,7 @@ export default function QuotationsPage() {
           id: `quo_${Date.now()}`,
           quotationNumber: `QUO-00${quotations.length + 1}`,
           createdAt: new Date().toISOString(),
+          status: 'draft' as const,
         }
         setQuotations([...quotations, newQuotation])
         toast({
@@ -326,4 +350,3 @@ export default function QuotationsPage() {
       </>
     );
 }
-
