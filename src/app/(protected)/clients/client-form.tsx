@@ -29,7 +29,7 @@ const formSchema = z.object({
   contactPerson: z.string().min(2, "Contact person must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
   phone: z.string().optional(),
-  status: z.enum(["lead", "active", "inactive"]),
+  status: z.enum(["lead", "opportunity", "customer"]),
 })
 
 type ClientFormValues = z.infer<typeof formSchema>
@@ -73,7 +73,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Client Name</FormLabel>
+              <FormLabel>Company Name</FormLabel>
               <FormControl>
                 <Input placeholder="Innovate Inc." {...field} />
               </FormControl>
@@ -129,13 +129,13 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select client status" />
+                    <SelectValue placeholder="Select contact status" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="opportunity">Opportunity</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -143,7 +143,7 @@ export function ClientForm({ onSubmit, defaultValues }: ClientFormProps) {
           )}
         />
         <Button type="submit" className="w-full">
-          {isEditing ? "Update Client" : "Create Client"}
+          {isEditing ? "Update Contact" : "Create Contact"}
         </Button>
       </form>
     </Form>

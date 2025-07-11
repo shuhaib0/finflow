@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Table,
   TableBody,
@@ -51,7 +52,7 @@ const initialClients: Client[] = [
     contactPerson: "John Doe",
     email: "john.doe@innovate.com",
     phone: "123-456-7890",
-    status: "active",
+    status: "customer",
   },
   {
     id: "2",
@@ -59,7 +60,7 @@ const initialClients: Client[] = [
     contactPerson: "Jane Smith",
     email: "jane.smith@solutions.com",
     phone: "098-765-4321",
-    status: "active",
+    status: "customer",
   },
   {
     id: "3",
@@ -75,15 +76,25 @@ const initialClients: Client[] = [
     contactPerson: "Emily Brown",
     email: "emily.b@legacysys.com",
     phone: "111-222-3333",
-    status: "inactive",
+    status: "opportunity",
   },
 ]
 
-export default function ClientsPage() {
+export default function CrmPage() {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const statusFilter = searchParams.get('status')
+
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+  const filteredClients = useMemo(() => {
+    if (!statusFilter) {
+      return clients;
+    }
+    return clients.filter(client => client.status === statusFilter);
+  }, [clients, statusFilter]);
 
   const handleAddClient = () => {
     setSelectedClient(null)
@@ -98,36 +109,47 @@ export default function ClientsPage() {
   const handleDeleteClient = (clientId: string) => {
     setClients(clients.filter((client) => client.id !== clientId))
     toast({
-      title: "Client Deleted",
-      description: "The client has been successfully deleted.",
+      title: "Contact Deleted",
+      description: "The contact has been successfully deleted.",
     })
   }
 
   const handleFormSubmit = (clientData: Omit<Client, "id">) => {
     if (selectedClient) {
-      // Update existing client
       setClients(
         clients.map((c) =>
           c.id === selectedClient.id ? { ...c, ...clientData, id: c.id } : c
         )
       )
       toast({
-        title: "Client Updated",
-        description: "The client details have been updated.",
+        title: "Contact Updated",
+        description: "The contact details have been updated.",
       })
     } else {
-      // Add new client
       const newClient = {
         ...clientData,
         id: (clients.length + 1).toString(),
       }
       setClients([...clients, newClient])
       toast({
-        title: "Client Created",
-        description: "The new client has been added successfully.",
+        title: "Contact Created",
+        description: "A new contact has been added successfully.",
       })
     }
     setIsSheetOpen(false)
+  }
+
+  const getStatusVariant = (status: Client['status']) => {
+    switch (status) {
+      case 'lead':
+        return 'secondary';
+      case 'opportunity':
+        return 'default';
+      case 'customer':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
   }
 
   return (
@@ -136,12 +158,12 @@ export default function ClientsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
               <div>
-                  <CardTitle className="font-headline">Clients</CardTitle>
-                  <CardDescription>Manage your clients and view their details.</CardDescription>
+                  <CardTitle className="font-headline">Customer Relationship Management</CardTitle>
+                  <CardDescription>Manage your contacts and sales pipeline.</CardDescription>
               </div>
               <Button size="sm" className="gap-1" onClick={handleAddClient}>
                   <PlusCircle className="h-4 w-4" />
-                  Add Client
+                  Add Contact
               </Button>
           </div>
         </CardHeader>
@@ -149,7 +171,7 @@ export default function ClientsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Company Name</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
@@ -159,20 +181,14 @@ export default function ClientsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.name}</TableCell>
                   <TableCell>{client.contactPerson}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={
-                        client.status === "active"
-                          ? "default"
-                          : client.status === "lead"
-                          ? "secondary"
-                          : "destructive"
-                      }
+                      variant={getStatusVariant(client.status)}
                       className="capitalize"
                     >
                       {client.status}
@@ -199,7 +215,7 @@ export default function ClientsPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the client
+                            This action cannot be undone. This will permanently delete the contact
                             and all associated data.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -222,9 +238,9 @@ export default function ClientsPage() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
             <SheetHeader>
-                <SheetTitle className="font-headline">{selectedClient ? "Edit Client" : "Add New Client"}</SheetTitle>
+                <SheetTitle className="font-headline">{selectedClient ? "Edit Contact" : "Add New Contact"}</SheetTitle>
                 <SheetDescription>
-                    {selectedClient ? "Update the client details below." : "Fill in the details below to create a new client."}
+                    {selectedClient ? "Update the contact details below." : "Fill in the details below to create a new contact."}
                 </SheetDescription>
             </SheetHeader>
             <ClientForm 

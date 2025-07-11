@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   Users,
+  Briefcase,
 } from "lucide-react"
 
 import {
@@ -29,15 +30,28 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { usePathname, useRouter } from "next/navigation"
 import { handleLogout } from "@/app/login/actions"
 import { useEffect, useState } from "react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
-    { href: "/clients", icon: Users, label: "Clients", tooltip: "Clients" },
+    { 
+      href: "/crm", 
+      icon: Briefcase, 
+      label: "CRM", 
+      tooltip: "CRM",
+      subItems: [
+        { href: "/crm?status=lead", label: "Leads" },
+        { href: "/crm?status=opportunity", label: "Opportunities" },
+        { href: "/crm?status=customer", label: "Customers" },
+      ]
+    },
     { href: "/invoices", icon: FileText, label: "Invoices", tooltip: "Invoices" },
     { href: "/transactions", icon: ArrowLeftRight, label: "Transactions", tooltip: "Transactions" },
     { href: "/reports", icon: BarChart3, label: "Reports", tooltip: "Reports" },
@@ -82,16 +96,47 @@ export default function ProtectedLayout({
         <SidebarContent>
           <SidebarMenu>
             {navItems.map((item) => (
-                 <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        href={item.href}
-                        tooltip={item.tooltip}
-                        isActive={pathname.startsWith(item.href)}
-                    >
-                        <item.icon />
-                        {item.label}
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                 item.subItems ? (
+                  <Collapsible key={item.href} asChild>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            href={item.href}
+                            tooltip={item.tooltip}
+                            isActive={pathname.startsWith(item.href)}
+                        >
+                            <item.icon />
+                            {item.label}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent asChild>
+                          <SidebarMenuSub>
+                              {item.subItems.map(subItem => (
+                                  <SidebarMenuSubItem key={subItem.href}>
+                                      <SidebarMenuSubButton 
+                                          href={subItem.href}
+                                          isActive={pathname === subItem.href.split('?')[0] && router.query?.status === subItem.href.split('=')[1]}
+                                          >
+                                          {subItem.label}
+                                      </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                              ))}
+                          </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                 ) : (
+                  <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                          href={item.href}
+                          tooltip={item.tooltip}
+                          isActive={pathname.startsWith(item.href)}
+                      >
+                          <item.icon />
+                          {item.label}
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                 )
             ))}
           </SidebarMenu>
         </SidebarContent>

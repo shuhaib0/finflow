@@ -4,7 +4,7 @@ export type Client = {
     contactPerson: string;
     email: string;
     phone?: string;
-    status: 'lead' | 'active' | 'inactive';
+    status: 'lead' | 'opportunity' | 'customer';
     address?: string;
     notes?: string;
 };
