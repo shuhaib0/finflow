@@ -70,25 +70,52 @@ type InvoiceFormProps = {
   clients: Client[];
 }
 
+const getInitialValues = (defaultValues?: Invoice | null) => {
+    const baseValues = {
+        clientRef: "",
+        status: "draft" as const,
+        date: new Date(),
+        dueDate: new Date(),
+        items: [{ description: "", quantity: 1, unitPrice: 0 }],
+        tax: 0,
+        discount: 0,
+        companyTaxId: '',
+        terms: '',
+        purchaseOrderNumber: '',
+        billingAddress: {
+            addressLine1: '',
+            addressLine2: '',
+            city: '',
+            state: '',
+            postalCode: '',
+            country: '',
+        }
+    };
+
+    if (defaultValues) {
+        return {
+            ...baseValues,
+            ...defaultValues,
+            date: new Date(defaultValues.date), 
+            dueDate: new Date(defaultValues.dueDate), 
+            items: defaultValues.items.map(item => ({...item})),
+            companyTaxId: defaultValues.companyTaxId || '',
+            terms: defaultValues.terms || '',
+            purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
+            billingAddress: {
+                ...baseValues.billingAddress,
+                ...defaultValues.billingAddress
+            }
+        };
+    }
+
+    return baseValues;
+}
+
 export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues
-      ? {
-          ...defaultValues,
-          date: new Date(defaultValues.date),
-          dueDate: new Date(defaultValues.dueDate),
-          items: defaultValues.items.map(item => ({...item}))
-        }
-      : {
-          clientRef: "",
-          status: "draft",
-          date: new Date(),
-          dueDate: new Date(),
-          items: [{ description: "", quantity: 1, unitPrice: 0 }],
-          tax: 0,
-          discount: 0
-        },
+    defaultValues: getInitialValues(defaultValues),
   })
 
   const { fields, append, remove } = useFieldArray({
@@ -99,23 +126,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
   const watchedClientRef = form.watch("clientRef");
 
   useEffect(() => {
-    const defaultData = defaultValues
-        ? { 
-            ...defaultValues, 
-            date: new Date(defaultValues.date), 
-            dueDate: new Date(defaultValues.dueDate), 
-            items: defaultValues.items.map(item => ({...item})) 
-          }
-        : {
-            clientRef: "",
-            status: "draft" as const,
-            date: new Date(),
-            dueDate: new Date(),
-            items: [{ description: "", quantity: 1, unitPrice: 0 }],
-            tax: 0,
-            discount: 0
-        };
-        form.reset(defaultData);
+    form.reset(getInitialValues(defaultValues));
   }, [defaultValues, form])
 
   useEffect(() => {
@@ -124,12 +135,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
         if (client) {
             form.setValue('companyTaxId', client.taxId || '');
             form.setValue('billingAddress', {
-                addressLine1: client.addressLine1,
-                addressLine2: client.addressLine2,
-                city: client.city,
-                state: client.state,
-                postalCode: client.postalCode,
-                country: client.country,
+                addressLine1: client.addressLine1 || '',
+                addressLine2: client.addressLine2 || '',
+                city: client.city || '',
+                state: client.state || '',
+                postalCode: client.postalCode || '',
+                country: client.country || '',
             });
         }
     }
@@ -443,5 +454,3 @@ export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormPro
     </Form>
   )
 }
-
-    
