@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,10 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { Invoice, InvoiceItem } from "@/types"
+import type { Invoice, InvoiceItem, Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
 
 const invoiceItemSchema = z.object({
@@ -36,12 +39,27 @@ const invoiceItemSchema = z.object({
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive."),
 })
 
+const addressSchema = z.object({
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    postalCode: z.string().optional(),
+    country: z.string().optional(),
+})
+
 const formSchema = z.object({
   clientRef: z.string().min(1, "Client is required."),
   status: z.enum(["draft", "sent", "paid", "overdue"]),
+  date: z.date({ required_error: "Invoice date is required."}),
   dueDate: z.date({ required_error: "Due date is required."}),
+  companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
+  discount: z.coerce.number().min(0).optional().default(0),
   tax: z.coerce.number().min(0).optional().default(0),
+  billingAddress: addressSchema.optional(),
+  terms: z.string().optional(),
+  purchaseOrderNumber: z.string().optional(),
 })
 
 type InvoiceFormValues = z.infer<typeof formSchema>
@@ -49,24 +67,27 @@ type InvoiceFormValues = z.infer<typeof formSchema>
 type InvoiceFormProps = {
   onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => void;
   defaultValues?: Invoice | null;
-  clientNames: { [key: string]: string };
+  clients: Client[];
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues
       ? {
           ...defaultValues,
+          date: new Date(defaultValues.date),
           dueDate: new Date(defaultValues.dueDate),
           items: defaultValues.items.map(item => ({...item}))
         }
       : {
           clientRef: "",
           status: "draft",
+          date: new Date(),
           dueDate: new Date(),
           items: [{ description: "", quantity: 1, unitPrice: 0 }],
           tax: 0,
+          discount: 0
         },
   })
 
@@ -74,36 +95,65 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
     control: form.control,
     name: "items",
   })
+  
+  const watchedClientRef = form.watch("clientRef");
 
   useEffect(() => {
-    form.reset(defaultValues
-        ? { ...defaultValues, dueDate: new Date(defaultValues.dueDate), items: defaultValues.items.map(item => ({...item})) }
+    const defaultData = defaultValues
+        ? { 
+            ...defaultValues, 
+            date: new Date(defaultValues.date), 
+            dueDate: new Date(defaultValues.dueDate), 
+            items: defaultValues.items.map(item => ({...item})) 
+          }
         : {
             clientRef: "",
-            status: "draft",
+            status: "draft" as const,
+            date: new Date(),
             dueDate: new Date(),
             items: [{ description: "", quantity: 1, unitPrice: 0 }],
             tax: 0,
-        });
+            discount: 0
+        };
+        form.reset(defaultData);
   }, [defaultValues, form])
 
-  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number) => {
+  useEffect(() => {
+    if (watchedClientRef) {
+        const client = clients.find(c => c.id === watchedClientRef);
+        if (client) {
+            form.setValue('companyTaxId', client.taxId || '');
+            form.setValue('billingAddress', {
+                addressLine1: client.addressLine1,
+                addressLine2: client.addressLine2,
+                city: client.city,
+                state: client.state,
+                postalCode: client.postalCode,
+                country: client.country,
+            });
+        }
+    }
+  }, [watchedClientRef, clients, form]);
+
+  const calculateTotals = (items: (Partial<InvoiceItem>)[], taxRate: number, discount: number) => {
     const subtotal = items.reduce((acc, item) => {
       const quantity = Number(item.quantity) || 0;
       const unitPrice = Number(item.unitPrice) || 0;
       return acc + (quantity * unitPrice);
     }, 0);
-    const taxAmount = subtotal * (taxRate / 100);
-    const totalAmount = subtotal + taxAmount;
+    const discountedSubtotal = subtotal - discount;
+    const taxAmount = discountedSubtotal * (taxRate / 100);
+    const totalAmount = discountedSubtotal + taxAmount;
     return { subtotal, taxAmount, totalAmount };
   }
   
   const watchedItems = form.watch("items");
   const watchedTax = form.watch("tax");
-  const { subtotal, taxAmount, totalAmount } = calculateTotals(watchedItems, watchedTax || 0);
+  const watchedDiscount = form.watch("discount");
+  const { subtotal, taxAmount, totalAmount } = calculateTotals(watchedItems, watchedTax || 0, watchedDiscount || 0);
 
   const handleFormSubmit = (values: InvoiceFormValues) => {
-    const { subtotal: finalSubtotal, taxAmount: finalTaxAmount, totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0);
+    const { totalAmount: finalTotal } = calculateTotals(values.items, values.tax || 0, values.discount || 0);
     const itemsWithTotal = values.items.map(item => ({
         ...item,
         total: item.quantity * item.unitPrice
@@ -111,112 +161,135 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
     
     onSubmit({
       ...values,
+      date: values.date.toISOString(),
       dueDate: values.dueDate.toISOString(),
       items: itemsWithTotal,
-      tax: finalTaxAmount,
+      tax: values.tax || 0,
+      discount: values.discount || 0,
       totalAmount: finalTotal,
     })
   }
-  
 
-  const isEditing = !!defaultValues;
+  const isEditing = !!defaultValues?.id;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-6 overflow-y-auto max-h-[calc(100vh-10rem)] pr-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <FormField
-            control={form.control}
-            name="clientRef"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Client</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a client" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {Object.entries(clientNames).map(([id, name]) => (
-                        <SelectItem key={id} value={id}>{name}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
+                control={form.control}
+                name="clientRef"
+                render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                    <FormLabel>Client</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
+                control={form.control}
+                name="companyTaxId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Company Tax ID</FormLabel>
+                        <FormControl><Input placeholder="e.g., GST12345" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="sent">Sent</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="overdue">Overdue</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Invoice Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
         </div>
-        
-        <FormField
-            control={form.control}
-            name="dueDate"
-            render={({ field }) => (
-                <FormItem className="flex flex-col">
-                    <FormLabel>Due Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={"outline"}
-                            className={cn(
-                                "pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, "PPP")
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date("1900-01-01")}
-                            initialFocus
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
-        
-        <Separator />
 
+        <Separator className="my-6" />
+        
         <div>
-            <FormLabel className="text-lg font-medium">Items</FormLabel>
-            <div className="space-y-4 mt-2">
+            <h3 className="text-lg font-medium mb-2">Particulars</h3>
+            <div className="space-y-4">
             {fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2 p-3 border rounded-md">
                      <div className="grid flex-1 gap-2">
@@ -226,9 +299,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel className={cn(index !== 0 && "sr-only")}>Description</FormLabel>
-                                <FormControl>
-                                <Input {...field} placeholder="Item description" />
-                                </FormControl>
+                                <FormControl><Input {...field} placeholder="Item description" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}
@@ -241,9 +312,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel className={cn(index !== 0 && "sr-only")}>Qty</FormLabel>
-                                <FormControl>
-                                <Input type="number" {...field} placeholder="1"/>
-                                </FormControl>
+                                <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}
@@ -256,39 +325,41 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel className={cn(index !== 0 && "sr-only")}>Price</FormLabel>
-                                <FormControl>
-                                <Input type="number" {...field} placeholder="100.00" />
-                                </FormControl>
+                                <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}
                         />
                      </div>
                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Remove item</span>
+                        <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
                      </Button>
                 </div>
             ))}
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}
-            >
+            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
                 Add Item
             </Button>
             </div>
         </div>
-
-        <Separator />
         
-        <div className="flex justify-end space-y-2">
-            <div className="w-64 space-y-2">
+        <div className="flex justify-end mt-6">
+            <div className="w-80 space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <FormField
+                        control={form.control}
+                        name="discount"
+                        render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                                <FormLabel className="text-sm">Discount ($)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="w-24 h-8" placeholder="0.00" /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <span>-${(form.getValues("discount") || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <FormField
@@ -297,9 +368,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
                         render={({ field }) => (
                             <FormItem className="flex items-center gap-2">
                                 <FormLabel className="text-sm">Tax (%)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" {...field} className="w-20 h-8" placeholder="0" />
-                                </FormControl>
+                                <FormControl><Input type="number" {...field} className="w-20 h-8" placeholder="0" /></FormControl>
                             </FormItem>
                         )}
                     />
@@ -312,10 +381,64 @@ export function InvoiceForm({ onSubmit, defaultValues, clientNames }: InvoiceFor
                 </div>
             </div>
         </div>
+        
+        <Separator className="my-6" />
 
-        <Button type="submit" className="w-full">
-          {isEditing ? "Update Invoice" : "Create Invoice"}
-        </Button>
+        <Tabs defaultValue="address" className="w-full">
+            <TabsList>
+                <TabsTrigger value="address">Address</TabsTrigger>
+                <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
+                <TabsTrigger value="more-info">More Info</TabsTrigger>
+            </TabsList>
+            <TabsContent value="address" className="mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="billingAddress.addressLine1"
+                        render={({ field }) => (
+                            <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}
+                    />
+                    <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+            </TabsContent>
+            <TabsContent value="terms" className="mt-4">
+                <FormField
+                    control={form.control}
+                    name="terms"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Terms and Conditions</FormLabel>
+                            <FormControl><Textarea placeholder="e.g., Payment is due within 30 days." {...field} rows={5} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </TabsContent>
+            <TabsContent value="more-info" className="mt-4">
+                 <FormField
+                    control={form.control}
+                    name="purchaseOrderNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Purchase Order (PO) Number</FormLabel>
+                            <FormControl><Input placeholder="Enter PO Number" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </TabsContent>
+        </Tabs>
+        </div>
+        <div className="p-6 border-t mt-auto">
+            <Button type="submit" className="w-full">
+            {isEditing ? "Update Invoice" : "Create Invoice"}
+            </Button>
+        </div>
       </form>
     </Form>
   )

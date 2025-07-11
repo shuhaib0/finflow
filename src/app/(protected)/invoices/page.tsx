@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useSearchParams } from 'next/navigation'
 import {
   Table,
@@ -19,12 +19,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,16 +42,51 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
-import type { Invoice } from "@/types"
+import type { Invoice, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
+
+const initialClients: Client[] = [
+  {
+    id: "1",
+    name: "Innovate Inc.",
+    contactPerson: "John Doe",
+    email: "john.doe@innovate.com",
+    phone: "123-456-7890",
+    status: "customer",
+    taxId: "GST12345",
+    addressLine1: "123 Tech Ave",
+    city: "Silicon Valley",
+    state: "CA",
+    postalCode: "94043",
+    country: "USA",
+  },
+  {
+    id: "2",
+    name: "Solutions Co.",
+    contactPerson: "Jane Smith",
+    email: "jane.smith@solutions.com",
+    phone: "098-765-4321",
+    status: "customer",
+  },
+  {
+    id: "3",
+    name: "Future Forward",
+    contactPerson: "Sam Wilson",
+    email: "sam.wilson@ff.io",
+    phone: "555-555-5555",
+    status: "lead",
+  },
+];
 
 const initialInvoices: Invoice[] = [
     {
       id: "1",
       invoiceNumber: "INV-001",
       clientRef: "1",
+      date: new Date(2024, 6, 15).toISOString(),
       items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, total: 5000 }],
+      discount: 0,
       tax: 500,
       totalAmount: 5500,
       dueDate: new Date(2024, 7, 15).toISOString(),
@@ -62,9 +97,11 @@ const initialInvoices: Invoice[] = [
       id: "2",
       invoiceNumber: "INV-002",
       clientRef: "2",
+      date: new Date(2024, 5, 30).toISOString(),
       items: [{ description: "Consulting", quantity: 10, unitPrice: 150, total: 1500 }],
-      tax: 150,
-      totalAmount: 1650,
+      discount: 100,
+      tax: 140,
+      totalAmount: 1540,
       dueDate: new Date(2024, 6, 30).toISOString(),
       status: "overdue",
       createdAt: new Date(2024, 5, 30).toISOString(),
@@ -72,7 +109,8 @@ const initialInvoices: Invoice[] = [
     {
         id: "3",
         invoiceNumber: "INV-003",
-        clientRef: "3",
+        clientRef: "1",
+        date: new Date(2024, 7, 1).toISOString(),
         items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, total: 2000 }],
         tax: 200,
         totalAmount: 2200,
@@ -82,21 +120,20 @@ const initialInvoices: Invoice[] = [
       },
 ]
 
-// Mock client names for display
-const clientNames: { [key: string]: string } = {
-  "1": "Innovate Inc.",
-  "2": "Solutions Co.",
-  "3": "Future Forward",
-  "4": "Legacy Systems",
-}
-
-
 export default function InvoicesPage() {
     const { toast } = useToast()
     const searchParams = useSearchParams()
     const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices)
+    const [clients] = useState<Client[]>(initialClients)
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
-    const [isSheetOpen, setIsSheetOpen] = useState(false)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+    const clientMap = useMemo(() => {
+        return clients.reduce((acc, client) => {
+          acc[client.id] = client;
+          return acc;
+        }, {} as { [key: string]: Client });
+      }, [clients]);
 
     useEffect(() => {
         const createForClient = searchParams.get('createForClient');
@@ -108,22 +145,23 @@ export default function InvoicesPage() {
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
                 tax: 0,
                 totalAmount: 0,
+                date: new Date().toISOString(),
                 dueDate: new Date().toISOString(),
                 status: 'draft',
                 createdAt: new Date().toISOString(),
             });
-            setIsSheetOpen(true);
+            setIsDialogOpen(true);
         }
     }, [searchParams]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
-      setIsSheetOpen(true)
+      setIsDialogOpen(true)
     }
   
     const handleEditInvoice = (invoice: Invoice) => {
       setSelectedInvoice(invoice)
-      setIsSheetOpen(true)
+      setIsDialogOpen(true)
     }
   
     const handleDeleteInvoice = (invoiceId: string) => {
@@ -158,7 +196,7 @@ export default function InvoicesPage() {
           description: "The new invoice has been added successfully.",
         })
       }
-      setIsSheetOpen(false)
+      setIsDialogOpen(false)
     }
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -210,7 +248,7 @@ export default function InvoicesPage() {
                     {invoices.map((invoice) => (
                         <TableRow key={invoice.id}>
                         <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                        <TableCell>{clientNames[invoice.clientRef] || 'Unknown Client'}</TableCell>
+                        <TableCell>{clientMap[invoice.clientRef]?.name || 'Unknown Client'}</TableCell>
                         <TableCell>${invoice.totalAmount.toFixed(2)}</TableCell>
                         <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
                         <TableCell>
@@ -265,21 +303,21 @@ export default function InvoicesPage() {
                 )}
             </CardContent>
         </Card>
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetContent className="sm:max-w-full h-full p-0">
-                <SheetHeader className="p-6">
-                    <SheetTitle className="font-headline">{selectedInvoice && selectedInvoice.id ? "Edit Invoice" : "New Invoice"}</SheetTitle>
-                    <SheetDescription>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="sm:max-w-full h-full max-h-full flex flex-col p-0 gap-0">
+                <DialogHeader className="p-6">
+                    <DialogTitle className="font-headline">{selectedInvoice && selectedInvoice.id ? "Edit Invoice" : "New Invoice"}</DialogTitle>
+                    <DialogDescription>
                         {selectedInvoice && selectedInvoice.id ? "Update the invoice details below." : "Fill in the details to create a new invoice."}
-                    </SheetDescription>
-                </SheetHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}
-                  clientNames={clientNames}
+                  clients={clients}
                 />
-            </SheetContent>
-        </Sheet>
+            </DialogContent>
+        </Dialog>
       </>
     );
 }

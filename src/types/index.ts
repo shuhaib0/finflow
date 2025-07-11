@@ -24,6 +24,7 @@ export type Client = {
     website?: string;
     whatsapp?: string;
     phoneExt?: string;
+    taxId?: string;
     // Address Info
     addressLine1?: string;
     addressLine2?: string;
@@ -44,14 +45,31 @@ export type InvoiceItem = {
     total: number;
 };
 
+export type Address = {
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+};
+
 export type Invoice = {
     id: string;
     invoiceNumber: string;
     clientRef: string; // Refers to Client ID
+    companyTaxId?: string;
+    date: string; // ISO string
+    dueDate: string; // ISO string
     items: InvoiceItem[];
+    discount?: number;
     tax: number;
     totalAmount: number;
-    dueDate: string; // ISO string
+    billingAddress?: Address;
+    shippingAddress?: Address;
+    terms?: string;
+    purchaseOrderNumber?: string;
+    purchaseOrderDate?: string;
     status: 'draft' | 'sent' | 'paid' | 'overdue';
     createdAt: string; // ISO string
 };
