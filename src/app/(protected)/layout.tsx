@@ -34,6 +34,7 @@ import {
   SidebarTrigger,
   SidebarMenuSub,
   SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { usePathname, useRouter } from "next/navigation"
@@ -128,11 +129,11 @@ export default function ProtectedLayout({
           <SidebarMenu>
             {navItems.map((item) => (
                  item.subItems ? (
-                  <Collapsible key={item.href} asChild defaultOpen={pathname.startsWith(item.href)}>
+                  <Collapsible key={item.href} asChild defaultOpen={pathname.startsWith(item.href) || (item.href === '/sales' && isSalesPath(pathname))}>
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                            href={item.href === '/clients' || item.href === '/sales' ? undefined : item.href}
+                            href={(item.href === '/clients' || item.href === '/sales') ? undefined : item.href}
                             tooltip={item.tooltip}
                             isActive={pathname.startsWith(item.href) && !activeSubItem && !isSalesPath(pathname)}
                         >
