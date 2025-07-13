@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { isAuthenticated } from '@/lib/auth'
 
-const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna']
+const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna', '/quotations']
 const publicRoutes = ['/login', '/signup']
 
 export async function middleware(request: NextRequest) {
