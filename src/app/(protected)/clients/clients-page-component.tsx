@@ -63,8 +63,8 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
         return;
     };
 
-    setLoading(true);
     const fetchClients = async () => {
+        setLoading(true);
         try {
             const clientsData = await getClients();
             setClients(clientsData);
@@ -160,6 +160,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
           description: "The contact details have been updated.",
         });
       } catch (error) {
+        console.error("Failed to update client:", error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -181,6 +182,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
           description: "A new contact has been added successfully.",
         });
       } catch (error) {
+        console.error("Failed to create client:", error);
         toast({
           variant: "destructive",
           title: "Error",

@@ -25,10 +25,13 @@ export const getClients = async (): Promise<Client[]> => {
 export const addClient = async (clientData: Omit<Client, 'id'>): Promise<Client> => {
     const dataToSave = { ...clientData };
     if (dataToSave.notes && dataToSave.notes.length > 0) {
-        dataToSave.notes = dataToSave.notes.map(note => ({
-            ...note,
-            createdAt: Timestamp.fromDate(new Date(note.createdAt))
-        }));
+        dataToSave.notes = dataToSave.notes.map(note => {
+            const createdAtDate = new Date(note.createdAt);
+            return {
+                ...note,
+                createdAt: Timestamp.fromDate(createdAtDate)
+            };
+        });
     }
     const docRef = await addDoc(clientsCollection, dataToSave);
     return { id: docRef.id, ...clientData };
@@ -36,13 +39,18 @@ export const addClient = async (clientData: Omit<Client, 'id'>): Promise<Client>
 
 export const updateClient = async (id: string, clientData: Partial<Client>): Promise<void> => {
     const clientDoc = doc(db, 'clients', id);
-    const dataToUpdate = { ...clientData };
+    const dataToUpdate: { [key: string]: any } = { ...clientData };
 
     if (dataToUpdate.notes && dataToUpdate.notes.length > 0) {
-        dataToUpdate.notes = dataToUpdate.notes.map(note => ({
-            ...note,
-            createdAt: Timestamp.fromDate(new Date(note.createdAt))
-        }));
+        dataToUpdate.notes = dataToUpdate.notes.map(note => {
+            if (note.createdAt && typeof note.createdAt === 'string') {
+                return {
+                    ...note,
+                    createdAt: Timestamp.fromDate(new Date(note.createdAt))
+                };
+            }
+            return note;
+        });
     }
 
     await updateDoc(clientDoc, dataToUpdate);
