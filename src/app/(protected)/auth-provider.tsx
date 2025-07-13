@@ -8,10 +8,9 @@ import { Icons } from '@/components/icons';
 
 type AuthContextType = {
   user: User | null;
-  loading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

@@ -171,7 +171,7 @@ export default function QuotationsPageComponent() {
     const handleConvertToInvoice = (quotation: Quotation) => {
         const { quotationNumber, ...invoiceData } = quotation;
         const fullInvoiceData = { ...invoiceData, quotationRef: quotation.id };
-        router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
+        router.push(`/invoices?fromQuotation=${"$"}{encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {

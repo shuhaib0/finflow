@@ -256,7 +256,7 @@ export default function InvoicesPageComponent() {
                   }
                 </style>
               </head>
-              <body>${printableContent}</body>
+              <body>${"$"}{printableContent}</body>
             </html>
           `);
           printWindow.document.close();
