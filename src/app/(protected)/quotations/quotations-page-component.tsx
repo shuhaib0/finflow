@@ -178,8 +178,8 @@ export default function QuotationsPageComponent() {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
         return;
       }
-      if (selectedQuotation && selectedQuotation.id) {
-        try {
+      try {
+        if (selectedQuotation && selectedQuotation.id) {
             await updateQuotation(selectedQuotation.id, quotationData);
             const updatedQuotation = { ...selectedQuotation, ...quotationData };
             setQuotations(
@@ -192,28 +192,24 @@ export default function QuotationsPageComponent() {
               title: "Quotation Updated",
               description: "The quotation details have been updated.",
             });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Failed to update quotation." });
+        } else {
+          const newQuotationData = {
+            ...quotationData,
+            quotationNumber: `QUO-${String(quotations.length + 1).padStart(3, '0')}`,
+            createdAt: new Date().toISOString(),
+            status: 'draft' as const,
+          }
+          const newQuotation = await addQuotation(newQuotationData);
+          setQuotations([...quotations, newQuotation])
+          toast({
+            title: "Quotation Created",
+            description: "The new quotation has been added successfully.",
+          });
         }
-      } else {
-        const newQuotationData = {
-          ...quotationData,
-          quotationNumber: `QUO-${String(quotations.length + 1).padStart(3, '0')}`,
-          createdAt: new Date().toISOString(),
-          status: 'draft' as const,
-        }
-        try {
-            const newQuotation = await addQuotation(newQuotationData);
-            setQuotations([...quotations, newQuotation])
-            toast({
-              title: "Quotation Created",
-              description: "The new quotation has been added successfully.",
-            });
-        } catch(error) {
-            toast({ variant: "destructive", title: "Error", description: "Failed to create quotation." });
-        }
+        setIsDialogOpen(false)
+      } catch(error) {
+          toast({ variant: "destructive", title: "Error", description: "Failed to create quotation." });
       }
-      setIsDialogOpen(false)
     }
 
     const getStatusVariant = (status: Quotation['status']) => {

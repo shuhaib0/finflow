@@ -106,7 +106,7 @@ export default function TransactionsPage() {
 
     const handleDeleteTransaction = async (transactionId: string) => {
         if (!user) {
-            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a transaction." });
             return;
         }
         try {
@@ -123,11 +123,11 @@ export default function TransactionsPage() {
 
     const handleFormSubmit = async (data: Omit<Transaction, 'id'>) => {
         if (!user) {
-            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a transaction." });
             return;
         }
-        if (selectedTransaction) {
-            try {
+        try {
+            if (selectedTransaction) {
                 await updateTransaction(selectedTransaction.id, data);
                 const updatedTransactions = transactions.map((t) =>
                     t.id === selectedTransaction.id ? { ...selectedTransaction, ...data } : t
@@ -137,22 +137,18 @@ export default function TransactionsPage() {
                     title: "Transaction Updated",
                     description: "The transaction details have been updated.",
                 });
-            } catch (error) {
-                toast({ variant: "destructive", title: "Error", description: "Failed to update transaction." });
-            }
-        } else {
-            try {
+            } else {
                 const newTransaction = await addTransaction(data);
                 setTransactions([...transactions, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
                 toast({
                     title: "Transaction Added",
                     description: "The new transaction has been added successfully.",
                 });
-            } catch (error) {
-                toast({ variant: "destructive", title: "Error", description: "Failed to add transaction." });
             }
+            setIsDialogOpen(false)
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to save transaction." });
         }
-        setIsDialogOpen(false)
     }
 
 

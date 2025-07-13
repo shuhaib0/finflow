@@ -102,8 +102,8 @@ export default function InvoicesPageComponent() {
         return;
       }
 
-      if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
-        try {
+      try {
+        if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
             await updateInvoice(selectedInvoice.id, invoiceData);
             const updatedInvoice = { ...selectedInvoice, ...invoiceData };
             setInvoices(
@@ -116,31 +116,27 @@ export default function InvoicesPageComponent() {
               title: "Invoice Updated",
               description: "The invoice details have been updated.",
             })
-        } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Failed to update invoice." });
+        } else { // New Invoice
+          const newInvoiceData = {
+            ...invoiceData,
+            id: '', // Firestore will generate
+            invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
+            createdAt: new Date().toISOString(),
+            status: 'draft' as const,
+          }
+          const newInvoice = await addInvoice(newInvoiceData);
+          setInvoices(prev => [...prev, newInvoice]);
+          toast({
+            title: fromConversion ? "Invoice Converted" : "Invoice Created",
+            description: fromConversion 
+              ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
+              : "The new invoice has been added successfully.",
+          });
         }
-      } else { // New Invoice
-        const newInvoiceData = {
-          ...invoiceData,
-          id: '', // Firestore will generate
-          invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
-          createdAt: new Date().toISOString(),
-          status: 'draft' as const,
-        }
-        try {
-            const newInvoice = await addInvoice(newInvoiceData);
-            setInvoices(prev => [...prev, newInvoice]);
-            toast({
-              title: fromConversion ? "Invoice Converted" : "Invoice Created",
-              description: fromConversion 
-                ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
-                : "The new invoice has been added successfully.",
-            });
-        } catch(error) {
-            toast({ variant: "destructive", title: "Error", description: "Failed to create invoice." });
-        }
+        setIsDialogOpen(false);
+      } catch(error) {
+          toast({ variant: "destructive", title: "Error", description: "Failed to save invoice." });
       }
-      setIsDialogOpen(false);
     }
 
     useEffect(() => {

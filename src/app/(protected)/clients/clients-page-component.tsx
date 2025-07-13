@@ -74,8 +74,7 @@ export default function ClientsPageComponent() {
       };
       fetchClients();
     } else {
-        // No user, don't fetch anything and stop loading.
-        setLoading(false);
+      setLoading(false);
     }
   }, [user, toast]);
 
@@ -113,8 +112,12 @@ export default function ClientsPageComponent() {
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient || !user) {
+    if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
+        return;
+    }
+    if (!selectedClient) {
+        toast({ variant: "destructive", title: "Error", description: "No client selected." });
         return;
     }
 
