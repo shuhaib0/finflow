@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // This effect runs after the component has rendered and checks for the auth state.
     if (!loading && !user) {
       router.push('/login');
     }
@@ -44,17 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // If there's no user, we show a redirecting message while the useEffect above does its job.
   if (!user) {
-    return (
+     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
-            <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
+            <Icons.logo className="h-12 w-12 text-primary" />
             <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
         </div>
     );
   }
 
-  return <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

@@ -235,9 +235,9 @@ export default function ProtectedLayout({
 }) {
   return (
     <AuthProvider>
-        <ProtectedLayoutContent>
-            {children}
-        </ProtectedLayoutContent>
+      <ProtectedLayoutContent>
+        {children}
+      </ProtectedLayoutContent>
     </AuthProvider>
   );
 }
