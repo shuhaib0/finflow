@@ -149,59 +149,50 @@ export default function ClientsPageComponent() {
     
     const authorName = currentUser.displayName || "Admin User";
 
-    if (selectedClient) { // Editing existing client
-      const existingNotes = selectedClient.notes || [];
-      const newNoteEntry: Note[] = clientData.newNote ? 
-        [{ content: clientData.newNote, author: authorName, createdAt: new Date().toISOString() }] 
-        : [];
-      
-      const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      const { newNote, ...restOfClientData } = clientData;
-      const finalData = { ...restOfClientData, notes: updatedNotes };
-
-      try {
-        await updateClient(selectedClient.id, finalData);
-        const updatedClientWithNotes = { ...selectedClient, ...finalData };
-        setClients(clients.map((c) =>
-          c.id === selectedClient.id ? updatedClientWithNotes as Client : c
-        ));
+    try {
+        if (selectedClient) { // Editing existing client
+          const existingNotes = selectedClient.notes || [];
+          const newNoteEntry: Note[] = clientData.newNote ? 
+            [{ content: clientData.newNote, author: authorName, createdAt: new Date().toISOString() }] 
+            : [];
+          
+          const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          
+          const { newNote, ...restOfClientData } = clientData;
+          const finalData = { ...restOfClientData, notes: updatedNotes };
+    
+          await updateClient(selectedClient.id, finalData);
+          const updatedClientWithNotes = { ...selectedClient, ...finalData };
+          setClients(clients.map((c) =>
+            c.id === selectedClient.id ? updatedClientWithNotes as Client : c
+          ));
+          toast({
+            title: "Contact Updated",
+            description: "The contact details have been updated.",
+          });
+    
+        } else { // Creating new client
+          const { newNote, ...restOfClientData } = clientData;
+          const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
+          
+          const newClientData = { ...restOfClientData, notes };
+    
+          const newClient = await addClient(newClientData);
+          setClients([...clients, newClient]);
+          toast({
+            title: "Contact Created",
+            description: "A new contact has been added successfully.",
+          });
+        }
+        setDialogState('closed');
+    } catch (error) {
+        console.error("Failed to save client:", error);
         toast({
-          title: "Contact Updated",
-          description: "The contact details have been updated.",
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create contact.",
         });
-      } catch (error) {
-        console.error("Failed to update client:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to update contact.",
-        });
-      }
-
-    } else { // Creating new client
-      const { newNote, ...restOfClientData } = clientData;
-      const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
-      
-      const newClientData = { ...restOfClientData, notes };
-
-      try {
-        const newClient = await addClient(newClientData);
-        setClients([...clients, newClient]);
-        toast({
-          title: "Contact Created",
-          description: "A new contact has been added successfully.",
-        });
-      } catch (error) {
-        console.error("Failed to create client:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to create contact.",
-        });
-      }
     }
-    setDialogState('closed');
   }
 
   const getStatusVariant = (status: Client['status']) => {
