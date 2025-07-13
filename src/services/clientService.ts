@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
 import type { Client, Note } from '@/types';
@@ -22,13 +23,29 @@ export const getClients = async (): Promise<Client[]> => {
 };
 
 export const addClient = async (clientData: Omit<Client, 'id'>): Promise<Client> => {
-    const docRef = await addDoc(clientsCollection, clientData);
+    const dataToSave = { ...clientData };
+    if (dataToSave.notes && dataToSave.notes.length > 0) {
+        dataToSave.notes = dataToSave.notes.map(note => ({
+            ...note,
+            createdAt: Timestamp.fromDate(new Date(note.createdAt))
+        }));
+    }
+    const docRef = await addDoc(clientsCollection, dataToSave);
     return { id: docRef.id, ...clientData };
 };
 
 export const updateClient = async (id: string, clientData: Partial<Client>): Promise<void> => {
     const clientDoc = doc(db, 'clients', id);
-    await updateDoc(clientDoc, clientData);
+    const dataToUpdate = { ...clientData };
+
+    if (dataToUpdate.notes && dataToUpdate.notes.length > 0) {
+        dataToUpdate.notes = dataToUpdate.notes.map(note => ({
+            ...note,
+            createdAt: Timestamp.fromDate(new Date(note.createdAt))
+        }));
+    }
+
+    await updateDoc(clientDoc, dataToUpdate);
 };
 
 export const deleteClient = async (id: string): Promise<void> => {
