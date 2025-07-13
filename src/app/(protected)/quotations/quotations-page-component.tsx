@@ -82,10 +82,11 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     const searchParams = useSearchParams()
     const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations)
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Default to false as we use mock data
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     
+    // Using mock data, so client fetching is for the form dropdown only.
     useEffect(() => {
         const fetchClients = async () => {
             try {
@@ -96,10 +97,8 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
                 toast({
                     variant: "destructive",
                     title: "Error",
-                    description: "Could not load client data.",
+                    description: "Could not load client data for form.",
                 });
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -116,7 +115,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
       }, [clients]);
 
       useEffect(() => {
-        if (loading) return;
+        if (!user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -134,7 +133,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, loading]);
+    }, [searchParams, router, user]);
 
     const handleAddQuotation = () => {
       setSelectedQuotation(null)
@@ -215,7 +214,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     const isEditing = !!selectedQuotation;
     
     if (loading) {
-        return <div>Loading quotations...</div>; // Or a skeleton loader
+        return <div>Loading...</div>;
     }
 
     return (

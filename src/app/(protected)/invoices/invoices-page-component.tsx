@@ -72,6 +72,7 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
     
     useEffect(() => {
       const fetchData = async () => {
+        setLoading(true);
         try {
           const [invoicesData, clientsData] = await Promise.all([
             getInvoices(),
@@ -139,7 +140,7 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
     }
 
     useEffect(() => {
-        if (loading) return;
+        if (loading || !user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -180,7 +181,7 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
             router.replace('/invoices', { scroll: false });
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, router, loading]);
+    }, [searchParams, router, loading, user]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -249,7 +250,9 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
                   }
                 </style>
               </head>
-              <body>${printableContent}</body>
+              <body>${"```"}html
+              ${printableContent}
+              ${"```"}</body>
             </html>
           `);
           printWindow.document.close();
@@ -278,7 +281,7 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
     const isEditing = !!selectedInvoice;
 
     if (loading) {
-        return <div>Loading invoices...</div>; // Or a skeleton loader
+        return <div>Loading...</div>;
     }
 
     return (

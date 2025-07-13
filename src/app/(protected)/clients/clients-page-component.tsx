@@ -59,6 +59,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
 
   useEffect(() => {
     const fetchClients = async () => {
+        setLoading(true);
         try {
             const clientsData = await getClients();
             setClients(clientsData);
@@ -203,7 +204,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
   const isEditing = dialogState === 'edit';
 
   if (loading) {
-    return <div>Loading...</div>; // Or a skeleton loader
+    return <div>Loading...</div>;
   }
 
   return (
