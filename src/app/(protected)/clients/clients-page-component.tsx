@@ -73,6 +73,7 @@ export default function ClientsPageComponent() {
       };
       fetchClients();
     } else {
+      // If there's no user, we are not fetching, so stop loading.
       setLoading(false);
     }
   }, [user, toast]);
@@ -160,8 +161,9 @@ export default function ClientsPageComponent() {
 
       try {
         await updateClient(selectedClient.id, finalData);
+        const updatedClientWithNotes = { ...selectedClient, ...finalData };
         setClients(clients.map((c) =>
-          c.id === selectedClient.id ? { ...c, ...finalData, id: c.id } : c
+          c.id === selectedClient.id ? updatedClientWithNotes as Client : c
         ));
         toast({
           title: "Contact Updated",

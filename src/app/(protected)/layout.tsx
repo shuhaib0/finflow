@@ -133,11 +133,14 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }
 
-  if (loading || !user) {
+  if (!user) {
+    // AuthProvider handles the main loading state. If there's no user, 
+    // the useEffect above will trigger a redirect.
+    // We can show a minimal loader here or just null.
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
             <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-            <p className="mt-4 text-muted-foreground">Authenticating...</p>
+            <p className="mt-4 text-muted-foreground">Redirecting...</p>
         </div>
     );
   }
