@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { isAuthenticated } from '@/lib/auth'
 
 const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna']
-const publicRoutes = ['/login']
+const publicRoutes = ['/login', '/signup']
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname

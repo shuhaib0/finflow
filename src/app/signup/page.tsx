@@ -19,16 +19,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Icons } from '@/components/icons'
-import { handleLogin } from './actions'
+import { handleSignUp } from './actions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Terminal } from 'lucide-react'
 
 const formSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 })
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -36,6 +37,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
     },
@@ -45,7 +47,7 @@ export default function LoginPage() {
     setIsSubmitting(true)
     setError(null)
     
-    const result = await handleLogin(values)
+    const result = await handleSignUp(values)
 
     if (result.success) {
       router.push('/dashboard')
@@ -62,8 +64,8 @@ export default function LoginPage() {
             <div className="flex justify-center mb-4">
                 <Icons.logo className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your account.</CardDescription>
+            <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
+            <CardDescription>Enter your details to get started.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -71,10 +73,23 @@ export default function LoginPage() {
               {error && (
                 <Alert variant="destructive">
                     <Terminal className="h-4 w-4" />
-                    <AlertTitle>Login Failed</AlertTitle>
+                    <AlertTitle>Sign-up Failed</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -82,7 +97,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin@ailutions.com" {...field} />
+                      <Input placeholder="john.doe@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -102,13 +117,13 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Signing In...' : 'Sign In'}
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="justify-center text-sm">
-            <p>Don&apos;t have an account? <Link href="/signup" className="font-semibold text-primary hover:underline">Sign Up</Link></p>
+            <p>Already have an account? <Link href="/login" className="font-semibold text-primary hover:underline">Log In</Link></p>
         </CardFooter>
       </Card>
     </div>

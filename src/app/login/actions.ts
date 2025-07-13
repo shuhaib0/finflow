@@ -7,14 +7,15 @@ import { signInWithEmailAndPassword } from 'firebase/auth'
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string(),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
 })
 
 export async function handleLogin(values: z.infer<typeof loginSchema>) {
   const result = loginSchema.safeParse(values)
 
   if (!result.success) {
-    return { success: false, error: 'Invalid input.' }
+    const error = result.error.errors[0];
+    return { success: false, error: `${error.path[0]}: ${error.message}` }
   }
 
   const { email, password } = result.data
