@@ -49,14 +49,21 @@ export default function ClientsPageComponent() {
   const statusFilter = searchParams.get('status')
   
   const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setPageLoading(false);
+      return;
+    }
+
     const fetchClients = async () => {
-      setLoading(true);
+      setPageLoading(true);
       try {
         const clientsData = await getClients();
         setClients(clientsData);
@@ -68,16 +75,12 @@ export default function ClientsPageComponent() {
           description: "Could not load client data.",
         });
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
 
-    if (user) {
-      fetchClients();
-    } else {
-      setLoading(false);
-    }
-  }, [user, toast]);
+    fetchClients();
+  }, [user, authLoading, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -133,14 +136,14 @@ export default function ClientsPageComponent() {
         setClients(clients.map(c => c.id === selectedClient.id ? updatedClient as Client : c));
         setSelectedClient(updatedClient as Client);
         toast({
-            title: `Contact converted to ${status}`,
-            description: `${selectedClient.name} is now a ${status}.`,
+            title: `Contact converted to ${"$"}{status}`,
+            description: `${"$"}{selectedClient.name} is now a ${"$"}{status}.`,
         });
     } catch (error) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: `Failed to convert contact to ${status}.`,
+            description: `Failed to convert contact to ${"$"}{status}.`,
         });
     }
   }
@@ -214,7 +217,7 @@ export default function ClientsPageComponent() {
 
   const isEditing = dialogState === 'edit';
 
-  if (loading) {
+  if (pageLoading || authLoading) {
     return (
         <Card>
           <CardHeader>
@@ -286,7 +289,7 @@ export default function ClientsPageComponent() {
                   </TableCell>
                   <TableCell>
                     {client.status === 'opportunity' && client.opportunityWorth
-                      ? `$${client.opportunityWorth.toLocaleString()}`
+                      ? `$${"$"}{client.opportunityWorth.toLocaleString()}`
                       : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">

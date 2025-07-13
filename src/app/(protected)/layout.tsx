@@ -80,7 +80,7 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -88,7 +88,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
   
-  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
   
   useEffect(() => {
     const getTitle = () => {
@@ -121,6 +121,12 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const onLogout = async () => {
     await handleLogout(); 
     router.push('/login');
+  }
+
+  if (!user) {
+    // AuthProvider will handle the loading state, and middleware handles the redirect.
+    // This return is a safeguard for the brief moment before the redirect or user state is confirmed.
+    return null;
   }
 
   return (
@@ -226,16 +232,16 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function ProtectedLayout({
+export default function RootProtectedLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <AuthProvider>
-      <ProtectedLayoutContent>
+      <ProtectedLayout>
         {children}
-      </ProtectedLayoutContent>
+      </ProtectedLayout>
     </AuthProvider>
   );
 }

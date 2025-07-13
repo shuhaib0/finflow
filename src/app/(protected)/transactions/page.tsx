@@ -54,14 +54,20 @@ export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [clientNames, setClientNames] = useState<{ [key: string]: string }>({});
-    const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(true);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     useEffect(() => {
+        if(authLoading) return;
+        if(!user){
+            setPageLoading(false);
+            return;
+        }
+
         const fetchData = async () => {
-            setLoading(true);
+            setPageLoading(true);
             try {
                 const [transactionsData, clientsData] = await Promise.all([
                     getTransactions(),
@@ -85,16 +91,12 @@ export default function TransactionsPage() {
                     description: "Could not load transactions or client data.",
                 });
             } finally {
-                setLoading(false);
+                setPageLoading(false);
             }
         };
 
-        if(user){
-            fetchData();
-        } else {
-            setLoading(false);
-        }
-    }, [user, toast]);
+        fetchData();
+    }, [user, authLoading, toast]);
 
     const handleAddTransaction = () => {
         setSelectedTransaction(null)
@@ -154,7 +156,7 @@ export default function TransactionsPage() {
     }
 
 
-    if (loading) {
+    if (pageLoading || authLoading) {
         return (
             <Card>
                 <CardHeader>

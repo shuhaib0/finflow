@@ -55,11 +55,11 @@ export default function InvoicesPageComponent() {
     const searchParams = useSearchParams()
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const invoicePrintRef = useRef<HTMLDivElement>(null);
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -69,8 +69,15 @@ export default function InvoicesPageComponent() {
       }, [clients]);
     
     useEffect(() => {
+      if (authLoading) return;
+
+      if (!user) {
+        setPageLoading(false);
+        return;
+      }
+      
       const fetchData = async () => {
-        setLoading(true);
+        setPageLoading(true);
         try {
           const [invoicesData, clientsData] = await Promise.all([
             getInvoices(),
@@ -86,16 +93,12 @@ export default function InvoicesPageComponent() {
             description: "Could not load invoices or client data.",
           });
         } finally {
-          setLoading(false);
+          setPageLoading(false);
         }
       };
       
-      if (user) {
-        fetchData();
-      } else {
-        setLoading(false);
-      }
-    }, [user, toast]);
+      fetchData();
+    }, [user, authLoading, toast]);
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
@@ -131,7 +134,7 @@ export default function InvoicesPageComponent() {
           toast({
             title: fromConversion ? "Invoice Converted" : "Invoice Created",
             description: fromConversion 
-              ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
+              ? `Invoice ${"$"}{newInvoice.invoiceNumber} created from quotation.`
               : "The new invoice has been added successfully.",
           });
         }
@@ -142,7 +145,7 @@ export default function InvoicesPageComponent() {
     }
 
     useEffect(() => {
-        if (loading || !user) return;
+        if (pageLoading || !user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -183,7 +186,7 @@ export default function InvoicesPageComponent() {
             router.replace('/invoices', { scroll: false });
         }
     
-    }, [searchParams, router, loading, user, toast]);
+    }, [searchParams, router, pageLoading, user, toast]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -284,7 +287,7 @@ export default function InvoicesPageComponent() {
 
     const isEditing = !!selectedInvoice;
 
-    if (loading) {
+    if (pageLoading || authLoading) {
         return (
             <Card>
                 <CardHeader>

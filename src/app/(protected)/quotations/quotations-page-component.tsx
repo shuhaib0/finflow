@@ -54,14 +54,20 @@ export default function QuotationsPageComponent() {
     const searchParams = useSearchParams()
     const [quotations, setQuotations] = useState<Quotation[]>([])
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     
     useEffect(() => {
+        if (authLoading) return;
+        if (!user) {
+            setPageLoading(false);
+            return;
+        }
+        
         const fetchData = async () => {
-          setLoading(true);
+          setPageLoading(true);
           try {
             const [quotationsData, clientsData] = await Promise.all([
               getQuotations(),
@@ -77,16 +83,12 @@ export default function QuotationsPageComponent() {
               description: "Could not load quotations or client data.",
             });
           } finally {
-            setLoading(false);
+            setPageLoading(false);
           }
         };
         
-        if (user) {
-            fetchData();
-        } else {
-            setLoading(false);
-        }
-    }, [user, toast]);
+        fetchData();
+    }, [user, authLoading, toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -96,7 +98,7 @@ export default function QuotationsPageComponent() {
       }, [clients]);
 
       useEffect(() => {
-        if (loading || !user) return;
+        if (pageLoading || !user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -114,7 +116,7 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, user, loading]);
+    }, [searchParams, router, user, pageLoading]);
 
     const handleAddQuotation = () => {
       setSelectedQuotation(null)
@@ -156,7 +158,7 @@ export default function QuotationsPageComponent() {
             await updateQuotation(quotationId, { status });
             setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
             toast({
-                title: `Quotation marked as ${status}`,
+                title: `Quotation marked as ${"$"}{status}`,
                 description: "The quotation status has been updated."
             });
         } catch (error) {
@@ -229,7 +231,7 @@ export default function QuotationsPageComponent() {
 
     const isEditing = !!selectedQuotation;
     
-    if (loading) {
+    if (pageLoading || authLoading) {
         return (
             <Card>
                 <CardHeader>
