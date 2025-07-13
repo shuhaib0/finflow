@@ -45,32 +45,7 @@ import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import type { User as FirebaseUser } from "firebase/auth"
 import { getClients } from "@/services/clientService"
-
-
-const initialQuotations: Quotation[] = [
-    {
-      id: "1",
-      quotationNumber: "QUO-001",
-      clientRef: "3",
-      date: new Date(2024, 6, 10).toISOString(),
-      items: [{ description: "Initial Consultation", quantity: 1, unitPrice: 500, tax: 10, total: 550 }],
-      totalAmount: 550,
-      dueDate: new Date(2024, 7, 10).toISOString(),
-      status: "sent",
-      createdAt: new Date(2024, 6, 10).toISOString(),
-    },
-    {
-        id: "2",
-        quotationNumber: "QUO-002",
-        clientRef: "4",
-        date: new Date(2024, 7, 1).toISOString(),
-        items: [{ description: "Enterprise Software License", quantity: 1, unitPrice: 12000, tax: 10, discount: 10, total: 11880 }],
-        totalAmount: 11880,
-        dueDate: new Date(2024, 8, 1).toISOString(),
-        status: "draft",
-        createdAt: new Date(2024, 7, 1).toISOString(),
-      },
-]
+import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
 
 type QuotationsPageComponentProps = {
     user: FirebaseUser | null;
@@ -80,30 +55,35 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations)
+    const [quotations, setQuotations] = useState<Quotation[]>([])
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(false); // Default to false as we use mock data
+    const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     
-    // Using mock data, so client fetching is for the form dropdown only.
     useEffect(() => {
-        const fetchClients = async () => {
-            try {
-                const clientsData = await getClients();
-                setClients(clientsData);
-            } catch (error) {
-                console.error("Failed to fetch clients:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not load client data for form.",
-                });
-            }
+        const fetchData = async () => {
+          setLoading(true);
+          try {
+            const [quotationsData, clientsData] = await Promise.all([
+              getQuotations(),
+              getClients(),
+            ]);
+            setQuotations(quotationsData);
+            setClients(clientsData);
+          } catch (error) {
+            console.error("Failed to fetch data:", error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Could not load quotations or client data.",
+            });
+          } finally {
+            setLoading(false);
+          }
         };
-
-        if(user) {
-            fetchClients();
+        if(user){
+          fetchData();
         }
     }, [user, toast]);
     
@@ -115,7 +95,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
       }, [clients]);
 
       useEffect(() => {
-        if (!user) return;
+        if (loading || !user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -133,7 +113,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, user]);
+    }, [searchParams, router, user, loading]);
 
     const handleAddQuotation = () => {
       setSelectedQuotation(null)
@@ -145,20 +125,38 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
       setIsDialogOpen(true)
     }
   
-    const handleDeleteQuotation = (quotationId: string) => {
-      setQuotations(quotations.filter((q) => q.id !== quotationId))
-      toast({
-        title: "Quotation Deleted",
-        description: "The quotation has been successfully deleted.",
-      })
+    const handleDeleteQuotation = async (quotationId: string) => {
+      try {
+        await deleteQuotation(quotationId);
+        setQuotations(quotations.filter((q) => q.id !== quotationId))
+        toast({
+            title: "Quotation Deleted",
+            description: "The quotation has been successfully deleted.",
+        });
+      } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to delete quotation.",
+        });
+      }
     }
 
-    const handleStatusChange = (quotationId: string, status: 'won' | 'lost') => {
-        setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
-        toast({
-            title: `Quotation marked as ${status}`,
-            description: "The quotation status has been updated."
-        })
+    const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
+        try {
+            await updateQuotation(quotationId, { status });
+            setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
+            toast({
+                title: `Quotation marked as ${status}`,
+                description: "The quotation status has been updated."
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to update quotation status.",
+            });
+        }
     }
 
     const handleConvertToInvoice = (quotation: Quotation) => {
@@ -167,32 +165,41 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
         router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
     }
   
-    const handleFormSubmit = (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
+    const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
       if (selectedQuotation && selectedQuotation.id) {
-        const updatedQuotation = { ...selectedQuotation, ...quotationData };
-        setQuotations(
-          quotations.map((q) =>
-            q.id === selectedQuotation.id ? updatedQuotation : q
-          )
-        )
-        setSelectedQuotation(updatedQuotation);
-        toast({
-          title: "Quotation Updated",
-          description: "The quotation details have been updated.",
-        })
+        try {
+            await updateQuotation(selectedQuotation.id, quotationData);
+            const updatedQuotation = { ...selectedQuotation, ...quotationData };
+            setQuotations(
+                quotations.map((q) =>
+                  q.id === selectedQuotation.id ? updatedQuotation : q
+                )
+            );
+            setSelectedQuotation(updatedQuotation);
+            toast({
+              title: "Quotation Updated",
+              description: "The quotation details have been updated.",
+            });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to update quotation." });
+        }
       } else {
-        const newQuotation = {
+        const newQuotationData = {
           ...quotationData,
-          id: `quo_${Date.now()}`,
-          quotationNumber: `QUO-00${quotations.length + 1}`,
+          quotationNumber: `QUO-${String(quotations.length + 1).padStart(3, '0')}`,
           createdAt: new Date().toISOString(),
           status: 'draft' as const,
         }
-        setQuotations([...quotations, newQuotation])
-        toast({
-          title: "Quotation Created",
-          description: "The new quotation has been added successfully.",
-        })
+        try {
+            const newQuotation = await addQuotation(newQuotationData);
+            setQuotations([...quotations, newQuotation])
+            toast({
+              title: "Quotation Created",
+              description: "The new quotation has been added successfully.",
+            });
+        } catch(error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to create quotation." });
+        }
       }
       setIsDialogOpen(false)
     }

@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -39,79 +40,118 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle, TrendingDown, TrendingUp } from "lucide-react"
-import type { Expense, Income } from "@/types"
+import type { Transaction, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { TransactionForm } from "./transaction-form"
+import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
+import { getClients } from "@/services/clientService"
+import type { User as FirebaseUser } from "firebase/auth"
 
-type Transaction = (Income | Expense) & { type: 'income' | 'expense' };
+type TransactionsPageComponentProps = {
+    user: FirebaseUser | null;
+}
 
-const initialTransactions: Transaction[] = [
-  { id: 'inc1', type: 'income', amount: 5500, source: 'Invoice INV-001 Payment', date: new Date(2024, 6, 20).toISOString(), clientRef: '1' },
-  { id: 'exp1', type: 'expense', amount: 8000, category: 'Salaries', date: new Date(2024, 6, 1).toISOString(), vendor: 'Payroll Co.' },
-  { id: 'exp2', type: 'expense', amount: 3500, category: 'Marketing', date: new Date(2024, 6, 5).toISOString(), vendor: 'AdWords' },
-  { id: 'exp3', type: 'expense', amount: 1200, category: 'Software', date: new Date(2024, 6, 10).toISOString(), vendor: 'SaaS Inc.' },
-  { id: 'inc2', type: 'income', amount: 1650, source: 'Invoice INV-002 Payment', date: new Date(2024, 7, 2).toISOString(), clientRef: '2' },
-];
-
-const clientNames: { [key: string]: string } = {
-    "1": "Innovate Inc.",
-    "2": "Solutions Co.",
-    "3": "Future Forward",
-    "4": "Legacy Systems",
-};
-
-export default function TransactionsPage() {
+export default function TransactionsPage({ user }: TransactionsPageComponentProps) {
     const { toast } = useToast()
-    const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [clientNames, setClientNames] = useState<{ [key: string]: string }>({});
+    const [loading, setLoading] = useState(true);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [transactionsData, clientsData] = await Promise.all([
+                    getTransactions(),
+                    getClients(),
+                ]);
+                
+                setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                setClients(clientsData);
+
+                const nameMap = clientsData.reduce((acc, client) => {
+                    acc[client.id] = client.name;
+                    return acc;
+                }, {} as { [key: string]: string });
+                setClientNames(nameMap);
+
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not load transactions or client data.",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        if(user){
+            fetchData();
+        }
+    }, [user, toast]);
 
     const handleAddTransaction = () => {
         setSelectedTransaction(null)
         setIsDialogOpen(true)
-      }
+    }
     
-      const handleEditTransaction = (transaction: Transaction) => {
+    const handleEditTransaction = (transaction: Transaction) => {
         setSelectedTransaction(transaction)
         setIsDialogOpen(true)
-      }
-    
-      const handleDeleteTransaction = (transactionId: string) => {
-        setTransactions(transactions.filter((t) => t.id !== transactionId))
-        toast({
-          title: "Transaction Deleted",
-          description: "The transaction has been successfully deleted.",
-        })
-      }
-    
-      const handleFormSubmit = (data: any) => {
-        const transactionData = { ...data, amount: parseFloat(data.amount) };
+    }
+
+    const handleDeleteTransaction = async (transactionId: string) => {
+        try {
+            await deleteTransaction(transactionId);
+            setTransactions(transactions.filter((t) => t.id !== transactionId));
+            toast({
+                title: "Transaction Deleted",
+                description: "The transaction has been successfully deleted.",
+            });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete transaction." });
+        }
+    }
+
+    const handleFormSubmit = async (data: Omit<Transaction, 'id'>) => {
         if (selectedTransaction) {
-          setTransactions(
-            transactions.map((t) =>
-              t.id === selectedTransaction.id ? { ...selectedTransaction, ...transactionData } : t
-            ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          )
-          toast({
-            title: "Transaction Updated",
-            description: "The transaction details have been updated.",
-          })
+            try {
+                await updateTransaction(selectedTransaction.id, data);
+                const updatedTransactions = transactions.map((t) =>
+                    t.id === selectedTransaction.id ? { ...selectedTransaction, ...data } : t
+                ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                setTransactions(updatedTransactions);
+                toast({
+                    title: "Transaction Updated",
+                    description: "The transaction details have been updated.",
+                });
+            } catch (error) {
+                toast({ variant: "destructive", title: "Error", description: "Failed to update transaction." });
+            }
         } else {
-          const newTransaction = {
-            ...transactionData,
-            id: `${transactionData.type}${transactions.length + 1}`,
-            date: new Date(transactionData.date).toISOString(),
-          }
-          setTransactions([...transactions, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-          toast({
-            title: "Transaction Added",
-            description: "The new transaction has been added successfully.",
-          })
+            try {
+                const newTransaction = await addTransaction(data);
+                setTransactions([...transactions, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                toast({
+                    title: "Transaction Added",
+                    description: "The new transaction has been added successfully.",
+                });
+            } catch (error) {
+                toast({ variant: "destructive", title: "Error", description: "Failed to add transaction." });
+            }
         }
         setIsDialogOpen(false)
-      }
+    }
 
+
+    if (loading) {
+        return <div>Loading...</div>
+    }
 
     return (
         <>
@@ -156,7 +196,7 @@ export default function TransactionsPage() {
                                         {t.type === 'income' ? t.source : t.vendor || 'N/A'}
                                     </div>
                                     <div className="text-sm text-muted-foreground">
-                                        {t.clientRef ? `Client: ${clientNames[t.clientRef]}` : ''}
+                                        {t.clientRef && clientNames[t.clientRef] ? `Client: ${clientNames[t.clientRef]}` : ''}
                                     </div>
                                 </TableCell>
                                 <TableCell>

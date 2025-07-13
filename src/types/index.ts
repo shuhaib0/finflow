@@ -1,4 +1,5 @@
 
+
 export type Note = {
     content: string;
     author: string;
@@ -95,10 +96,11 @@ export type Payment = {
 
 export type Expense = {
     id: string;
+    type: 'expense';
     amount: number;
     category: string;
     date: string; // ISO string
-    linkedClient?: string; // Refers to Client ID
+    clientRef?: string; // Refers to Client ID
     vendor?: string;
     notes?: string;
     receiptUrl?: string;
@@ -106,12 +108,15 @@ export type Expense = {
 
 export type Income = {
     id: string;
+    type: 'income';
     amount: number;
     source: string;
     clientRef?: string; // Refers to Client ID
     date: string; // ISO string
     notes?: string;
 };
+
+export type Transaction = Income | Expense;
 
 export type User = {
     uid: string;
