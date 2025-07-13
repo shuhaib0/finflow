@@ -42,95 +42,25 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { MoreHorizontal, PlusCircle, Download, Printer } from "lucide-react"
+import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
 import type { Invoice, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
+import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
+import { getClients } from "@/services/clientService"
 
-const initialClients: Client[] = [
-  {
-    id: "1",
-    name: "Innovate Inc.",
-    contactPerson: "John Doe",
-    email: "john.doe@innovate.com",
-    phone: "123-456-7890",
-    status: "customer",
-    taxId: "GST12345",
-    addressLine1: "123 Tech Ave",
-    city: "Silicon Valley",
-    state: "CA",
-    postalCode: "94043",
-    country: "USA",
-  },
-  {
-    id: "2",
-    name: "Solutions Co.",
-    contactPerson: "Jane Smith",
-    email: "jane.smith@solutions.com",
-    phone: "098-765-4321",
-    status: "customer",
-  },
-  {
-    id: "3",
-    name: "Future Forward",
-    contactPerson: "Sam Wilson",
-    email: "sam.wilson@ff.io",
-    phone: "555-555-5555",
-    status: "lead",
-  },
-];
-
-const initialInvoices: Invoice[] = [
-    {
-      id: "1",
-      invoiceNumber: "INV-001",
-      clientRef: "1",
-      date: new Date(2024, 6, 15).toISOString(),
-      items: [{ description: "Web Development", quantity: 1, unitPrice: 5000, tax: 10, discount: 0, total: 5500 }],
-      totalAmount: 5500,
-      currency: "USD",
-      dueDate: new Date(2024, 7, 15).toISOString(),
-      status: "paid",
-      createdAt: new Date(2024, 6, 15).toISOString(),
-    },
-    {
-      id: "2",
-      invoiceNumber: "INV-002",
-      clientRef: "2",
-      date: new Date(2024, 5, 30).toISOString(),
-      items: [{ description: "Consulting", quantity: 10, unitPrice: 150, tax: 10, discount: 5, total: 1485 }],
-      totalAmount: 1485,
-      currency: "USD",
-      dueDate: new Date(2024, 6, 30).toISOString(),
-      status: "overdue",
-      createdAt: new Date(2024, 5, 30).toISOString(),
-    },
-    {
-        id: "3",
-        invoiceNumber: "INV-003",
-        clientRef: "1",
-        date: new Date(2024, 7, 1).toISOString(),
-        items: [{ description: "Design Services", quantity: 1, unitPrice: 2000, tax: 10, discount: 0, total: 2200 }],
-        totalAmount: 2200,
-        currency: "USD",
-        dueDate: new Date(2024, 8, 1).toISOString(),
-        status: "sent",
-        createdAt: new Date(2024, 7, 1).toISOString(),
-      },
-]
 
 export default function InvoicesPageComponent() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-    const [clients] = useState<Client[]>(initialClients);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const invoicePrintRef = useRef<HTMLDivElement>(null);
-
-    const [isClient, setIsClient] = useState(false)
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -140,58 +70,73 @@ export default function InvoicesPageComponent() {
       }, [clients]);
     
     useEffect(() => {
-        setIsClient(true);
+      const fetchData = async () => {
         try {
-            const savedInvoices = localStorage.getItem('invoices');
-            if (savedInvoices) {
-                setInvoices(JSON.parse(savedInvoices));
-            }
-        } catch (e) {
-            console.error("Failed to parse invoices from localStorage", e);
-            setInvoices(initialInvoices);
+          const [invoicesData, clientsData] = await Promise.all([
+            getInvoices(),
+            getClients(),
+          ]);
+          setInvoices(invoicesData);
+          setClients(clientsData);
+        } catch (error) {
+          console.error("Failed to fetch data:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load invoices or client data.",
+          });
+        } finally {
+          setLoading(false);
         }
-    }, []);
+      };
+      fetchData();
+    }, [toast]);
 
-    useEffect(() => {
-        if (isClient && invoices.length > 0 && invoices !== initialInvoices) {
-            localStorage.setItem('invoices', JSON.stringify(invoices));
-        }
-    }, [invoices, isClient]);
 
-    const handleFormSubmit = (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
+    const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
       if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
-        const updatedInvoice = { ...selectedInvoice, ...invoiceData };
-        setInvoices(
-          invoices.map((inv) =>
-            inv.id === selectedInvoice.id ? updatedInvoice : inv
-          )
-        )
-        setSelectedInvoice(updatedInvoice); // Keep dialog open with updated data
-        toast({
-          title: "Invoice Updated",
-          description: "The invoice details have been updated.",
-        })
-      } else {
-        const newInvoice = {
+        try {
+            await updateInvoice(selectedInvoice.id, invoiceData);
+            const updatedInvoice = { ...selectedInvoice, ...invoiceData };
+            setInvoices(
+              invoices.map((inv) =>
+                inv.id === selectedInvoice.id ? updatedInvoice : inv
+              )
+            )
+            setSelectedInvoice(updatedInvoice); // Keep dialog open with updated data
+            toast({
+              title: "Invoice Updated",
+              description: "The invoice details have been updated.",
+            })
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to update invoice." });
+        }
+      } else { // New Invoice
+        const newInvoiceData = {
           ...invoiceData,
-          id: `inv_${Date.now()}`,
+          id: '', // Firestore will generate
           invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
           createdAt: new Date().toISOString(),
           status: 'draft' as const,
         }
-        setInvoices(prev => [...prev, newInvoice])
-        toast({
-          title: fromConversion ? "Invoice Converted" : "Invoice Created",
-          description: fromConversion 
-            ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
-            : "The new invoice has been added successfully.",
-        })
+        try {
+            const newInvoice = await addInvoice(newInvoiceData);
+            setInvoices(prev => [...prev, newInvoice]);
+            toast({
+              title: fromConversion ? "Invoice Converted" : "Invoice Created",
+              description: fromConversion 
+                ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
+                : "The new invoice has been added successfully.",
+            });
+        } catch(error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to create invoice." });
+        }
       }
       setIsDialogOpen(false);
     }
 
     useEffect(() => {
-        if (!isClient) return;
+        if (loading) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -215,12 +160,12 @@ export default function InvoicesPageComponent() {
         if (fromQuotation) {
             try {
                 const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
-                const newInvoice: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "status"> = {
+                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "status"> = {
                     ...quotationData,
                     dueDate: new Date().toISOString(), // set new due date
                     quotationRef: quotationData.id,
                 };
-                handleFormSubmit(newInvoice, true);
+                handleFormSubmit(newInvoiceData, true);
             } catch (error) {
                 console.error("Failed to parse quotation data:", error);
                 toast({
@@ -232,7 +177,7 @@ export default function InvoicesPageComponent() {
             router.replace('/invoices', { scroll: false });
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, router, isClient]);
+    }, [searchParams, router, loading]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -244,12 +189,17 @@ export default function InvoicesPageComponent() {
       setIsDialogOpen(true)
     }
   
-    const handleDeleteInvoice = (invoiceId: string) => {
-      setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId))
-      toast({
-        title: "Invoice Deleted",
-        description: "The invoice has been successfully deleted.",
-      })
+    const handleDeleteInvoice = async (invoiceId: string) => {
+        try {
+            await deleteInvoice(invoiceId);
+            setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId));
+            toast({
+                title: "Invoice Deleted",
+                description: "The invoice has been successfully deleted.",
+            });
+        } catch(error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete invoice." });
+        }
     }
 
     const handleDownloadPdf = async () => {
@@ -276,47 +226,37 @@ export default function InvoicesPageComponent() {
         if (!node) return;
         
         const printableContent = node.innerHTML;
-        const originalContent = document.body.innerHTML;
-
-        const printStyles = `
-            @media print {
-              body, html {
-                  margin: 0;
-                  padding: 0;
-                  background: #fff;
-              }
-              .non-printable {
-                display: none !important;
-              }
-              .printable-area {
-                  visibility: visible;
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  width: 100%;
-                  height: auto;
-                  padding: 0;
-                  margin: 0;
-                  border: none;
-                  box-shadow: none;
-                  transform: scale(1) !important;
-              }
-              @page {
-                size: A4;
-                margin: 0;
-              }
-            }
-        `;
-        
-        const styleEl = document.createElement('style');
-        styleEl.innerHTML = printStyles;
-        document.head.appendChild(styleEl);
-
-        document.body.innerHTML = printableContent;
-        window.print();
-        document.body.innerHTML = originalContent;
-        styleEl.remove();
-        window.location.reload();
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Print Invoice</title>
+                <link rel="stylesheet" href="/globals.css">
+                <style>
+                  @media print {
+                    @page { size: A4; margin: 0; }
+                    body { margin: 0; }
+                    .a4-container {
+                        box-shadow: none;
+                        border: none;
+                        margin: 0;
+                        padding: 20mm;
+                    }
+                  }
+                </style>
+              </head>
+              <body>${printableContent}</body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          // Timeout to allow content to load before printing
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 500);
+        }
       };
 
     const getStatusVariant = (status: Invoice['status']) => {
@@ -334,8 +274,8 @@ export default function InvoicesPageComponent() {
 
     const isEditing = !!selectedInvoice;
 
-    if (!isClient) {
-        return null; // Or a loading spinner
+    if (loading) {
+        return <div>Loading invoices...</div>; // Or a skeleton loader
     }
 
     return (

@@ -14,6 +14,9 @@ import {
   DollarSign,
   FileQuestion,
 } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 import {
   Avatar,
@@ -37,10 +40,11 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
-import { usePathname, useRouter } from "next/navigation"
 import { handleLogout } from "@/app/login/actions"
-import { useEffect, useState } from "react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { auth } from "@/lib/firebase"
+import type { User as FirebaseUser } from "firebase/auth"
+import { onAuthStateChanged, signOut } from "firebase/auth"
+
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
@@ -79,6 +83,21 @@ export default function ProtectedLayout({
   const pathname = usePathname()
   const [pageTitle, setPageTitle] = useState("Dashboard");
   const [activeSubItem, setActiveSubItem] = useState("");
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+      if (!currentUser) {
+        router.push('/login');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     // This logic now runs only on the client-side
@@ -105,11 +124,20 @@ export default function ProtectedLayout({
   }, [pathname]);
 
   const onLogout = async () => {
-    await handleLogout();
+    await signOut(auth); // Sign out from Firebase client
+    await handleLogout(); // Clear server-side session cookie
     router.push('/login');
   }
 
   const isSalesPath = (path: string) => path === '/quotations' || path === '/invoices';
+  
+  if (loading) {
+    return <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+      <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
+      <p className="mt-4 text-muted-foreground">Loading Ailutions Finance Hub...</p>
+    </div>;
+  }
+
 
   return (
     <SidebarProvider>
@@ -176,15 +204,15 @@ export default function ProtectedLayout({
         <SidebarFooter className="p-4">
           <div className="flex items-center gap-2">
             <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="avatar person" />
-              <AvatarFallback>AD</AvatarFallback>
+              <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="avatar person" />
+              <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col group-data-[collapsible=icon]:hidden">
               <span className="font-semibold text-sm text-sidebar-foreground">
-                Admin User
+                {user?.displayName || 'Admin User'}
               </span>
               <span className="text-xs text-muted-foreground">
-                admin@ailutions.com
+                {user?.email || 'admin@ailutions.com'}
               </span>
             </div>
           </div>

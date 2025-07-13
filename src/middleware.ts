@@ -1,14 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-// import { isAuthenticated } from '@/lib/auth'
+import { isAuthenticated } from '@/lib/auth'
 
-// const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna']
-// const publicRoutes = ['/login']
+const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna']
+const publicRoutes = ['/login']
 
 export async function middleware(request: NextRequest) {
-  // For ease of testing, authentication is currently disabled.
-  return NextResponse.next()
-
-  /*
   const path = request.nextUrl.pathname
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
   
@@ -23,7 +19,6 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
-  */
 }
 
 export const config = {

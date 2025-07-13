@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import {
   Table,
   TableBody,
@@ -37,80 +37,39 @@ import { PlusCircle } from "lucide-react"
 import { ClientForm } from "./client-form"
 import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
-
-const initialClients: Client[] = [
-  {
-    id: "1",
-    name: "Innovate Inc.",
-    contactPerson: "John Doe",
-    email: "john.doe@innovate.com",
-    phone: "123-456-7890",
-    status: "customer",
-    opportunityWorth: 25000,
-    jobTitle: "CEO",
-    salutation: "Mr.",
-    gender: "Male",
-    leadType: "client",
-    requestType: "enquiry",
-    mobile: "123-456-7890",
-    website: "https://innovate.com",
-    whatsapp: "123-456-7890",
-    phoneExt: "123",
-    addressLine1: "123 Tech Ave",
-    addressLine2: "Suite 100",
-    city: "Silicon Valley",
-    state: "CA",
-    postalCode: "94043",
-    country: "USA",
-    source: "Referral",
-    campaign: "Q2 Partner Program",
-    notes: [
-        { content: "Initial contact made through referral from Existing Corp.", author: "Admin User", createdAt: new Date(2024, 5, 1).toISOString() },
-        { content: "Followed up with a demo call.", author: "Admin User", createdAt: new Date(2024, 5, 5).toISOString() }
-    ]
-  },
-  {
-    id: "2",
-    name: "Solutions Co.",
-    contactPerson: "Jane Smith",
-    email: "jane.smith@solutions.com",
-    phone: "098-765-4321",
-    status: "customer",
-    notes: [],
-  },
-  {
-    id: "3",
-    name: "Future Forward",
-    contactPerson: "Sam Wilson",
-    email: "sam.wilson@ff.io",
-    phone: "555-555-5555",
-    status: "lead",
-    source: "Website",
-    notes: [],
-  },
-  {
-    id: "4",
-    name: "Legacy Systems",
-    contactPerson: "Emily Brown",
-    email: "emily.b@legacysys.com",
-    phone: "111-222-3333",
-    status: "opportunity",
-    opportunityWorth: 10000,
-    notes: [],
-  },
-]
+import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
+import { Timestamp } from "firebase/firestore"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
 export default function ClientsPageComponent() {
   const { toast } = useToast()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
   
-  const [clients, setClients] = useState<Client[]>(initialClients)
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
+
+  useEffect(() => {
+    const fetchClients = async () => {
+        try {
+            const clientsData = await getClients();
+            setClients(clientsData);
+        } catch (error) {
+            console.error("Failed to fetch clients:", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load client data.",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchClients();
+  }, [toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -124,68 +83,98 @@ export default function ClientsPageComponent() {
     setDialogState(state);
   }
 
-  const handleDeleteClient = (clientId: string) => {
-    setClients(clients.filter((client) => client.id !== clientId))
-    toast({
-      title: "Contact Deleted",
-      description: "The contact has been successfully deleted.",
-    })
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+        await deleteClient(clientId);
+        setClients(clients.filter((client) => client.id !== clientId));
+        toast({
+            title: "Contact Deleted",
+            description: "The contact has been successfully deleted.",
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to delete contact.",
+        });
+    }
   }
 
-  const handleStatusChange = (status: 'opportunity' | 'customer', worth?: number) => {
+  const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
     if (!selectedClient) return;
 
-    const updatedClient: Client = {
-      ...selectedClient,
-      status,
-      opportunityWorth: status === 'opportunity' ? worth : selectedClient.opportunityWorth,
+    const updatedClientData: Partial<Client> = {
+        status,
+        opportunityWorth: status === 'opportunity' ? worth : selectedClient.opportunityWorth,
     };
     
-    setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
-    setSelectedClient(updatedClient); // Keep dialog open with updated data
-    toast({
-        title: `Contact converted to ${status}`,
-        description: `${selectedClient.name} is now a ${status}.`,
-    });
+    try {
+        await updateClient(selectedClient.id, updatedClientData);
+        const updatedClient = { ...selectedClient, ...updatedClientData };
+        setClients(clients.map(c => c.id === selectedClient.id ? updatedClient as Client : c));
+        setSelectedClient(updatedClient as Client); // Keep dialog open with updated data
+        toast({
+            title: `Contact converted to ${status}`,
+            description: `${selectedClient.name} is now a ${status}.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Failed to convert contact to ${status}.`,
+        });
+    }
   }
 
-
-  const handleFormSubmit = (clientData: Omit<Client, "id"> & { newNote?: string }) => {
-    if (selectedClient) {
+  const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
+    if (selectedClient) { // Editing existing client
       const existingNotes = selectedClient.notes || [];
       const newNoteEntry: Note[] = clientData.newNote ? 
         [{ content: clientData.newNote, author: "Admin User", createdAt: new Date().toISOString() }] 
         : [];
       
-      const updatedClientData = {
-        ...clientData,
-        notes: [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-      };
-      delete updatedClientData.newNote;
+      const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      const { newNote, ...restOfClientData } = clientData;
+      const finalData = { ...restOfClientData, notes: updatedNotes };
 
-      setClients(
-        clients.map((c) =>
-          c.id === selectedClient.id ? { ...c, ...updatedClientData, id: c.id } : c
-        )
-      )
-      toast({
-        title: "Contact Updated",
-        description: "The contact details have been updated.",
-      })
-    } else {
+      try {
+        await updateClient(selectedClient.id, finalData);
+        setClients(clients.map((c) =>
+          c.id === selectedClient.id ? { ...c, ...finalData, id: c.id } : c
+        ));
+        toast({
+          title: "Contact Updated",
+          description: "The contact details have been updated.",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to update contact.",
+        });
+      }
+
+    } else { // Creating new client
       const { newNote, ...restOfClientData } = clientData;
       const notes: Note[] = newNote ? [{ content: newNote, author: 'Admin User', createdAt: new Date().toISOString() }] : [];
       
-      const newClient = {
-        ...restOfClientData,
-        id: (clients.length + 1).toString(),
-        notes,
+      const newClientData = { ...restOfClientData, notes };
+
+      try {
+        const newClient = await addClient(newClientData);
+        setClients([...clients, newClient]);
+        toast({
+          title: "Contact Created",
+          description: "A new contact has been added successfully.",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create contact.",
+        });
       }
-      setClients([...clients, newClient])
-      toast({
-        title: "Contact Created",
-        description: "A new contact has been added successfully.",
-      })
     }
     setDialogState('closed');
   }
@@ -204,6 +193,10 @@ export default function ClientsPageComponent() {
   }
 
   const isEditing = dialogState === 'edit';
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a skeleton loader
+  }
 
   return (
     <>

@@ -2,19 +2,13 @@
 
 import { z } from 'zod'
 import { createSession, clearSession } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { auth } from '@/lib/firebase'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
 })
-
-// In a real app, you'd validate against a database
-const MOCK_USER = {
-  email: 'admin@ailutions.com',
-  password: 'password',
-  uid: '12345',
-}
 
 export async function handleLogin(values: z.infer<typeof loginSchema>) {
   const result = loginSchema.safeParse(values)
@@ -25,16 +19,26 @@ export async function handleLogin(values: z.infer<typeof loginSchema>) {
 
   const { email, password } = result.data
 
-  if (email === MOCK_USER.email && password === MOCK_USER.password) {
-    await createSession(MOCK_USER.uid)
-    // We don't redirect here, the client-side will do it on success.
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    await createSession(userCredential.user.uid)
     return { success: true }
+  } catch (error: any) {
+    let errorMessage = 'An unexpected error occurred.'
+    switch (error.code) {
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        errorMessage = 'Invalid email or password.'
+        break;
+      default:
+        console.error('Firebase login error:', error);
+        break;
+    }
+    return { success: false, error: errorMessage }
   }
-
-  return { success: false, error: 'Invalid email or password.' }
 }
 
 export async function handleLogout() {
   await clearSession();
-  redirect('/login');
 }
