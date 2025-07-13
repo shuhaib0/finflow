@@ -74,18 +74,6 @@ const navItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ]
 
-function useCurrentRoute() {
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const [path, setPath] = useState(pathname + '?' + searchParams.toString());
-
-    useEffect(() => {
-        setPath(pathname + '?' + searchParams.toString());
-    }, [pathname, searchParams]);
-
-    return path;
-}
-
 export default function ProtectedLayout({
   children,
 }: {
@@ -93,7 +81,8 @@ export default function ProtectedLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const currentRoute = useCurrentRoute();
+  const searchParams = useSearchParams()
+
   const [pageTitle, setPageTitle] = useState("Dashboard");
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,36 +102,35 @@ export default function ProtectedLayout({
   }, [router]);
 
   useEffect(() => {
+    const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
     const findTitle = () => {
         for (const item of navItems) {
             if (item.subItems) {
                 for (const subItem of item.subItems) {
-                    // Exact match for paths like /quotations
-                    if (subItem.href === pathname) {
-                        return subItem.label;
-                    }
-                    // Match for paths with query params like /clients?status=lead
-                    if (currentRoute === subItem.href) {
+                    if (currentPath === subItem.href) {
                         return subItem.label;
                     }
                 }
             }
-            if (item.href === pathname) {
+            if (currentPath === item.href) {
                 return item.label;
             }
         }
+        // Fallback for base paths
+        if (pathname === '/clients') return 'CRM';
+        if (pathname === '/quotations') return 'Quotations';
+        if (pathname === '/invoices') return 'Invoices';
+
         return "Dashboard";
     };
     setPageTitle(findTitle());
-  }, [pathname, currentRoute]);
+  }, [pathname, searchParams]);
 
   const onLogout = async () => {
     await signOut(auth); // Sign out from Firebase client
     await handleLogout(); // Clear server-side session cookie
     router.push('/login');
   }
-
-  const isSalesPath = (path: string) => path === '/quotations' || path === '/invoices';
   
   if (loading) {
     return <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -151,6 +139,7 @@ export default function ProtectedLayout({
     </div>;
   }
 
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   return (
     <SidebarProvider>
@@ -168,15 +157,21 @@ export default function ProtectedLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
-                 item.subItems ? (
-                  <Collapsible key={item.href} asChild defaultOpen={pathname.startsWith(item.href) || (item.href === '/sales' && isSalesPath(pathname))}>
+            {navItems.map((item) => {
+                 const isCrmActive = pathname.startsWith('/clients');
+                 const isSalesActive = pathname.startsWith('/quotations') || pathname.startsWith('/invoices');
+
+                 return item.subItems ? (
+                  <Collapsible 
+                    key={item.href} 
+                    asChild 
+                    open={ (item.href === '/clients' && isCrmActive) || (item.href === '/sales' && isSalesActive) }
+                  >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                            href={(item.href === '/clients' || item.href === '/sales') ? undefined : item.href}
                             tooltip={item.tooltip}
-                            isActive={pathname.startsWith(item.href) && !isSalesPath(pathname) && !currentRoute.includes('?status=')}
+                            isActive={ (item.href === '/clients' && isCrmActive && !searchParams.toString()) || (item.href === '/sales' && isSalesActive) }
                         >
                             <item.icon />
                             {item.label}
@@ -186,13 +181,14 @@ export default function ProtectedLayout({
                           <SidebarMenuSub>
                               {item.subItems.map(subItem => (
                                   <SidebarMenuSubItem key={subItem.href}>
-                                      <SidebarMenuSubButton 
-                                          href={subItem.href}
-                                          isActive={currentRoute === subItem.href}
+                                      <Link href={subItem.href} passHref legacyBehavior>
+                                        <SidebarMenuSubButton 
+                                            isActive={currentRoute === subItem.href}
                                           >
                                             {subItem.icon && <subItem.icon />}
                                             {subItem.label}
-                                      </SidebarMenuSubButton>
+                                        </SidebarMenuSubButton>
+                                      </Link>
                                   </SidebarMenuSubItem>
                               ))}
                           </SidebarMenuSub>
@@ -204,14 +200,14 @@ export default function ProtectedLayout({
                       <SidebarMenuButton
                           href={item.href}
                           tooltip={item.tooltip}
-                          isActive={pathname.startsWith(item.href)}
+                          isActive={pathname === item.href}
                       >
                           <item.icon />
                           {item.label}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                  )
-            ))}
+            })}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
