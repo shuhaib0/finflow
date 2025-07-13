@@ -85,19 +85,12 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
   
   const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
   
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-
   useEffect(() => {
     const getTitle = () => {
         if (pathname.startsWith('/clients')) {
@@ -129,15 +122,6 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const onLogout = async () => {
     await handleLogout(); 
     router.push('/login');
-  }
-
-  if (loading || !user) {
-    return (
-        <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
-            <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-            <p className="mt-4 text-muted-foreground">Redirecting...</p>
-        </div>
-    );
   }
 
   return (
