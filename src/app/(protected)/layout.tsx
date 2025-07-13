@@ -123,13 +123,6 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }
 
-  // The AuthProvider above this component will handle the loading state,
-  // and the middleware handles the redirect for unauthenticated users.
-  // This check is a safeguard for the brief moment before the user state is confirmed.
-  if (!user) {
-    return null;
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>
