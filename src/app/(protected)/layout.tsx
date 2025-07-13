@@ -14,7 +14,7 @@ import {
   DollarSign,
   FileQuestion,
 } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
@@ -74,6 +74,18 @@ const navItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ]
 
+function useCurrentRoute() {
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [path, setPath] = useState(pathname + '?' + searchParams.toString());
+
+    useEffect(() => {
+        setPath(pathname + '?' + searchParams.toString());
+    }, [pathname, searchParams]);
+
+    return path;
+}
+
 export default function ProtectedLayout({
   children,
 }: {
@@ -81,8 +93,8 @@ export default function ProtectedLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const currentRoute = useCurrentRoute();
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const [activeSubItem, setActiveSubItem] = useState("");
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -101,29 +113,28 @@ export default function ProtectedLayout({
   }, [router]);
 
   useEffect(() => {
-    // This logic now runs only on the client-side
-    if (typeof window !== 'undefined') {
-        const searchParams = new URLSearchParams(window.location.search);
-        const currentStatus = searchParams.get('status');
-        if (pathname === '/clients' && currentStatus) {
-          setActiveSubItem(`/clients?status=${currentStatus}`);
-        } else {
-          setActiveSubItem("");
+    const findTitle = () => {
+        for (const item of navItems) {
+            if (item.subItems) {
+                for (const subItem of item.subItems) {
+                    // Exact match for paths like /quotations
+                    if (subItem.href === pathname) {
+                        return subItem.label;
+                    }
+                    // Match for paths with query params like /clients?status=lead
+                    if (currentRoute === subItem.href) {
+                        return subItem.label;
+                    }
+                }
+            }
+            if (item.href === pathname) {
+                return item.label;
+            }
         }
-        
-        let currentNavItem = navItems.find(item => pathname.startsWith(item.href));
-        let currentPageTitle = currentNavItem?.label || "Dashboard";
-
-        if (currentNavItem?.subItems) {
-          const activeSub = currentNavItem.subItems.find(sub => pathname.startsWith(sub.href));
-          if (activeSub) {
-            currentPageTitle = activeSub.label;
-          }
-        }
-        
-        setPageTitle(currentPageTitle);
-    }
-  }, [pathname]);
+        return "Dashboard";
+    };
+    setPageTitle(findTitle());
+  }, [pathname, currentRoute]);
 
   const onLogout = async () => {
     await signOut(auth); // Sign out from Firebase client
@@ -165,7 +176,7 @@ export default function ProtectedLayout({
                         <SidebarMenuButton
                             href={(item.href === '/clients' || item.href === '/sales') ? undefined : item.href}
                             tooltip={item.tooltip}
-                            isActive={pathname.startsWith(item.href) && !activeSubItem && !isSalesPath(pathname)}
+                            isActive={pathname.startsWith(item.href) && !isSalesPath(pathname) && !currentRoute.includes('?status=')}
                         >
                             <item.icon />
                             {item.label}
@@ -177,7 +188,7 @@ export default function ProtectedLayout({
                                   <SidebarMenuSubItem key={subItem.href}>
                                       <SidebarMenuSubButton 
                                           href={subItem.href}
-                                          isActive={activeSubItem ? activeSubItem === subItem.href : pathname.startsWith(subItem.href)}
+                                          isActive={currentRoute === subItem.href}
                                           >
                                             {subItem.icon && <subItem.icon />}
                                             {subItem.label}
