@@ -47,7 +47,6 @@ import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
-import { auth } from "@/lib/firebase"
 
 export default function InvoicesPageComponent() {
     const { toast } = useToast()
@@ -98,7 +97,7 @@ export default function InvoicesPageComponent() {
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
-      if (!auth.currentUser) {
+      if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save an invoice." });
         return;
       }
@@ -199,7 +198,7 @@ export default function InvoicesPageComponent() {
     }
   
     const handleDeleteInvoice = async (invoiceId: string) => {
-        if (!auth.currentUser) {
+        if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete an invoice." });
             return;
         }

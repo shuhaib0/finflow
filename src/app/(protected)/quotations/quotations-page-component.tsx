@@ -46,7 +46,6 @@ import { format } from "date-fns"
 import { useAuth } from "../auth-provider"
 import { getClients } from "@/services/clientService"
 import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
-import { auth } from "@/lib/firebase"
 
 export default function QuotationsPageComponent() {
     const { toast } = useToast()
@@ -127,7 +126,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleDeleteQuotation = async (quotationId: string) => {
-      if (!auth.currentUser) {
+      if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a quotation." });
         return;
       }
@@ -148,7 +147,7 @@ export default function QuotationsPageComponent() {
     }
 
     const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
-        if (!auth.currentUser) {
+        if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to update status." });
             return;
         }
@@ -175,7 +174,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
-      if (!auth.currentUser) {
+      if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
         return;
       }

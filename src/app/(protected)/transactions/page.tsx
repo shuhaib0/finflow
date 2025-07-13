@@ -47,7 +47,6 @@ import { TransactionForm } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
-import { auth } from "@/lib/firebase"
 
 export default function TransactionsPage() {
     const { toast } = useToast()
@@ -106,7 +105,7 @@ export default function TransactionsPage() {
     }
 
     const handleDeleteTransaction = async (transactionId: string) => {
-        if (!auth.currentUser) {
+        if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
             return;
         }
@@ -123,7 +122,7 @@ export default function TransactionsPage() {
     }
 
     const handleFormSubmit = async (data: Omit<Transaction, 'id'>) => {
-        if (!auth.currentUser) {
+        if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
             return;
         }

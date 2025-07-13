@@ -39,7 +39,7 @@ import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
-import { auth } from "@/lib/firebase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
@@ -74,7 +74,8 @@ export default function ClientsPageComponent() {
       };
       fetchClients();
     } else {
-      setLoading(false);
+        // No user, don't fetch anything and stop loading.
+        setLoading(false);
     }
   }, [user, toast]);
 
@@ -91,7 +92,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleDeleteClient = async (clientId: string) => {
-    if (!auth.currentUser) {
+    if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a contact." });
         return;
     }
@@ -112,7 +113,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient || !auth.currentUser) {
+    if (!selectedClient || !user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
         return;
     }
@@ -141,13 +142,12 @@ export default function ClientsPageComponent() {
   }
 
   const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
     }
     
-    const authorName = currentUser.displayName || "Admin User";
+    const authorName = user.displayName || "Admin User";
 
     try {
         if (selectedClient) { // Editing existing client
@@ -211,7 +211,27 @@ export default function ClientsPageComponent() {
   const isEditing = dialogState === 'edit';
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <Skeleton className="h-7 w-72" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                </div>
+                <Skeleton className="h-9 w-28" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      );
   }
 
   return (
