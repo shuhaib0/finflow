@@ -45,8 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Render children only if user is authenticated
-  return user ? <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider> : null;
+  // Render children only if user is authenticated and loading is complete
+  if (user) {
+    return <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider>;
+  }
+
+  // If not loading and no user, we are likely redirecting, so return null or a loader to prevent flicker
+  return null;
 }
 
 export const useAuth = () => {

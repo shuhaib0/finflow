@@ -80,7 +80,7 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -88,7 +88,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
   
-  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
   
   useEffect(() => {
     const getTitle = () => {
@@ -233,9 +233,9 @@ export default function RootProtectedLayout({
 }) {
   return (
     <AuthProvider>
-      <ProtectedLayout>
+      <ProtectedLayoutContent>
         {children}
-      </ProtectedLayout>
+      </ProtectedLayoutContent>
     </AuthProvider>
   );
 }
