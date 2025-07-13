@@ -97,7 +97,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleDeleteClient = async (clientId: string) => {
-    if (!user) {
+    if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a contact." });
         return;
     }
@@ -118,7 +118,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient || !user) {
+    if (!selectedClient || !auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
         return;
     }
@@ -147,12 +147,12 @@ export default function ClientsPageComponent() {
   }
 
   const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
-    if (!user) {
+    if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
     }
     
-    const authorName = user.displayName || "Admin User";
+    const authorName = auth.currentUser.displayName || "Admin User";
 
     if (selectedClient) { // Editing existing client
       const existingNotes = selectedClient.notes || [];

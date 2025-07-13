@@ -131,7 +131,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleDeleteQuotation = async (quotationId: string) => {
-      if (!user) {
+      if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a quotation." });
         return;
       }
@@ -152,7 +152,7 @@ export default function QuotationsPageComponent() {
     }
 
     const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
-        if (!user) {
+        if (!auth.currentUser) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to update status." });
             return;
         }
@@ -179,7 +179,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
-      if (!user) {
+      if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
         return;
       }

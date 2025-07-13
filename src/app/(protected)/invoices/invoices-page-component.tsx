@@ -103,7 +103,7 @@ export default function InvoicesPageComponent() {
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
-      if (!user) {
+      if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save an invoice." });
         return;
       }
@@ -204,7 +204,7 @@ export default function InvoicesPageComponent() {
     }
   
     const handleDeleteInvoice = async (invoiceId: string) => {
-        if (!user) {
+        if (!auth.currentUser) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete an invoice." });
             return;
         }
