@@ -13,6 +13,11 @@ import {
   Briefcase,
   DollarSign,
   FileQuestion,
+  Users,
+  BadgeCent,
+  TrendingUp,
+  CircleDollarSign,
+  ClipboardList
 } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -36,7 +41,9 @@ import {
   SidebarTrigger,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarSeparator
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
@@ -45,32 +52,35 @@ import type { User as FirebaseUser } from "firebase/auth"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 
 const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
     { 
-      href: "/clients", 
-      icon: Briefcase, 
-      label: "CRM", 
-      tooltip: "CRM",
+      id: 'crm',
+      label: "CRM",
+      icon: Briefcase,
       subItems: [
-        { href: "/clients?status=lead", label: "Leads" },
-        { href: "/clients?status=opportunity", label: "Opportunities" },
-        { href: "/clients?status=customer", label: "Customers" },
+        { href: "/clients", label: "All Contacts", icon: Users },
+        { href: "/clients?status=lead", label: "Leads", icon: BadgeCent },
+        { href: "/clients?status=opportunity", label: "Opportunities", icon: TrendingUp },
+        { href: "/clients?status=customer", label: "Customers", icon: CircleDollarSign },
       ]
     },
     {
-      href: "/sales",
-      icon: DollarSign,
+      id: 'sales',
       label: "Sales",
-      tooltip: "Sales",
+      icon: DollarSign,
       subItems: [
         { href: "/quotations", label: "Quotations", icon: FileQuestion },
         { href: "/invoices", label: "Invoices", icon: FileText },
       ]
     },
+];
+
+const singleNavItems = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
     { href: "/transactions", icon: ArrowLeftRight, label: "Transactions", tooltip: "Transactions" },
     { href: "/reports", icon: BarChart3, label: "Reports", tooltip: "Reports" },
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
-]
+];
+
 
 export default function ProtectedLayout({
   children,
@@ -97,32 +107,26 @@ export default function ProtectedLayout({
 
     return () => unsubscribe();
   }, [router]);
+  
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   useEffect(() => {
-    const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-    const findTitle = () => {
-        for (const item of navItems) {
-            if (item.subItems) {
-                for (const subItem of item.subItems) {
-                    if (currentPath === subItem.href) {
-                        return subItem.label;
-                    }
-                }
-            }
-            if (currentPath.startsWith(item.href) && !item.subItems) {
-                return item.label;
+    const getTitle = () => {
+        for (const item of singleNavItems) {
+            if (currentRoute === item.href) return item.label;
+        }
+        for (const group of navItems) {
+            for (const subItem of group.subItems) {
+                if (currentRoute === subItem.href) return subItem.label;
             }
         }
-        // Fallback for base paths
-        if (pathname === '/clients') return 'CRM';
-        if (pathname === '/quotations') return 'Quotations';
-        if (pathname === '/invoices') return 'Invoices';
-        if (pathname === '/dashboard') return 'Dashboard';
-
-        return "Dashboard";
-    };
-    setPageTitle(findTitle());
-  }, [pathname, searchParams]);
+        if (pathname.startsWith('/clients')) return 'CRM';
+        if (pathname.startsWith('/quotations')) return 'Quotations';
+        if (pathname.startsWith('/invoices')) return 'Invoices';
+        return 'Dashboard';
+    }
+    setPageTitle(getTitle());
+  }, [currentRoute, pathname]);
 
   const onLogout = async () => {
     await signOut(auth);
@@ -136,8 +140,6 @@ export default function ProtectedLayout({
       <p className="mt-4 text-muted-foreground">Authenticating...</p>
     </div>;
   }
-
-  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   return (
     <SidebarProvider>
@@ -155,33 +157,43 @@ export default function ProtectedLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                    href={item.subItems ? undefined : item.href}
-                    tooltip={item.tooltip}
-                    isActive={!item.subItems && pathname === item.href}
-                >
-                    <item.icon />
-                    {item.label}
-                </SidebarMenuButton>
-                {item.subItems && (
-                  <SidebarMenuSub>
-                      {item.subItems.map(subItem => (
-                          <SidebarMenuSubItem key={subItem.href}>
-                              <Link href={subItem.href} passHref legacyBehavior>
-                                <SidebarMenuSubButton 
-                                    isActive={currentRoute === subItem.href}
-                                  >
-                                    {subItem.icon && <subItem.icon />}
-                                    {subItem.label}
-                                </SidebarMenuSubButton>
-                              </Link>
-                          </SidebarMenuSubItem>
-                      ))}
-                  </SidebarMenuSub>
-                )}
-              </SidebarMenuItem>
+            {singleNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                    <Link href={item.href}>
+                        <SidebarMenuButton
+                            tooltip={item.tooltip}
+                            isActive={pathname === item.href}
+                        >
+                            <item.icon />
+                            {item.label}
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+          <SidebarSeparator />
+          <SidebarMenu>
+            {navItems.map((group) => (
+                <SidebarGroup key={group.id} className="p-2 pt-0">
+                    <SidebarGroupLabel className="flex items-center gap-2">
+                        <group.icon />
+                        {group.label}
+                    </SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenuSub>
+                            {group.subItems.map(subItem => (
+                                <SidebarMenuSubItem key={subItem.href}>
+                                    <Link href={subItem.href}>
+                                        <SidebarMenuSubButton isActive={currentRoute === subItem.href}>
+                                            {subItem.icon && <subItem.icon />}
+                                            <span>{subItem.label}</span>
+                                        </SidebarMenuSubButton>
+                                    </Link>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             ))}
           </SidebarMenu>
         </SidebarContent>
