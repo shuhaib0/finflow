@@ -58,8 +58,13 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
   const [dialogState, setDialogState] = useState<DialogState>('closed');
 
   useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
+    };
+
+    setLoading(true);
     const fetchClients = async () => {
-        setLoading(true);
         try {
             const clientsData = await getClients();
             setClients(clientsData);
@@ -75,9 +80,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
         }
     };
 
-    if(user) {
-        fetchClients();
-    }
+    fetchClients();
   }, [user, toast]);
 
   const filteredClients = useMemo(() => {
