@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 import {
   Avatar,
@@ -44,7 +43,6 @@ import { handleLogout } from "@/app/login/actions"
 import { auth } from "@/lib/firebase"
 import type { User as FirebaseUser } from "firebase/auth"
 import { onAuthStateChanged, signOut } from "firebase/auth"
-
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", tooltip: "Dashboard" },
@@ -97,7 +95,6 @@ export default function ProtectedLayout({
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [router]);
 
@@ -112,7 +109,7 @@ export default function ProtectedLayout({
                     }
                 }
             }
-            if (currentPath === item.href) {
+            if (currentPath.startsWith(item.href) && !item.subItems) {
                 return item.label;
             }
         }
@@ -120,6 +117,7 @@ export default function ProtectedLayout({
         if (pathname === '/clients') return 'CRM';
         if (pathname === '/quotations') return 'Quotations';
         if (pathname === '/invoices') return 'Invoices';
+        if (pathname === '/dashboard') return 'Dashboard';
 
         return "Dashboard";
     };
@@ -127,8 +125,8 @@ export default function ProtectedLayout({
   }, [pathname, searchParams]);
 
   const onLogout = async () => {
-    await signOut(auth); // Sign out from Firebase client
-    await handleLogout(); // Clear server-side session cookie
+    await signOut(auth);
+    await handleLogout(); 
     router.push('/login');
   }
   
@@ -157,57 +155,34 @@ export default function ProtectedLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => {
-                 const isCrmActive = pathname.startsWith('/clients');
-                 const isSalesActive = pathname.startsWith('/quotations') || pathname.startsWith('/invoices');
-
-                 return item.subItems ? (
-                  <Collapsible 
-                    key={item.href} 
-                    asChild 
-                    open={ (item.href === '/clients' && isCrmActive) || (item.href === '/sales' && isSalesActive) }
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                            tooltip={item.tooltip}
-                            isActive={ (item.href === '/clients' && isCrmActive && !searchParams.toString()) || (item.href === '/sales' && isSalesActive) }
-                        >
-                            <item.icon />
-                            {item.label}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent asChild>
-                          <SidebarMenuSub>
-                              {item.subItems.map(subItem => (
-                                  <SidebarMenuSubItem key={subItem.href}>
-                                      <Link href={subItem.href} passHref legacyBehavior>
-                                        <SidebarMenuSubButton 
-                                            isActive={currentRoute === subItem.href}
-                                          >
-                                            {subItem.icon && <subItem.icon />}
-                                            {subItem.label}
-                                        </SidebarMenuSubButton>
-                                      </Link>
-                                  </SidebarMenuSubItem>
-                              ))}
-                          </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                 ) : (
-                  <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                          href={item.href}
-                          tooltip={item.tooltip}
-                          isActive={pathname === item.href}
-                      >
-                          <item.icon />
-                          {item.label}
-                      </SidebarMenuButton>
-                  </SidebarMenuItem>
-                 )
-            })}
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                    href={item.subItems ? undefined : item.href}
+                    tooltip={item.tooltip}
+                    isActive={!item.subItems && pathname === item.href}
+                >
+                    <item.icon />
+                    {item.label}
+                </SidebarMenuButton>
+                {item.subItems && (
+                  <SidebarMenuSub>
+                      {item.subItems.map(subItem => (
+                          <SidebarMenuSubItem key={subItem.href}>
+                              <Link href={subItem.href} passHref legacyBehavior>
+                                <SidebarMenuSubButton 
+                                    isActive={currentRoute === subItem.href}
+                                  >
+                                    {subItem.icon && <subItem.icon />}
+                                    {subItem.label}
+                                </SidebarMenuSubButton>
+                              </Link>
+                          </SidebarMenuSubItem>
+                      ))}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
