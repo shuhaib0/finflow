@@ -44,6 +44,7 @@ import {
   SidebarGroupLabel,
   SidebarSeparator,
   SidebarGroupContent,
+  SidebarInset,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
