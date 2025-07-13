@@ -62,6 +62,10 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     
     useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         const fetchData = async () => {
           setLoading(true);
           try {
@@ -82,9 +86,7 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
             setLoading(false);
           }
         };
-        if(user){
-          fetchData();
-        }
+        fetchData();
     }, [user, toast]);
     
     const clientMap = useMemo(() => {
@@ -126,6 +128,10 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     }
   
     const handleDeleteQuotation = async (quotationId: string) => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a quotation." });
+        return;
+      }
       try {
         await deleteQuotation(quotationId);
         setQuotations(quotations.filter((q) => q.id !== quotationId))
@@ -143,6 +149,10 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     }
 
     const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to update status." });
+            return;
+        }
         try {
             await updateQuotation(quotationId, { status });
             setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
@@ -166,6 +176,10 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
+        return;
+      }
       if (selectedQuotation && selectedQuotation.id) {
         try {
             await updateQuotation(selectedQuotation.id, quotationData);

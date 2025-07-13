@@ -96,6 +96,10 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
   }
 
   const handleDeleteClient = async (clientId: string) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a contact." });
+        return;
+    }
     try {
         await deleteClient(clientId);
         setClients(clients.filter((client) => client.id !== clientId));
@@ -113,7 +117,10 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient) return;
+    if (!selectedClient || !user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
+        return;
+    }
 
     const updatedClientData: Partial<Client> = {
         status,
@@ -139,10 +146,17 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
   }
 
   const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
+        return;
+    }
+    
+    const authorName = user.displayName || "Admin User";
+
     if (selectedClient) { // Editing existing client
       const existingNotes = selectedClient.notes || [];
       const newNoteEntry: Note[] = clientData.newNote ? 
-        [{ content: clientData.newNote, author: "Admin User", createdAt: new Date().toISOString() }] 
+        [{ content: clientData.newNote, author: authorName, createdAt: new Date().toISOString() }] 
         : [];
       
       const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -170,7 +184,7 @@ export default function ClientsPageComponent({ user }: ClientsPageComponentProps
 
     } else { // Creating new client
       const { newNote, ...restOfClientData } = clientData;
-      const notes: Note[] = newNote ? [{ content: newNote, author: 'Admin User', createdAt: new Date().toISOString() }] : [];
+      const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
       
       const newClientData = { ...restOfClientData, notes };
 

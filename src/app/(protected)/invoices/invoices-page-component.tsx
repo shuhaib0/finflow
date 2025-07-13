@@ -71,6 +71,10 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
       }, [clients]);
     
     useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
       const fetchData = async () => {
         setLoading(true);
         try {
@@ -91,13 +95,16 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
           setLoading(false);
         }
       };
-      if(user){
-        fetchData();
-      }
+      fetchData();
     }, [user, toast]);
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save an invoice." });
+        return;
+      }
+
       if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
         try {
             await updateInvoice(selectedInvoice.id, invoiceData);
@@ -194,6 +201,10 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
     }
   
     const handleDeleteInvoice = async (invoiceId: string) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete an invoice." });
+            return;
+        }
         try {
             await deleteInvoice(invoiceId);
             setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId));
