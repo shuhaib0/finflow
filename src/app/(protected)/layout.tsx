@@ -48,9 +48,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
-import { auth } from "@/lib/firebase"
-import type { User as FirebaseUser } from "firebase/auth"
-import { onAuthStateChanged, signOut } from "firebase/auth"
+import { signOut } from "firebase/auth"
+import { AuthProvider, useAuth } from './auth-provider'
 
 const navItems = [
     { 
@@ -83,31 +82,13 @@ const singleNavItems = [
 ];
 
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { user } = useAuth();
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        router.push('/login');
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
   
   const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
   
@@ -121,11 +102,12 @@ export default function ProtectedLayout({
             return 'All Contacts';
         }
         for (const item of singleNavItems) {
-            if (pathname === item.href) return item.label;
+            if (pathname.startsWith(item.href)) return item.label;
         }
         for (const group of navItems) {
             for (const subItem of group.subItems) {
-                if (pathname === subItem.href) return subItem.label;
+                // Use startsWith for query param routes
+                if (currentRoute.startsWith(subItem.href)) return subItem.label;
             }
         }
         if (pathname.startsWith('/quotations')) return 'Quotations';
@@ -136,19 +118,17 @@ export default function ProtectedLayout({
         return 'Dashboard';
     }
     setPageTitle(getTitle());
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, currentRoute]);
 
   const onLogout = async () => {
-    await signOut(auth);
     await handleLogout(); 
+    // No need to call signOut here as it's handled by Firebase persistence
     router.push('/login');
   }
-  
-  if (loading) {
-    return <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
-      <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-      <p className="mt-4 text-muted-foreground">Authenticating...</p>
-    </div>;
+
+  if (!user) {
+    router.push('/login');
+    return null;
   }
 
   return (
@@ -172,6 +152,7 @@ export default function ProtectedLayout({
                     <SidebarMenuButton
                         tooltip={item.tooltip}
                         isActive={pathname === item.href}
+                        asChild
                     >
                         <Link href={item.href}>
                             <item.icon />
@@ -182,30 +163,30 @@ export default function ProtectedLayout({
             ))}
           </SidebarMenu>
           <SidebarSeparator />
-          <SidebarMenu>
             {navItems.map((group) => (
-                <SidebarGroup key={group.id} className="p-2 pt-0">
-                    <SidebarGroupLabel className="flex items-center gap-2">
-                        <group.icon />
-                        {group.label}
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenuSub>
-                            {group.subItems.map(subItem => (
-                                <SidebarMenuSubItem key={subItem.href}>
-                                    <SidebarMenuSubButton isActive={currentRoute === subItem.href}>
-                                      <Link href={subItem.href}>
-                                          {subItem.icon && <subItem.icon />}
-                                          <span>{subItem.label}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            ))}
-                        </SidebarMenuSub>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                <SidebarMenu key={group.id}>
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="flex items-center gap-2">
+                            <group.icon />
+                            {group.label}
+                        </SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenuSub>
+                                {group.subItems.map(subItem => (
+                                    <SidebarMenuSubItem key={subItem.href}>
+                                        <SidebarMenuSubButton isActive={currentRoute === subItem.href} asChild>
+                                          <Link href={subItem.href}>
+                                              {subItem.icon && <subItem.icon />}
+                                              <span>{subItem.label}</span>
+                                          </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                ))}
+                            </SidebarMenuSub>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                </SidebarMenu>
             ))}
-          </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
           <div className="flex items-center gap-2">
@@ -251,4 +232,19 @@ export default function ProtectedLayout({
       </SidebarInset>
     </SidebarProvider>
   )
+}
+
+
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AuthProvider>
+        <ProtectedLayoutContent>
+            {children}
+        </ProtectedLayoutContent>
+    </AuthProvider>
+  );
 }

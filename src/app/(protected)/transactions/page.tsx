@@ -46,13 +46,9 @@ import { format } from "date-fns"
 import { TransactionForm } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
-import type { User as FirebaseUser } from "firebase/auth"
+import { useAuth } from "../auth-provider"
 
-type TransactionsPageComponentProps = {
-    user: FirebaseUser | null;
-}
-
-export default function TransactionsPage({ user }: TransactionsPageComponentProps) {
+export default function TransactionsPage() {
     const { toast } = useToast()
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
@@ -60,38 +56,41 @@ export default function TransactionsPage({ user }: TransactionsPageComponentProp
     const [loading, setLoading] = useState(true);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const { user } = useAuth();
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const [transactionsData, clientsData] = await Promise.all([
-                    getTransactions(),
-                    getClients(),
-                ]);
-                
-                setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-                setClients(clientsData);
-
-                const nameMap = clientsData.reduce((acc, client) => {
-                    acc[client.id] = client.name;
-                    return acc;
-                }, {} as { [key: string]: string });
-                setClientNames(nameMap);
-
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not load transactions or client data.",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
         if(user){
+            const fetchData = async () => {
+                setLoading(true);
+                try {
+                    const [transactionsData, clientsData] = await Promise.all([
+                        getTransactions(),
+                        getClients(),
+                    ]);
+                    
+                    setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                    setClients(clientsData);
+
+                    const nameMap = clientsData.reduce((acc, client) => {
+                        acc[client.id] = client.name;
+                        return acc;
+                    }, {} as { [key: string]: string });
+                    setClientNames(nameMap);
+
+                } catch (error) {
+                    console.error("Failed to fetch data:", error);
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Could not load transactions or client data.",
+                    });
+                } finally {
+                    setLoading(false);
+                }
+            };
             fetchData();
+        } else {
+            setLoading(false);
         }
     }, [user, toast]);
 
@@ -106,6 +105,10 @@ export default function TransactionsPage({ user }: TransactionsPageComponentProp
     }
 
     const handleDeleteTransaction = async (transactionId: string) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+            return;
+        }
         try {
             await deleteTransaction(transactionId);
             setTransactions(transactions.filter((t) => t.id !== transactionId));
@@ -119,6 +122,10 @@ export default function TransactionsPage({ user }: TransactionsPageComponentProp
     }
 
     const handleFormSubmit = async (data: Omit<Transaction, 'id'>) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+            return;
+        }
         if (selectedTransaction) {
             try {
                 await updateTransaction(selectedTransaction.id, data);

@@ -43,9 +43,7 @@ import { QuotationForm } from "./quotation-form"
 import type { Quotation, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { auth } from "@/lib/firebase"
-import type { User as FirebaseUser } from "firebase/auth"
-import { onAuthStateChanged } from "firebase/auth"
+import { useAuth } from "../auth-provider"
 import { getClients } from "@/services/clientService"
 import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
 
@@ -58,39 +56,35 @@ export default function QuotationsPageComponent() {
     const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [user, setUser] = useState<FirebaseUser | null>(null);
+    const { user } = useAuth();
     
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            if (currentUser) {
-                const fetchData = async () => {
-                  setLoading(true);
-                  try {
-                    const [quotationsData, clientsData] = await Promise.all([
-                      getQuotations(),
-                      getClients(),
-                    ]);
-                    setQuotations(quotationsData);
-                    setClients(clientsData);
-                  } catch (error) {
-                    console.error("Failed to fetch data:", error);
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: "Could not load quotations or client data.",
-                    });
-                  } finally {
-                    setLoading(false);
-                  }
-                };
-                fetchData();
-            } else {
+        if (user) {
+            const fetchData = async () => {
+              setLoading(true);
+              try {
+                const [quotationsData, clientsData] = await Promise.all([
+                  getQuotations(),
+                  getClients(),
+                ]);
+                setQuotations(quotationsData);
+                setClients(clientsData);
+              } catch (error) {
+                console.error("Failed to fetch data:", error);
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Could not load quotations or client data.",
+                });
+              } finally {
                 setLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, [toast]);
+              }
+            };
+            fetchData();
+        } else {
+            setLoading(false);
+        }
+    }, [user, toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -131,7 +125,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleDeleteQuotation = async (quotationId: string) => {
-      if (!auth.currentUser) {
+      if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a quotation." });
         return;
       }
@@ -152,7 +146,7 @@ export default function QuotationsPageComponent() {
     }
 
     const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
-        if (!auth.currentUser) {
+        if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to update status." });
             return;
         }
@@ -179,7 +173,7 @@ export default function QuotationsPageComponent() {
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
-      if (!auth.currentUser) {
+      if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
         return;
       }

@@ -38,9 +38,7 @@ import { ClientForm } from "./client-form"
 import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
-import { auth } from "@/lib/firebase"
-import type { User as FirebaseUser } from "firebase/auth"
-import { onAuthStateChanged } from "firebase/auth"
+import { useAuth } from "../auth-provider"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
@@ -53,36 +51,31 @@ export default function ClientsPageComponent() {
   const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const fetchClients = async () => {
-            setLoading(true);
-            try {
-                const clientsData = await getClients();
-                setClients(clientsData);
-            } catch (error) {
-                console.error("Failed to fetch clients:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not load client data.",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchClients();
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [toast]);
+    if (user) {
+      const fetchClients = async () => {
+          setLoading(true);
+          try {
+              const clientsData = await getClients();
+              setClients(clientsData);
+          } catch (error) {
+              console.error("Failed to fetch clients:", error);
+              toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Could not load client data.",
+              });
+          } finally {
+              setLoading(false);
+          }
+      };
+      fetchClients();
+    } else {
+      setLoading(false);
+    }
+  }, [user, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
@@ -97,7 +90,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleDeleteClient = async (clientId: string) => {
-    if (!auth.currentUser) {
+    if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a contact." });
         return;
     }
@@ -118,7 +111,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient || !auth.currentUser) {
+    if (!selectedClient || !user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
         return;
     }
@@ -147,12 +140,12 @@ export default function ClientsPageComponent() {
   }
 
   const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
-    if (!auth.currentUser) {
+    if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
     }
     
-    const authorName = auth.currentUser.displayName || "Admin User";
+    const authorName = user.displayName || "Admin User";
 
     if (selectedClient) { // Editing existing client
       const existingNotes = selectedClient.notes || [];
