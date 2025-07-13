@@ -40,8 +40,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarMenuSub,
+  SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarGroup,
+  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarSeparator
 } from "@/components/ui/sidebar"
@@ -113,7 +115,7 @@ export default function ProtectedLayout({
   useEffect(() => {
     const getTitle = () => {
         for (const item of singleNavItems) {
-            if (currentRoute === item.href) return item.label;
+            if (pathname === item.href) return item.label;
         }
         for (const group of navItems) {
             for (const subItem of group.subItems) {
@@ -123,6 +125,9 @@ export default function ProtectedLayout({
         if (pathname.startsWith('/clients')) return 'CRM';
         if (pathname.startsWith('/quotations')) return 'Quotations';
         if (pathname.startsWith('/invoices')) return 'Invoices';
+        if (pathname.startsWith('/transactions')) return 'Transactions';
+        if (pathname.startsWith('/reports')) return 'Reports';
+        if (pathname.startsWith('/qna')) return 'AI Q&A';
         return 'Dashboard';
     }
     setPageTitle(getTitle());
@@ -159,15 +164,16 @@ export default function ProtectedLayout({
           <SidebarMenu>
             {singleNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                    <Link href={item.href}>
-                        <SidebarMenuButton
-                            tooltip={item.tooltip}
-                            isActive={pathname === item.href}
-                        >
+                    <SidebarMenuButton
+                        asChild
+                        tooltip={item.tooltip}
+                        isActive={pathname === item.href}
+                    >
+                        <Link href={item.href}>
                             <item.icon />
                             {item.label}
-                        </SidebarMenuButton>
-                    </Link>
+                        </Link>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -183,12 +189,12 @@ export default function ProtectedLayout({
                         <SidebarMenuSub>
                             {group.subItems.map(subItem => (
                                 <SidebarMenuSubItem key={subItem.href}>
-                                    <Link href={subItem.href}>
-                                        <SidebarMenuSubButton isActive={currentRoute === subItem.href}>
-                                            {subItem.icon && <subItem.icon />}
-                                            <span>{subItem.label}</span>
-                                        </SidebarMenuSubButton>
-                                    </Link>
+                                    <SidebarMenuSubButton asChild isActive={currentRoute === subItem.href}>
+                                      <Link href={subItem.href}>
+                                          {subItem.icon && <subItem.icon />}
+                                          <span>{subItem.label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
                             ))}
                         </SidebarMenuSub>
