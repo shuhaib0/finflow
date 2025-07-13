@@ -39,6 +39,7 @@ import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
+import { auth } from "@/lib/firebase"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
@@ -90,7 +91,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleDeleteClient = async (clientId: string) => {
-    if (!user) {
+    if (!auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a contact." });
         return;
     }
@@ -111,7 +112,7 @@ export default function ClientsPageComponent() {
   }
 
   const handleStatusChange = async (status: 'opportunity' | 'customer', worth?: number) => {
-    if (!selectedClient || !user) {
+    if (!selectedClient || !auth.currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to change status." });
         return;
     }
@@ -140,12 +141,13 @@ export default function ClientsPageComponent() {
   }
 
   const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
-    if (!user) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
     }
     
-    const authorName = user.displayName || "Admin User";
+    const authorName = currentUser.displayName || "Admin User";
 
     if (selectedClient) { // Editing existing client
       const existingNotes = selectedClient.notes || [];
