@@ -43,15 +43,13 @@ import { QuotationForm } from "./quotation-form"
 import type { Quotation, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
+import { auth } from "@/lib/firebase"
 import type { User as FirebaseUser } from "firebase/auth"
+import { onAuthStateChanged } from "firebase/auth"
 import { getClients } from "@/services/clientService"
 import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
 
-type QuotationsPageComponentProps = {
-    user: FirebaseUser | null;
-}
-
-export default function QuotationsPageComponent({ user }: QuotationsPageComponentProps) {
+export default function QuotationsPageComponent() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -60,34 +58,39 @@ export default function QuotationsPageComponent({ user }: QuotationsPageComponen
     const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [user, setUser] = useState<FirebaseUser | null>(null);
     
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-        const fetchData = async () => {
-          setLoading(true);
-          try {
-            const [quotationsData, clientsData] = await Promise.all([
-              getQuotations(),
-              getClients(),
-            ]);
-            setQuotations(quotationsData);
-            setClients(clientsData);
-          } catch (error) {
-            console.error("Failed to fetch data:", error);
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Could not load quotations or client data.",
-            });
-          } finally {
-            setLoading(false);
-          }
-        };
-        fetchData();
-    }, [user, toast]);
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                const fetchData = async () => {
+                  setLoading(true);
+                  try {
+                    const [quotationsData, clientsData] = await Promise.all([
+                      getQuotations(),
+                      getClients(),
+                    ]);
+                    setQuotations(quotationsData);
+                    setClients(clientsData);
+                  } catch (error) {
+                    console.error("Failed to fetch data:", error);
+                    toast({
+                      variant: "destructive",
+                      title: "Error",
+                      description: "Could not load quotations or client data.",
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                fetchData();
+            } else {
+                setLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {

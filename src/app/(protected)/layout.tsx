@@ -110,18 +110,24 @@ export default function ProtectedLayout({
   }, [router]);
   
   const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-
+  
   useEffect(() => {
     const getTitle = () => {
+        if (pathname.startsWith('/clients')) {
+            const status = searchParams.get('status');
+            if (status === 'lead') return 'Leads';
+            if (status === 'opportunity') return 'Opportunities';
+            if (status === 'customer') return 'Customers';
+            return 'All Contacts';
+        }
         for (const item of singleNavItems) {
             if (pathname === item.href) return item.label;
         }
         for (const group of navItems) {
             for (const subItem of group.subItems) {
-                if (currentRoute === subItem.href) return subItem.label;
+                if (pathname === subItem.href) return subItem.label;
             }
         }
-        if (pathname.startsWith('/clients')) return 'CRM';
         if (pathname.startsWith('/quotations')) return 'Quotations';
         if (pathname.startsWith('/invoices')) return 'Invoices';
         if (pathname.startsWith('/transactions')) return 'Transactions';
@@ -130,7 +136,7 @@ export default function ProtectedLayout({
         return 'Dashboard';
     }
     setPageTitle(getTitle());
-  }, [currentRoute, pathname]);
+  }, [pathname, searchParams]);
 
   const onLogout = async () => {
     await signOut(auth);
@@ -144,14 +150,6 @@ export default function ProtectedLayout({
       <p className="mt-4 text-muted-foreground">Authenticating...</p>
     </div>;
   }
-
-  const childrenWithProps = Children.map(children, child => {
-    if (isValidElement(child)) {
-      // @ts-ignore
-      return cloneElement(child, { user });
-    }
-    return child;
-  });
 
   return (
     <SidebarProvider>
@@ -172,7 +170,6 @@ export default function ProtectedLayout({
             {singleNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                        asChild
                         tooltip={item.tooltip}
                         isActive={pathname === item.href}
                     >
@@ -196,7 +193,7 @@ export default function ProtectedLayout({
                         <SidebarMenuSub>
                             {group.subItems.map(subItem => (
                                 <SidebarMenuSubItem key={subItem.href}>
-                                    <SidebarMenuSubButton asChild isActive={currentRoute === subItem.href}>
+                                    <SidebarMenuSubButton isActive={currentRoute === subItem.href}>
                                       <Link href={subItem.href}>
                                           {subItem.icon && <subItem.icon />}
                                           <span>{subItem.label}</span>
@@ -249,7 +246,7 @@ export default function ProtectedLayout({
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {childrenWithProps}
+          {children}
         </main>
       </SidebarInset>
     </SidebarProvider>

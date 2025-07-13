@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import InvoicesPageComponent from './invoices-page-component';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { User as FirebaseUser } from 'firebase/auth';
 
 function InvoicesPageSkeleton() {
     return (
@@ -31,10 +30,10 @@ function InvoicesPageSkeleton() {
     );
 }
 
-export default function InvoicesPage({ user }: { user: FirebaseUser | null }) {
+export default function InvoicesPage() {
     return (
         <Suspense fallback={<InvoicesPageSkeleton />}>
-            <InvoicesPageComponent user={user} />
+            <InvoicesPageComponent />
         </Suspense>
     );
 }

@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ClientsPageComponent from './clients-page-component';
-import type { User as FirebaseUser } from 'firebase/auth';
 
 function ClientsPageSkeleton() {
   return (
@@ -30,10 +29,10 @@ function ClientsPageSkeleton() {
 }
 
 
-export default function CrmPage({ user }: { user: FirebaseUser | null }) {
+export default function CrmPage() {
     return (
         <Suspense fallback={<ClientsPageSkeleton />}>
-            <ClientsPageComponent user={user} />
+            <ClientsPageComponent />
         </Suspense>
     )
 }

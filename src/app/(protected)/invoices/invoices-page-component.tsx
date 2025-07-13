@@ -46,13 +46,11 @@ import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
+import { auth } from "@/lib/firebase"
 import type { User as FirebaseUser } from "firebase/auth"
+import { onAuthStateChanged } from "firebase/auth"
 
-type InvoicesPageComponentProps = {
-  user: FirebaseUser | null;
-}
-
-export default function InvoicesPageComponent({ user }: InvoicesPageComponentProps) {
+export default function InvoicesPageComponent() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -62,6 +60,7 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const invoicePrintRef = useRef<HTMLDivElement>(null);
+    const [user, setUser] = useState<FirebaseUser | null>(null);
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -71,32 +70,36 @@ export default function InvoicesPageComponent({ user }: InvoicesPageComponentPro
       }, [clients]);
     
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          const [invoicesData, clientsData] = await Promise.all([
-            getInvoices(),
-            getClients(),
-          ]);
-          setInvoices(invoicesData);
-          setClients(clientsData);
-        } catch (error) {
-          console.error("Failed to fetch data:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not load invoices or client data.",
-          });
-        } finally {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        if (currentUser) {
+          const fetchData = async () => {
+            setLoading(true);
+            try {
+              const [invoicesData, clientsData] = await Promise.all([
+                getInvoices(),
+                getClients(),
+              ]);
+              setInvoices(invoicesData);
+              setClients(clientsData);
+            } catch (error) {
+              console.error("Failed to fetch data:", error);
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load invoices or client data.",
+              });
+            } finally {
+              setLoading(false);
+            }
+          };
+          fetchData();
+        } else {
           setLoading(false);
         }
-      };
-      fetchData();
-    }, [user, toast]);
+      });
+      return () => unsubscribe();
+    }, [toast]);
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
