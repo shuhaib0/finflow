@@ -17,10 +17,9 @@ import {
   BadgeCent,
   TrendingUp,
   CircleDollarSign,
-  ClipboardList
 } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Children, cloneElement, isValidElement } from "react"
 
 import {
   Avatar,
@@ -33,7 +32,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -43,9 +41,9 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarSeparator
+  SidebarSeparator,
+  SidebarGroupContent,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
@@ -146,6 +144,14 @@ export default function ProtectedLayout({
     </div>;
   }
 
+  const childrenWithProps = Children.map(children, child => {
+    if (isValidElement(child)) {
+      // @ts-ignore
+      return cloneElement(child, { user });
+    }
+    return child;
+  });
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -242,7 +248,7 @@ export default function ProtectedLayout({
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
+          {childrenWithProps}
         </main>
       </SidebarInset>
     </SidebarProvider>

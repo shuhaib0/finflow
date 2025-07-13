@@ -23,9 +23,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -49,10 +46,13 @@ import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
-import { auth } from "@/lib/firebase"
+import type { User as FirebaseUser } from "firebase/auth"
 
+type InvoicesPageComponentProps = {
+  user: FirebaseUser | null;
+}
 
-export default function InvoicesPageComponent() {
+export default function InvoicesPageComponent({ user }: InvoicesPageComponentProps) {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -90,10 +90,10 @@ export default function InvoicesPageComponent() {
           setLoading(false);
         }
       };
-      if(auth.currentUser){
+      if(user){
         fetchData();
       }
-    }, [toast]);
+    }, [user, toast]);
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
@@ -379,12 +379,6 @@ export default function InvoicesPageComponent() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
-                <DialogHeader className="sr-only">
-                    <DialogTitle>{isEditing ? "Edit Invoice" : "Create Invoice"}</DialogTitle>
-                    <DialogDescription>
-                    {isEditing ? "Update the details of your invoice." : "Fill out the form to create a new invoice."}
-                    </DialogDescription>
-                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}

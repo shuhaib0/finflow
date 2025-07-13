@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import QuotationsPageComponent from './quotations-page-component';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { User as FirebaseUser } from 'firebase/auth';
 
 function QuotationsPageSkeleton() {
     return (
@@ -30,10 +31,10 @@ function QuotationsPageSkeleton() {
     );
 }
 
-export default function QuotationsPage() {
+export default function QuotationsPage({ user }: { user: FirebaseUser | null }) {
     return (
         <Suspense fallback={<QuotationsPageSkeleton />}>
-            <QuotationsPageComponent />
+            <QuotationsPageComponent user={user} />
         </Suspense>
     );
 }

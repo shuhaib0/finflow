@@ -39,11 +39,15 @@ import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
 import { Timestamp } from "firebase/firestore"
-import { auth } from "@/lib/firebase"
+import type { User as FirebaseUser } from "firebase/auth"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
-export default function ClientsPageComponent() {
+type ClientsPageComponentProps = {
+  user: FirebaseUser | null;
+}
+
+export default function ClientsPageComponent({ user }: ClientsPageComponentProps) {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
@@ -70,11 +74,10 @@ export default function ClientsPageComponent() {
         }
     };
 
-    // We only fetch clients if there is a logged in user.
-    if(auth.currentUser) {
+    if(user) {
         fetchClients();
     }
-  }, [toast]);
+  }, [user, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
