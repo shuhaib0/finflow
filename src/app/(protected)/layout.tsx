@@ -88,11 +88,12 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-      if (!currentUser) {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
         router.push('/login');
       }
+      setLoading(false);
     });
 
     // Cleanup subscription on unmount
@@ -101,26 +102,27 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     // This logic now runs only on the client-side
-    const searchParams = new URLSearchParams(window.location.search);
-    const currentStatus = searchParams.get('status');
-    if (pathname === '/clients' && currentStatus) {
-      setActiveSubItem(`/clients?status=${currentStatus}`);
-    } else {
-      setActiveSubItem("");
-    }
-    
-    let currentNavItem = navItems.find(item => pathname.startsWith(item.href));
-    let currentPageTitle = currentNavItem?.label || "Dashboard";
+    if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const currentStatus = searchParams.get('status');
+        if (pathname === '/clients' && currentStatus) {
+          setActiveSubItem(`/clients?status=${currentStatus}`);
+        } else {
+          setActiveSubItem("");
+        }
+        
+        let currentNavItem = navItems.find(item => pathname.startsWith(item.href));
+        let currentPageTitle = currentNavItem?.label || "Dashboard";
 
-    if (currentNavItem?.subItems) {
-      const activeSub = currentNavItem.subItems.find(sub => pathname.startsWith(sub.href));
-      if (activeSub) {
-        currentPageTitle = activeSub.label;
-      }
+        if (currentNavItem?.subItems) {
+          const activeSub = currentNavItem.subItems.find(sub => pathname.startsWith(sub.href));
+          if (activeSub) {
+            currentPageTitle = activeSub.label;
+          }
+        }
+        
+        setPageTitle(currentPageTitle);
     }
-    
-    setPageTitle(currentPageTitle);
-
   }, [pathname]);
 
   const onLogout = async () => {
@@ -134,7 +136,7 @@ export default function ProtectedLayout({
   if (loading) {
     return <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
       <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-      <p className="mt-4 text-muted-foreground">Loading Ailutions Finance Hub...</p>
+      <p className="mt-4 text-muted-foreground">Authenticating...</p>
     </div>;
   }
 

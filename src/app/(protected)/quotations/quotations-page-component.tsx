@@ -46,49 +46,9 @@ import { QuotationForm } from "./quotation-form"
 import type { Quotation, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
+import { auth } from "@/lib/firebase"
+import { getClients } from "@/services/clientService"
 
-const initialClients: Client[] = [
-  {
-    id: "1",
-    name: "Innovate Inc.",
-    contactPerson: "John Doe",
-    email: "john.doe@innovate.com",
-    phone: "123-456-7890",
-    status: "customer",
-    taxId: "GST12345",
-    addressLine1: "123 Tech Ave",
-    city: "Silicon Valley",
-    state: "CA",
-    postalCode: "94043",
-    country: "USA",
-  },
-  {
-    id: "2",
-    name: "Solutions Co.",
-    contactPerson: "Jane Smith",
-    email: "jane.smith@solutions.com",
-    phone: "098-765-4321",
-    status: "customer",
-  },
-  {
-    id: "3",
-    name: "Future Forward",
-    contactPerson: "Sam Wilson",
-    email: "sam.wilson@ff.io",
-    phone: "555-555-5555",
-    status: "lead",
-  },
-  {
-    id: "4",
-    name: "Legacy Systems",
-    contactPerson: "Emily Brown",
-    email: "emily.b@legacysys.com",
-    phone: "111-222-3333",
-    status: "opportunity",
-    opportunityWorth: 10000,
-    notes: [],
-  },
-];
 
 const initialQuotations: Quotation[] = [
     {
@@ -120,10 +80,32 @@ export default function QuotationsPageComponent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations)
-    const [clients] = useState<Client[]>(initialClients)
+    const [clients, setClients] = useState<Client[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [isClient, setIsClient] = useState(false);
+    
+    useEffect(() => {
+        const fetchClients = async () => {
+            try {
+                const clientsData = await getClients();
+                setClients(clientsData);
+            } catch (error) {
+                console.error("Failed to fetch clients:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not load client data.",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if(auth.currentUser) {
+            fetchClients();
+        }
+    }, [toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -132,12 +114,8 @@ export default function QuotationsPageComponent() {
         }, {} as { [key: string]: Client });
       }, [clients]);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (!isClient) return;
+      useEffect(() => {
+        if (loading) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
@@ -155,7 +133,7 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, isClient]);
+    }, [searchParams, router, loading]);
 
     const handleAddQuotation = () => {
       setSelectedQuotation(null)
@@ -235,8 +213,8 @@ export default function QuotationsPageComponent() {
 
     const isEditing = !!selectedQuotation;
     
-    if (!isClient) {
-        return null;
+    if (loading) {
+        return <div>Loading quotations...</div>; // Or a skeleton loader
     }
 
     return (

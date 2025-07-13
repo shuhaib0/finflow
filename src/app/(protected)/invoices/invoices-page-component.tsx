@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
+import { auth } from "@/lib/firebase"
 
 
 export default function InvoicesPageComponent() {
@@ -89,7 +90,9 @@ export default function InvoicesPageComponent() {
           setLoading(false);
         }
       };
-      fetchData();
+      if(auth.currentUser){
+        fetchData();
+      }
     }, [toast]);
 
 

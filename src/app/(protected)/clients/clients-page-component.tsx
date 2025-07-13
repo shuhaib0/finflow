@@ -39,6 +39,7 @@ import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
 import { Timestamp } from "firebase/firestore"
+import { auth } from "@/lib/firebase"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
@@ -68,7 +69,11 @@ export default function ClientsPageComponent() {
             setLoading(false);
         }
     };
-    fetchClients();
+
+    // We only fetch clients if there is a logged in user.
+    if(auth.currentUser) {
+        fetchClients();
+    }
   }, [toast]);
 
   const filteredClients = useMemo(() => {
