@@ -56,7 +56,7 @@ export default function QuotationsPageComponent() {
     const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     
     useEffect(() => {
         if (user) {
@@ -81,10 +81,10 @@ export default function QuotationsPageComponent() {
               }
             };
             fetchData();
-        } else if (!user && !authLoading) {
+        } else {
             setLoading(false);
         }
-    }, [user, authLoading, toast]);
+    }, [user, toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {

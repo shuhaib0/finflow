@@ -56,27 +56,26 @@ export default function ClientsPageComponent() {
   useEffect(() => {
     if (user) {
       const fetchClients = async () => {
-          setLoading(true);
-          try {
-              const clientsData = await getClients();
-              setClients(clientsData);
-          } catch (error) {
-              console.error("Failed to fetch clients:", error);
-              toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "Could not load client data.",
-              });
-          } finally {
-              setLoading(false);
-          }
+        setLoading(true);
+        try {
+          const clientsData = await getClients();
+          setClients(clientsData);
+        } catch (error) {
+          console.error("Failed to fetch clients:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load client data.",
+          });
+        } finally {
+          setLoading(false);
+        }
       };
       fetchClients();
-    } else if (!user && !loading) {
-      // If there's no user and we are not in the initial loading phase, stop loading.
+    } else {
       setLoading(false);
     }
-  }, [user, toast, loading]);
+  }, [user, toast]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
