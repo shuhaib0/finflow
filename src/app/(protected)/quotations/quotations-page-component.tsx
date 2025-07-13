@@ -114,7 +114,6 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams, router, user, loading]);
 
     const handleAddQuotation = () => {
@@ -217,14 +216,14 @@ export default function QuotationsPageComponent() {
     const getStatusVariant = (status: Quotation['status']) => {
         switch (status) {
           case 'won':
-            return 'default' // Green
+            return 'default' 
           case 'sent':
-            return 'secondary' // Blue
+            return 'secondary'
           case 'lost':
-            return 'destructive' // Red
+            return 'destructive'
           case 'draft':
           default:
-            return 'outline' // Gray
+            return 'outline'
         }
       }
 

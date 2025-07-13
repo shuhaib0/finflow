@@ -105,7 +105,7 @@ export default function InvoicesPageComponent() {
       }
 
       try {
-        if (selectedInvoice && selectedInvoice.id && !fromConversion) { // Check if it's a real edit
+        if (selectedInvoice && selectedInvoice.id && !fromConversion) { 
             await updateInvoice(selectedInvoice.id, invoiceData);
             const updatedInvoice = { ...selectedInvoice, ...invoiceData };
             setInvoices(
@@ -113,15 +113,15 @@ export default function InvoicesPageComponent() {
                 inv.id === selectedInvoice.id ? updatedInvoice : inv
               )
             )
-            setSelectedInvoice(updatedInvoice); // Keep dialog open with updated data
+            setSelectedInvoice(updatedInvoice); 
             toast({
               title: "Invoice Updated",
               description: "The invoice details have been updated.",
             })
-        } else { // New Invoice
+        } else {
           const newInvoiceData = {
             ...invoiceData,
-            id: '', // Firestore will generate
+            id: '', 
             invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
             createdAt: new Date().toISOString(),
             status: 'draft' as const,
@@ -168,7 +168,7 @@ export default function InvoicesPageComponent() {
                 const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
                 const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "status"> = {
                     ...quotationData,
-                    dueDate: new Date().toISOString(), // set new due date
+                    dueDate: new Date().toISOString(), 
                     quotationRef: quotationData.id,
                 };
                 handleFormSubmit(newInvoiceData, true);
@@ -182,8 +182,8 @@ export default function InvoicesPageComponent() {
             }
             router.replace('/invoices', { scroll: false });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, router, loading, user]);
+    
+    }, [searchParams, router, loading, user, toast]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -256,14 +256,12 @@ export default function InvoicesPageComponent() {
                   }
                 </style>
               </head>
-              <body>${"```"}html
-              ${printableContent}
-              ${"```"}</body>
+              <body>${printableContent}</body>
             </html>
           `);
           printWindow.document.close();
           printWindow.focus();
-          // Timeout to allow content to load before printing
+          
           setTimeout(() => {
             printWindow.print();
             printWindow.close();

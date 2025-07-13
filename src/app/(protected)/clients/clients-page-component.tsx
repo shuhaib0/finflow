@@ -131,7 +131,7 @@ export default function ClientsPageComponent() {
         await updateClient(selectedClient.id, updatedClientData);
         const updatedClient = { ...selectedClient, ...updatedClientData };
         setClients(clients.map(c => c.id === selectedClient.id ? updatedClient as Client : c));
-        setSelectedClient(updatedClient as Client); // Keep dialog open with updated data
+        setSelectedClient(updatedClient as Client);
         toast({
             title: `Contact converted to ${status}`,
             description: `${selectedClient.name} is now a ${status}.`,
@@ -154,7 +154,7 @@ export default function ClientsPageComponent() {
     const authorName = user.displayName || "Admin User";
 
     try {
-        if (selectedClient) { // Editing existing client
+        if (selectedClient) { 
           const existingNotes = selectedClient.notes || [];
           const newNoteEntry: Note[] = clientData.newNote ? 
             [{ content: clientData.newNote, author: authorName, createdAt: new Date().toISOString() }] 
@@ -175,7 +175,7 @@ export default function ClientsPageComponent() {
             description: "The contact details have been updated.",
           });
     
-        } else { // Creating new client
+        } else {
           const { newNote, ...restOfClientData } = clientData;
           const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
           
