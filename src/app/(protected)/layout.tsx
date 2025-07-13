@@ -88,7 +88,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   const [pageTitle, setPageTitle] = useState("Dashboard");
   
-  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
   
   useEffect(() => {
     const getTitle = () => {

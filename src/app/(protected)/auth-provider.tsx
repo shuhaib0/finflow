@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Render children only if user is authenticated
-  return user ? <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider> : null;
+  return user ? <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider> : null;
 }
 
 export const useAuth = () => {
