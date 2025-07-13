@@ -80,7 +80,6 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -226,7 +225,6 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   )
 }
-
 
 export default function ProtectedLayout({
   children,
