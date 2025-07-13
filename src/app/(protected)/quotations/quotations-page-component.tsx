@@ -46,6 +46,7 @@ import { format } from "date-fns"
 import { useAuth } from "../auth-provider"
 import { getClients } from "@/services/clientService"
 import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function QuotationsPageComponent() {
     const { toast } = useToast()
@@ -59,27 +60,28 @@ export default function QuotationsPageComponent() {
     const { user } = useAuth();
     
     useEffect(() => {
+        const fetchData = async () => {
+          setLoading(true);
+          try {
+            const [quotationsData, clientsData] = await Promise.all([
+              getQuotations(),
+              getClients(),
+            ]);
+            setQuotations(quotationsData);
+            setClients(clientsData);
+          } catch (error) {
+            console.error("Failed to fetch data:", error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Could not load quotations or client data.",
+            });
+          } finally {
+            setLoading(false);
+          }
+        };
+        
         if (user) {
-            const fetchData = async () => {
-              setLoading(true);
-              try {
-                const [quotationsData, clientsData] = await Promise.all([
-                  getQuotations(),
-                  getClients(),
-                ]);
-                setQuotations(quotationsData);
-                setClients(clientsData);
-              } catch (error) {
-                console.error("Failed to fetch data:", error);
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "Could not load quotations or client data.",
-                });
-              } finally {
-                setLoading(false);
-              }
-            };
             fetchData();
         } else {
             setLoading(false);
@@ -229,7 +231,26 @@ export default function QuotationsPageComponent() {
     const isEditing = !!selectedQuotation;
     
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Skeleton className="h-7 w-48" />
+                            <Skeleton className="h-4 w-72 mt-2" />
+                        </div>
+                        <Skeleton className="h-9 w-36" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (

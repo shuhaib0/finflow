@@ -47,6 +47,7 @@ import { TransactionForm } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionsPage() {
     const { toast } = useToast()
@@ -59,35 +60,36 @@ export default function TransactionsPage() {
     const { user } = useAuth();
 
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [transactionsData, clientsData] = await Promise.all([
+                    getTransactions(),
+                    getClients(),
+                ]);
+                
+                setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                setClients(clientsData);
+
+                const nameMap = clientsData.reduce((acc, client) => {
+                    acc[client.id] = client.name;
+                    return acc;
+                }, {} as { [key: string]: string });
+                setClientNames(nameMap);
+
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not load transactions or client data.",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if(user){
-            const fetchData = async () => {
-                setLoading(true);
-                try {
-                    const [transactionsData, clientsData] = await Promise.all([
-                        getTransactions(),
-                        getClients(),
-                    ]);
-                    
-                    setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-                    setClients(clientsData);
-
-                    const nameMap = clientsData.reduce((acc, client) => {
-                        acc[client.id] = client.name;
-                        return acc;
-                    }, {} as { [key: string]: string });
-                    setClientNames(nameMap);
-
-                } catch (error) {
-                    console.error("Failed to fetch data:", error);
-                    toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Could not load transactions or client data.",
-                    });
-                } finally {
-                    setLoading(false);
-                }
-            };
             fetchData();
         } else {
             setLoading(false);
@@ -153,7 +155,26 @@ export default function TransactionsPage() {
 
 
     if (loading) {
-        return <div>Loading...</div>
+        return (
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Skeleton className="h-7 w-48" />
+                            <Skeleton className="h-4 w-64 mt-2" />
+                        </div>
+                        <Skeleton className="h-9 w-40" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (

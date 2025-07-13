@@ -55,23 +55,24 @@ export default function ClientsPageComponent() {
   const { user } = useAuth();
 
   useEffect(() => {
+    const fetchClients = async () => {
+      setLoading(true);
+      try {
+        const clientsData = await getClients();
+        setClients(clientsData);
+      } catch (error) {
+        console.error("Failed to fetch clients:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load client data.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (user) {
-      const fetchClients = async () => {
-        setLoading(true);
-        try {
-          const clientsData = await getClients();
-          setClients(clientsData);
-        } catch (error) {
-          console.error("Failed to fetch clients:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not load client data.",
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
       fetchClients();
     } else {
       setLoading(false);

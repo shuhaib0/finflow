@@ -47,6 +47,7 @@ import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function InvoicesPageComponent() {
     const { toast } = useToast()
@@ -68,27 +69,28 @@ export default function InvoicesPageComponent() {
       }, [clients]);
     
     useEffect(() => {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const [invoicesData, clientsData] = await Promise.all([
+            getInvoices(),
+            getClients(),
+          ]);
+          setInvoices(invoicesData);
+          setClients(clientsData);
+        } catch (error) {
+          console.error("Failed to fetch data:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load invoices or client data.",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
       if (user) {
-        const fetchData = async () => {
-          setLoading(true);
-          try {
-            const [invoicesData, clientsData] = await Promise.all([
-              getInvoices(),
-              getClients(),
-            ]);
-            setInvoices(invoicesData);
-            setClients(clientsData);
-          } catch (error) {
-            console.error("Failed to fetch data:", error);
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Could not load invoices or client data.",
-            });
-          } finally {
-            setLoading(false);
-          }
-        };
         fetchData();
       } else {
         setLoading(false);
@@ -285,7 +287,26 @@ export default function InvoicesPageComponent() {
     const isEditing = !!selectedInvoice;
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Skeleton className="h-7 w-48" />
+                            <Skeleton className="h-4 w-64 mt-2" />
+                        </div>
+                        <Skeleton className="h-9 w-32" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (
