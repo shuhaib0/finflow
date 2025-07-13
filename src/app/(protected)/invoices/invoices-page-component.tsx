@@ -58,7 +58,7 @@ export default function InvoicesPageComponent() {
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const invoicePrintRef = useRef<HTMLDivElement>(null);
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -90,10 +90,10 @@ export default function InvoicesPageComponent() {
           }
         };
         fetchData();
-      } else {
+      } else if (!user && !authLoading) {
         setLoading(false);
       }
-    }, [user, toast]);
+    }, [user, authLoading, toast]);
 
 
     const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {

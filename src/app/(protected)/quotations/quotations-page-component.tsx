@@ -56,7 +56,7 @@ export default function QuotationsPageComponent() {
     const [loading, setLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     
     useEffect(() => {
         if (user) {
@@ -81,10 +81,10 @@ export default function QuotationsPageComponent() {
               }
             };
             fetchData();
-        } else {
+        } else if (!user && !authLoading) {
             setLoading(false);
         }
-    }, [user, toast]);
+    }, [user, authLoading, toast]);
     
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
@@ -112,6 +112,7 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams, router, user, loading]);
 
     const handleAddQuotation = () => {

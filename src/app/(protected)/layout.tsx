@@ -19,7 +19,7 @@ import {
   CircleDollarSign,
 } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useState, Children, cloneElement, isValidElement } from "react"
+import { useEffect, useState } from "react"
 
 import {
   Avatar,
@@ -42,13 +42,12 @@ import {
   SidebarMenuSubButton,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarSeparator,
   SidebarGroupContent,
+  SidebarSeparator,
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
-import { signOut } from "firebase/auth"
 import { AuthProvider, useAuth } from './auth-provider'
 
 const navItems = [
@@ -129,14 +128,10 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
 
   const onLogout = async () => {
     await handleLogout(); 
-    // No need to call signOut here as it's handled by Firebase persistence
     router.push('/login');
   }
 
-  if (!user) {
-    // AuthProvider handles the main loading state. If there's no user, 
-    // the useEffect above will trigger a redirect.
-    // We can show a minimal loader here or just null.
+  if (loading || !user) {
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
             <Icons.logo className="h-12 w-12 animate-pulse text-primary" />

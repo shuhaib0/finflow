@@ -56,7 +56,7 @@ export default function TransactionsPage() {
     const [loading, setLoading] = useState(true);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     useEffect(() => {
         if(user){
@@ -89,10 +89,10 @@ export default function TransactionsPage() {
                 }
             };
             fetchData();
-        } else {
+        } else if (!user && !authLoading) {
             setLoading(false);
         }
-    }, [user, toast]);
+    }, [user, authLoading, toast]);
 
     const handleAddTransaction = () => {
         setSelectedTransaction(null)

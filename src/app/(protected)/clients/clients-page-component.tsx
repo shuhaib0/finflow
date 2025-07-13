@@ -72,11 +72,11 @@ export default function ClientsPageComponent() {
           }
       };
       fetchClients();
-    } else {
-      // If there's no user, we are not fetching, so stop loading.
+    } else if (!user && !loading) {
+      // If there's no user and we are not in the initial loading phase, stop loading.
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, loading]);
 
   const filteredClients = useMemo(() => {
     if (!statusFilter) {
