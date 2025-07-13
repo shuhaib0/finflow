@@ -9,10 +9,9 @@ const toClientObject = (doc: any): Client => {
     return {
         id: doc.id,
         ...data,
-        // Convert Firestore Timestamps to ISO strings
         notes: data.notes?.map((note: any) => ({
             ...note,
-            createdAt: note.createdAt instanceof Timestamp ? note.createdAt.toDate().toISOString() : note.createdAt
+            createdAt: note.createdAt?.toDate ? note.createdAt.toDate().toISOString() : note.createdAt
         })) || [],
     };
 };

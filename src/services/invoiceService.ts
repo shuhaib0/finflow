@@ -9,9 +9,9 @@ const toInvoiceObject = (doc: any): Invoice => {
     return {
         id: doc.id,
         ...data,
-        date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date,
-        dueDate: data.dueDate instanceof Timestamp ? data.dueDate.toDate().toISOString() : data.dueDate,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+        dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
     };
 };
 
