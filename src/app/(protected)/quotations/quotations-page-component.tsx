@@ -1,8 +1,10 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from 'next/navigation'
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
 import {
   Table,
   TableBody,
@@ -61,6 +63,7 @@ export default function QuotationsPageComponent() {
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const { user, loading: authLoading } = useAuth();
+    const quotationPrintRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
         if (authLoading) return;
@@ -207,6 +210,7 @@ export default function QuotationsPageComponent() {
           }
           const newQuotation = await addQuotation(newQuotationData);
           setQuotations([...quotations, newQuotation])
+          setSelectedQuotation(newQuotation);
           toast({
             title: "Quotation Created",
             description: "The new quotation has been added successfully.",
@@ -217,6 +221,63 @@ export default function QuotationsPageComponent() {
           toast({ variant: "destructive", title: "Error", description: "Failed to create quotation." });
       }
     }
+
+    const handleDownloadPdf = async () => {
+        const element = quotationPrintRef.current;
+        if (!element) return;
+    
+        const canvas = await html2canvas(element, { 
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+        });
+        const data = canvas.toDataURL('image/png');
+    
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`quotation-${selectedQuotation?.quotationNumber || 'new'}.pdf`);
+      };
+    
+      const handlePrint = () => {
+        const node = quotationPrintRef.current;
+        if (!node) return;
+        
+        const printableContent = node.innerHTML;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Print Quotation</title>
+                <link rel="stylesheet" href="/globals.css">
+                <style>
+                  @media print {
+                    @page { size: A4; margin: 0; }
+                    body { margin: 0; }
+                    .a4-container {
+                        box-shadow: none;
+                        border: none;
+                        margin: 0;
+                        padding: 20mm;
+                    }
+                  }
+                </style>
+              </head>
+              <body>${printableContent}</body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 500);
+        }
+      };
 
     const getStatusVariant = (status: Quotation['status']) => {
         switch (status) {
@@ -366,7 +427,12 @@ export default function QuotationsPageComponent() {
                 )}
             </CardContent>
         </Card>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setSelectedQuotation(null);
+            }
+            setIsDialogOpen(isOpen);
+        }}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
                 <DialogHeader className="p-4 border-b">
                     <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${selectedQuotation?.quotationNumber}` : "New Quotation"}</DialogTitle>
@@ -377,6 +443,9 @@ export default function QuotationsPageComponent() {
                   defaultValues={selectedQuotation}
                   clients={clients}
                   isEditing={isEditing}
+                  printRef={quotationPrintRef}
+                  onPrint={handlePrint}
+                  onDownload={handleDownloadPdf}
                   onClose={() => setIsDialogOpen(false)}
                 />
             </DialogContent>

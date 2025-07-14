@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Trash, X } from "lucide-react"
+import { Calendar as CalendarIcon, Trash, X, Download, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -29,9 +29,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import type { Quotation, InvoiceItem, Client } from "@/types"
 import { Separator } from "@/components/ui/separator"
+import { QuotationTemplate } from "./quotation-template"
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
@@ -70,6 +72,9 @@ type QuotationFormProps = {
   defaultValues?: Quotation | null;
   clients: Client[];
   isEditing: boolean;
+  printRef: React.RefObject<HTMLDivElement>;
+  onPrint: () => void;
+  onDownload: () => void;
   onClose: () => void;
 }
 
@@ -102,8 +107,10 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
             ...defaultValues,
             date: new Date(defaultValues.date), 
             dueDate: new Date(defaultValues.dueDate), 
-            items: defaultValues.items.map(item => ({...item })),
+            items: defaultValues.items.map(item => ({...item, total: (item.quantity || 0) * (item.unitPrice || 0) })),
             currency: defaultValues.currency || 'USD',
+            tax: defaultValues.tax || 0,
+            discount: defaultValues.discount || 0,
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
@@ -117,7 +124,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
     return baseValues;
 }
 
-export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onClose }: QuotationFormProps) {
+export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: QuotationFormProps) {
   const form = useForm<QuotationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -187,293 +194,314 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
       totalAmount: finalTotal,
     })
   }
+  
+  const clientMap = clients.reduce((acc, client) => {
+    acc[client.id] = client;
+    return acc;
+  }, {} as { [key: string]: Client });
+  const currentClient = clientMap[watchedClientRef];
+
+  const constructedQuotation = {
+    ...(defaultValues || getInitialValues(null)),
+    ...allFormValues,
+    totalAmount: totalAmount,
+    client: currentClient,
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
-        <header className="p-4 border-b flex-shrink-0 bg-background z-10">
-            <div className="flex flex-row items-center justify-end">
-                <div className="flex items-center gap-2">
-                    <Button type="submit">
-                        {isEditing ? "Save Changes" : "Create Quotation"}
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden h-full">
+      
+        <div className="relative flex flex-col h-full">
+            <header className="p-4 border-b flex-shrink-0 bg-background z-10">
+                <div className="flex flex-row items-center justify-end">
+                    <div className="flex items-center gap-2">
+                        <Button type="submit">
+                            {isEditing ? "Save Changes" : "Create Quotation"}
+                        </Button>
+                         {isEditing && (
+                        <>
+                            <Button type="button" variant="outline" size="sm" onClick={onDownload}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                        </>
+                        )}
+                        <Button type="button" variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+                    </div>
                 </div>
-            </div>
-        </header>
-
-      <div className="relative flex flex-col h-full flex-1 overflow-y-auto">
-        <div className="flex-1 p-6">
-            <Tabs defaultValue="details" className="w-full mb-6">
-                    <TabsList>
-                        <TabsTrigger value="details">Details</TabsTrigger>
-                        <TabsTrigger value="address">Address & Contact</TabsTrigger>
-                        <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
-                        <TabsTrigger value="more-info">More Info</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="details" className="mt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
-                            <FormField
-                                control={form.control}
-                                name="clientRef"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Client</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a client" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        {clients.map((client) => (
-                                            <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                                        ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="companyTaxId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Company Tax ID</FormLabel>
-                                        <FormControl><Input placeholder="e.g., GST12345" {...field} value={field.value || ''} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="status"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Status</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select status" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="sent">Sent</SelectItem>
-                                        <SelectItem value="won">Won</SelectItem>
-                                        <SelectItem value="lost">Lost</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="currency"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Currency</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select currency" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="USD">USD ($)</SelectItem>
-                                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                                            <SelectItem value="GBP">GBP (£)</SelectItem>
-                                            <SelectItem value="INR">INR (₹)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="date"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>Quotation Date</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
+            </header>
+            <div className="flex-1 overflow-y-auto">
+                <div className="px-6 py-4 pb-48">
+                    <Tabs defaultValue="details" className="w-full mb-6">
+                        <TabsList>
+                            <TabsTrigger value="details">Details</TabsTrigger>
+                            <TabsTrigger value="address">Address & Contact</TabsTrigger>
+                            <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
+                            <TabsTrigger value="more-info">More Info</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="details" className="mt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
+                                <FormField
+                                    control={form.control}
+                                    name="clientRef"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Client</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <Button
-                                                variant={"outline"}
-                                                className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
-                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a client" />
+                                            </SelectTrigger>
                                             </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
-                                            </PopoverContent>
-                                        </Popover>
+                                            <SelectContent>
+                                            {clients.map((client) => (
+                                                <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                                            ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="dueDate"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>Expiry Date</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="companyTaxId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Company Tax ID</FormLabel>
+                                            <FormControl><Input placeholder="e.g., GST12345" {...field} value={field.value || ''} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Status</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <Button
-                                                variant={"outline"}
-                                                className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
-                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
                                             </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
-                                            </PopoverContent>
-                                        </Popover>
+                                            <SelectContent>
+                                            <SelectItem value="draft">Draft</SelectItem>
+                                            <SelectItem value="sent">Sent</SelectItem>
+                                            <SelectItem value="won">Won</SelectItem>
+                                            <SelectItem value="lost">Lost</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <Separator className="my-6" />
-                
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Particulars</h3>
-                            <div className="space-y-4">
-                            {fields.map((field, index) => (
-                                <div key={field.id} className="flex items-start gap-2 p-3 border rounded-md">
-                                    <div className="flex-1 space-y-2">
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.description`}
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="sr-only">Description</FormLabel>
-                                                <FormControl><Textarea placeholder="Item description" {...field} rows={1} className="min-h-0" /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid w-20 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.quantity`}
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Qty</FormLabel>
-                                                <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid w-28 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.unitPrice`}
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Price</FormLabel>
-                                                <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="pt-7">
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                                            <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
-                                Add Item
-                            </Button>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="currency"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Currency</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select currency" />
+                                            </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="USD">USD ($)</SelectItem>
+                                                <SelectItem value="EUR">EUR (€)</SelectItem>
+                                                <SelectItem value="GBP">GBP (£)</SelectItem>
+                                                <SelectItem value="INR">INR (₹)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="date"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Quotation Date</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                    variant={"outline"}
+                                                    className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="dueDate"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Expiry Date</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                    variant={"outline"}
+                                                    className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
-                        </div>
+                            <Separator className="my-6" />
+                    
+                            <div>
+                                <h3 className="text-lg font-medium mb-2">Particulars</h3>
+                                <div className="space-y-4">
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="flex items-start gap-2 p-3 border rounded-md">
+                                        <div className="flex-1 space-y-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.description`}
+                                                render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="sr-only">Description</FormLabel>
+                                                    <FormControl><Textarea placeholder="Item description" {...field} rows={1} className="min-h-0" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="grid w-20 gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.quantity`}
+                                                render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Qty</FormLabel>
+                                                    <FormControl><Input type="number" {...field} placeholder="1"/></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="grid w-28 gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.unitPrice`}
+                                                render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Price</FormLabel>
+                                                    <FormControl><Input type="number" {...field} placeholder="100.00" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="pt-7">
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                                <Trash className="h-4 w-4" /><span className="sr-only">Remove item</span>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
+                                    Add Item
+                                </Button>
+                                </div>
+                            </div>
 
-                        <Separator className="my-6" />
+                            <Separator className="my-6" />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                             <FormField
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name={`discount`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Discount (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`tax`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Tax (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+
+                        </TabsContent>
+                        <TabsContent value="address" className="mt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="billingAddress.addressLine1"
+                                    render={({ field }) => (
+                                        <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                                    )}
+                                />
+                                <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="terms" className="mt-4">
+                            <FormField
                                 control={form.control}
-                                name={`discount`}
+                                name="terms"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Discount (%)</FormLabel>
-                                    <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
-                                    <FormMessage />
+                                        <FormLabel>Terms and Conditions</FormLabel>
+                                        <FormControl><Textarea placeholder="e.g., This quotation is valid for 30 days." {...field} value={field.value || ''} rows={5} /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
+                        </TabsContent>
+                        <TabsContent value="more-info" className="mt-4">
                             <FormField
                                 control={form.control}
-                                name={`tax`}
+                                name="purchaseOrderNumber"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Tax (%)</FormLabel>
-                                    <FormControl><Input type="number" {...field} placeholder="0"/></FormControl>
-                                    <FormMessage />
+                                        <FormLabel>Reference Number</FormLabel>
+                                        <FormControl><Input placeholder="Enter a reference number" {...field} value={field.value || ''} /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </div>
-
-
-                    </TabsContent>
-                    <TabsContent value="address" className="mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="billingAddress.addressLine1"
-                                render={({ field }) => (
-                                    <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                                )}
-                            />
-                            <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="terms" className="mt-4">
-                        <FormField
-                            control={form.control}
-                            name="terms"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Terms and Conditions</FormLabel>
-                                    <FormControl><Textarea placeholder="e.g., This quotation is valid for 30 days." {...field} value={field.value || ''} rows={5} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="more-info" className="mt-4">
-                        <FormField
-                            control={form.control}
-                            name="purchaseOrderNumber"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Reference Number</FormLabel>
-                                    <FormControl><Input placeholder="Enter a reference number" {...field} value={field.value || ''} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </TabsContent>
-                </Tabs>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
             <footer className="p-6 border-t bg-background flex-shrink-0">
                 <div className="ml-auto w-full max-w-sm space-y-2">
@@ -497,6 +525,15 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
                 </div>
             </footer>
         </div>
+
+        <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
+            <ScrollArea className="h-full w-full">
+                <div ref={printRef} className="my-6">
+                    <QuotationTemplate quotation={constructedQuotation} />
+                </div>
+            </ScrollArea>
+        </div>
+
       </form>
     </Form>
   )
