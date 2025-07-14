@@ -23,7 +23,7 @@ const addTransactionTool = ai.defineTool(
   {
     name: 'addTransaction',
     description:
-      'Add a new transaction, either an income or an expense. For expenses, category is required. For income, source is required.',
+      'Add a new transaction, either an income or an expense. For income, source is required. For expenses, infer a category if possible; otherwise, it will default to "other".',
     inputSchema: z.object({
         type: z.enum(['income', 'expense']),
         amount: z.number(),
