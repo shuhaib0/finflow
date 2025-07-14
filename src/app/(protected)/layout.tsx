@@ -86,13 +86,20 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
+  return (
+    <AuthProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </AuthProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const [pageTitle, setPageTitle] = useState("Dashboard");
-
   const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+  const { user } = useAuth();
 
   useEffect(() => {
     const getTitle = () => {
@@ -126,23 +133,10 @@ export default function ProtectedLayout({
     router.push('/login');
   }
 
-  return (
-    <AuthProvider>
-      <InnerLayout onLogout={onLogout} pageTitle={pageTitle} currentRoute={currentRoute}>
-        {children}
-      </InnerLayout>
-    </AuthProvider>
-  );
-}
-
-function InnerLayout({ children, onLogout, pageTitle, currentRoute }: { children: React.ReactNode, onLogout: () => void, pageTitle: string, currentRoute: string }) {
-  const { user } = useAuth();
-  const pathname = usePathname();
-
-  // The AuthProvider shows a loading screen, so by the time we get here, user is guaranteed to be populated.
-  // This check is for type safety and to prevent rendering an unauthenticated layout in an edge case.
   if (!user) {
-    return null; 
+    // This case is handled by the AuthProvider's loading and redirect logic.
+    // Returning null here prevents rendering the layout without a user.
+    return null;
   }
 
   return (

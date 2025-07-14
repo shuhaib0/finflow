@@ -43,10 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   if (user) {
-    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider>;
   }
   
-  return null;
+  // If not loading and no user, the useEffect above will trigger a redirect.
+  // We can return the loading screen to avoid a flash of content.
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+        <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
+        <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+    </div>
+  );
 }
 
 export const useAuth = () => {
