@@ -27,6 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // This effect runs only after the initial loading is complete.
+    // The middleware is responsible for the initial redirect if not authenticated.
+    // This client-side check is a fallback for cases like token expiration during a session.
     if (!loading && !user) {
       router.push('/login');
     }
@@ -41,11 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
   
+  // Only render children if there is a user.
+  // If no user, the useEffect above will trigger a redirect.
+  // We can render a redirecting screen here as a fallback.
   if (user) {
     return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
   }
 
-  // If not loading and no user, we are redirecting. Show a loading state.
+  // This state is reached if !loading and !user, before the router push completes.
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
         <Icons.logo className="h-12 w-12 animate-pulse text-primary" />

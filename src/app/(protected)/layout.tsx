@@ -105,7 +105,7 @@ function LayoutContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
 
   useEffect(() => {
     const getTitle = () => {
@@ -139,6 +139,7 @@ function LayoutContent({
     router.push('/login');
   }
 
+  // The AuthProvider ensures user is not null here, so we can render the layout.
   return (
     <SidebarProvider>
       <Sidebar>
