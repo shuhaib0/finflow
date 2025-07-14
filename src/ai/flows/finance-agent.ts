@@ -24,52 +24,47 @@ const addTransactionTool = ai.defineTool(
     description:
       'Add a new transaction, either an income or an expense. For expenses, category is required. For income, source is required.',
     inputSchema: z.object({
-      type: z.enum(['income', 'expense']),
-      amount: z.number(),
-      date: z
-        .string()
-        .describe('The date of the transaction in YYYY-MM-DD format.'),
-      details: z.object({
-        source: z.string().optional().describe('Source of income.'),
-        category: z
-          .string()
-          .optional()
-          .describe('Category of the expense.'),
-        vendor: z.string().optional().describe('Vendor for the expense.'),
-        description: z.string().optional().describe('A brief description of the transaction.')
-      }),
+        type: z.enum(['income', 'expense']),
+        amount: z.number(),
+        date: z.string().describe('The date of the transaction in YYYY-MM-DD format.'),
+        description: z.string().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment".'),
+        category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing").'),
+        vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft").'),
+        source: z.string().optional().describe('Source of the income (e.g., "Invoice Payment", "Sale").'),
     }),
     outputSchema: z.string(),
   },
   async (input) => {
     try {
-      if (input.type === 'income' && !input.details.source) {
-        return 'Error: Source is required for income transactions.';
-      }
-      if (input.type === 'expense' && !input.details.category) {
-        // If category is missing but description is present, try to infer it.
-        // For this app, let's default to a category if one isn't clear.
-        if (input.details.description) {
-            input.details.category = 'other';
-            input.details.vendor = input.details.vendor || input.details.description;
-        } else {
-            return 'Error: Category is required for expense transactions.';
+        const transactionData: any = {
+            type: input.type,
+            amount: input.amount,
+            date: new Date(input.date).toISOString(),
+        };
+
+        if (input.type === 'income') {
+            if (!input.source) return 'Error: Source is required for income transactions.';
+            transactionData.source = input.source;
+        } else { // expense
+            if (!input.category) {
+                // If category is missing, default to 'other'
+                transactionData.category = 'other';
+            } else {
+                transactionData.category = input.category;
+            }
+            // Use the description as the vendor if no vendor is provided
+            transactionData.vendor = input.vendor || input.description;
         }
-      }
-      await addTransaction({
-        type: input.type,
-        amount: input.amount,
-        date: new Date(input.date).toISOString(),
-        source: input.details.source,
-        category: input.details.category,
-        vendor: input.details.vendor,
-      });
-      return `Successfully added ${input.type} of ${input.amount}.`;
+
+        await addTransaction(transactionData);
+
+        return `Successfully added ${input.type} of ${input.amount} for "${input.description}".`;
     } catch (e: any) {
-      return `Error: ${e.message}`;
+        return `Error: ${e.message}`;
     }
   }
 );
+
 
 // Tool to create a new client
 const addClientTool = ai.defineTool(
@@ -348,7 +343,7 @@ const agent = ai.definePrompt({
     system: `You are a powerful financial assistant for the company Ailutions.
     - You will help users by answering questions and performing actions based on the provided data and tools.
     - To answer questions or perform actions, you must use the provided tools. Do not make up information.
-    - When asked to add an expense, if a category is not provided, use the description to infer a vendor and set the category to 'other'.
+    - When asked to add an expense, if a category is not provided, default the category to 'other' and use the description as the vendor.
     - If you cannot fulfill a request with the available tools, clearly state that you cannot perform the action and suggest what you can do.
     - Do not answer any questions that are not related to the company's financial data.
     - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").`,
