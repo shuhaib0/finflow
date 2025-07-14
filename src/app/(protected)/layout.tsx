@@ -80,13 +80,12 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-
-export default function ProtectedLayout({
+function ProtectedLayoutContent({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -125,7 +124,7 @@ export default function ProtectedLayout({
     router.push('/login');
   }
 
-  // The AuthProvider ensures user is not null here, so we can render the layout.
+  // The AuthProvider ensures loading is false and user is not null here.
   return (
     <SidebarProvider>
       <Sidebar>
@@ -222,11 +221,24 @@ export default function ProtectedLayout({
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <AuthProvider>
             {children}
-          </AuthProvider>
         </main>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AuthProvider>
+      <ProtectedLayoutContent>
+        {children}
+      </ProtectedLayoutContent>
+    </AuthProvider>
   )
 }

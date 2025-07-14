@@ -9,9 +9,10 @@ import { useRouter } from 'next/navigation';
 
 type AuthContextType = {
   user: User | null;
+  loading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({ user: null });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -23,18 +24,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
     });
+
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    // This effect runs only after the initial loading is complete.
-    // The middleware is responsible for the initial redirect if not authenticated.
+    // This effect handles redirection after the initial loading is complete.
+    // The middleware handles the initial server-side redirect if the cookie is missing.
     // This client-side check is a fallback for cases like token expiration during a session.
     if (!loading && !user) {
       router.push('/login');
     }
   }, [loading, user, router]);
 
+  // While loading, show a full-screen loading indicator.
   if (loading) {
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -43,15 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         </div>
     );
   }
-  
-  // Only render children if there is a user.
-  // If no user, the useEffect above will trigger a redirect.
-  // We can render a redirecting screen here as a fallback.
+
+  // If not loading and there's a user, render the children (the application).
   if (user) {
-    return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
   }
 
-  // This state is reached if !loading and !user, before the router push completes.
+  // If not loading and no user, show a redirecting screen while the router push completes.
+  // This state is hit for a brief moment before the redirect happens.
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
         <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
