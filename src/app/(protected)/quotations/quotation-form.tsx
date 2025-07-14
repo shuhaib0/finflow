@@ -501,29 +501,29 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                             />
                         </TabsContent>
                     </Tabs>
+                    <footer className="p-6 border-t bg-background flex-shrink-0 -mx-6">
+                        <div className="ml-auto w-full max-w-sm space-y-2">
+                        <div className="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Discount</span>
+                            <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalDiscount)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Tax</span>
+                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalTax)}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
+                        </div>
+                        </div>
+                    </footer>
                 </div>
             </ScrollArea>
-            <footer className="p-6 border-t bg-background flex-shrink-0">
-                <div className="ml-auto w-full max-w-sm space-y-2">
-                <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Discount</span>
-                    <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalDiscount)}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalTax)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: allFormValues.currency || 'USD' }).format(totalAmount)}</span>
-                </div>
-                </div>
-            </footer>
         </div>
 
         <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
