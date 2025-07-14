@@ -1,5 +1,6 @@
 
 
+
 export type Note = {
     content: string;
     author: string;
@@ -43,8 +44,6 @@ export type InvoiceItem = {
     description: string;
     quantity: number;
     unitPrice: number;
-    tax?: number; // Percentage
-    discount?: number; // Percentage
     total: number;
 };
 
@@ -65,6 +64,8 @@ export type SalesDocument = {
     items: InvoiceItem[];
     currency?: string;
     totalAmount: number;
+    tax?: number; // Overall tax percentage
+    discount?: number; // Overall discount percentage
     billingAddress?: Address;
     terms?: string;
     purchaseOrderNumber?: string;
