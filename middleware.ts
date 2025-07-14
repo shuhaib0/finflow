@@ -1,24 +1,41 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import { isAuthenticated } from '@/lib/auth'
 
-const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna']
-const publicRoutes = ['/login']
+import { type NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/firebase/admin'
+
+const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna', '/quotations']
+const publicRoutes = ['/login', '/signup']
 
 export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
+  const path = request.nextUrl.pathname;
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   
-  const isAuthed = await isAuthenticated()
+  const cookie = request.cookies.get('session')?.value;
+  let isAuthenticated = false;
 
-  if (isProtectedRoute && !isAuthed) {
-    return NextResponse.redirect(new URL('/login', request.nextUrl))
+  if (cookie) {
+    try {
+      await auth.verifySessionCookie(cookie, true);
+      isAuthenticated = true;
+    } catch (err) {
+      // Session cookie is invalid or expired.
+      // The user is not authenticated. We can clear the cookie.
+      const response = NextResponse.redirect(new URL('/login', request.nextUrl));
+      response.cookies.delete('session');
+      return response;
+    }
   }
 
-  if (isAuthed && publicRoutes.some(route => path.startsWith(route))) {
-    return NextResponse.redirect(new URL('/dashboard', request.nextUrl))
+  // If trying to access a protected route without being authenticated, redirect to login
+  if (isProtectedRoute && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/login', request.nextUrl));
   }
 
-  return NextResponse.next()
+  // If authenticated and trying to access a public route (like login), redirect to the dashboard
+  if (isAuthenticated && publicRoutes.some(route => path.startsWith(route))) {
+    return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
