@@ -373,8 +373,18 @@ const agent = ai.definePrompt({
 });
 
 export async function runAgent(prompt: string): Promise<string> {
-    const response = await agent.generate({
-        prompt,
-    });
+  try {
+    const response = await agent.generate({ prompt });
+
+    console.log('AI agent response:', response);
+
+    if (!response || typeof response.text !== 'string') {
+      return "⚠️ The AI agent could not generate a proper response. Please check the tool output.";
+    }
+
     return response.text;
+  } catch (error: any) {
+    console.error("runAgent error:", error);
+    return `❌ Internal error: ${error.message || "unknown error"}`;
+  }
 }
