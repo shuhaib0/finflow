@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth as clientAuth } from '@/lib/firebase/client';
 
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Icons } from '@/components/icons'
-import { handleLogin } from './actions'
+import { createSession } from './actions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Terminal } from 'lucide-react'
 
@@ -45,13 +47,32 @@ export default function LoginPage() {
     setIsSubmitting(true)
     setError(null)
     
-    const result = await handleLogin(values)
+    try {
+        const userCredential = await signInWithEmailAndPassword(
+            clientAuth,
+            values.email,
+            values.password
+        );
 
-    if (result.success) {
-      router.push('/dashboard')
-    } else {
-      setError(result.error || 'An unexpected error occurred.')
-      setIsSubmitting(false)
+        const idToken = await userCredential.user.getIdToken();
+
+        const sessionResult = await createSession({ idToken });
+
+        if (sessionResult.success) {
+            router.push('/dashboard');
+        } else {
+            setError(sessionResult.error || 'Failed to create session.');
+            setIsSubmitting(false);
+        }
+
+    } catch (authError: any) {
+        let errorMessage = 'An unexpected error occurred.';
+        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+            errorMessage = 'Invalid email or password.';
+        }
+        console.error('Firebase login error:', authError);
+        setError(errorMessage);
+        setIsSubmitting(false);
     }
   }
 
