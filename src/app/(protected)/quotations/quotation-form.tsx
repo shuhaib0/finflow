@@ -202,13 +202,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full @container">
-      
         <header className="p-4 border-b flex-shrink-0 bg-background z-10">
-            <div className="flex flex-row items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${defaultValues?.quotationNumber}` : "New Quotation"}</h2>
-                    <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new quotation."}</p>
-                </div>
+            <div className="flex flex-row items-center justify-end">
                 <div className="flex items-center gap-2">
                     <Button type="submit">
                         {isEditing ? "Save Changes" : "Create Quotation"}

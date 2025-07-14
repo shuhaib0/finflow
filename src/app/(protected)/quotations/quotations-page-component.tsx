@@ -22,6 +22,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -158,7 +161,7 @@ export default function QuotationsPageComponent() {
             await updateQuotation(quotationId, { status });
             setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
             toast({
-                title: `Quotation marked as ${"$"}{status}`,
+                title: `Quotation marked as ${status}`,
                 description: "The quotation status has been updated."
             });
         } catch (error) {
@@ -173,7 +176,7 @@ export default function QuotationsPageComponent() {
     const handleConvertToInvoice = (quotation: Quotation) => {
         const { quotationNumber, ...invoiceData } = quotation;
         const fullInvoiceData = { ...invoiceData, quotationRef: quotation.id };
-        router.push(`/invoices?fromQuotation=${"$"}{encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
+        router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
     }
   
     const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
@@ -365,6 +368,10 @@ export default function QuotationsPageComponent() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
+                <DialogHeader className="p-4 border-b">
+                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${selectedQuotation?.quotationNumber}` : "New Quotation"}</DialogTitle>
+                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new quotation."}</DialogDescription>
+                </DialogHeader>
                 <QuotationForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedQuotation}

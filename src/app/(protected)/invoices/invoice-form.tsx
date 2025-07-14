@@ -224,11 +224,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
       
       <div className="relative flex flex-col h-full">
         <header className="p-4 border-b flex-shrink-0 bg-background z-10">
-            <div className="flex flex-row items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${defaultValues?.invoiceNumber}` : "New Invoice"}</h2>
-                    <p className="text-sm text-muted-foreground">{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</p>
-                </div>
+            <div className="flex flex-row items-center justify-end">
                 <div className="flex items-center gap-2">
                     <Button type="submit">
                         {isEditing ? "Save Changes" : "Create Invoice"}

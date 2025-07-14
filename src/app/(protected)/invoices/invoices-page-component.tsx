@@ -23,6 +23,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -134,7 +137,7 @@ export default function InvoicesPageComponent() {
           toast({
             title: fromConversion ? "Invoice Converted" : "Invoice Created",
             description: fromConversion 
-              ? `Invoice ${"$"}{newInvoice.invoiceNumber} created from quotation.`
+              ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
               : "The new invoice has been added successfully.",
           });
         }
@@ -259,7 +262,7 @@ export default function InvoicesPageComponent() {
                   }
                 </style>
               </head>
-              <body>${"$"}{printableContent}</body>
+              <body>${printableContent}</body>
             </html>
           `);
           printWindow.document.close();
@@ -408,6 +411,10 @@ export default function InvoicesPageComponent() {
         </Card>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
+                <DialogHeader className="p-4 border-b">
+                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
+                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                </DialogHeader>
                 <InvoiceForm 
                   onSubmit={handleFormSubmit}
                   defaultValues={selectedInvoice}

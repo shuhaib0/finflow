@@ -136,14 +136,14 @@ export default function ClientsPageComponent() {
         setClients(clients.map(c => c.id === selectedClient.id ? updatedClient as Client : c));
         setSelectedClient(updatedClient as Client);
         toast({
-            title: `Contact converted to ${"$"}{status}`,
-            description: `${"$"}{selectedClient.name} is now a ${"$"}{status}.`,
+            title: `Contact converted to ${status}`,
+            description: `${selectedClient.name} is now a ${status}.`,
         });
     } catch (error) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: `Failed to convert contact to ${"$"}{status}.`,
+            description: `Failed to convert contact to ${status}.`,
         });
     }
   }
@@ -289,7 +289,7 @@ export default function ClientsPageComponent() {
                   </TableCell>
                   <TableCell>
                     {client.status === 'opportunity' && client.opportunityWorth
-                      ? `$${"$"}{client.opportunityWorth.toLocaleString()}`
+                      ? `$${client.opportunityWorth.toLocaleString()}`
                       : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
