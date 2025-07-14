@@ -9,9 +9,10 @@ import { useRouter } from 'next/navigation';
 
 type AuthContextType = {
   user: User | null;
+  loading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({ user: null });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -23,8 +24,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
     });
+
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
+
+  // The middleware already handles redirecting to /login if there's no session.
+  // This client-side check handles the case where the Firebase session expires
+  // while the user is on the site.
+  useEffect(() => {
+    if (!loading && !user) {
+        // This redirect is safe because it only runs after the initial auth check.
+        router.push('/login');
+    }
+  }, [user, loading, router]);
+
 
   if (loading) {
     return (
@@ -35,21 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // The middleware now handles all redirection. If the user is null at this point,
-  // it means they've somehow bypassed the middleware, but we won't render the UI.
-  // The middleware will eventually redirect them.
-  if (!user) {
-    // This state prevents a flash of content if Firebase auth is slow.
-    // The middleware is the primary guard.
-    return (
-        <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
-            <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-            <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
-        </div>
-    );
+  // If we are done loading and there is a user, render the children.
+  // Otherwise, the effect above will have already triggered a redirect.
+  // Returning null here prevents a flash of content during the redirect.
+  if (user) {
+    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
   }
-  
-  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
+
+  return null;
 }
 
 export const useAuth = () => {

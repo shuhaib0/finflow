@@ -86,20 +86,11 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AuthProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </AuthProvider>
-  );
-}
-
-function LayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-  const { user } = useAuth();
+  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
 
   useEffect(() => {
     const getTitle = () => {
@@ -133,6 +124,36 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }
 
+  return (
+    <AuthProvider>
+      <LayoutContent onLogout={onLogout} pageTitle={pageTitle} currentRoute={currentRoute} pathname={pathname}>
+        {children}
+      </LayoutContent>
+    </AuthProvider>
+  );
+}
+
+function LayoutContent({ 
+    children, 
+    onLogout, 
+    pageTitle, 
+    currentRoute, 
+    pathname 
+}: { 
+    children: React.ReactNode, 
+    onLogout: () => void, 
+    pageTitle: string, 
+    currentRoute: string, 
+    pathname: string 
+}) {
+  const { user } = useAuth();
+  
+  if (!user) {
+    // This case should be handled by the AuthProvider's loading state,
+    // but as a fallback, we render nothing to prevent errors.
+    return null;
+  }
+  
   return (
     <SidebarProvider>
       <Sidebar>
