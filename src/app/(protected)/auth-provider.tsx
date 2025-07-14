@@ -9,10 +9,9 @@ import { useRouter } from 'next/navigation';
 
 type AuthContextType = {
   user: User | null;
-  loading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -24,18 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
     });
-
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  // The middleware already handles redirecting to /login if there's no session.
-  // This client-side check handles the case where the Firebase session expires
-  // while the user is on the site.
   useEffect(() => {
+    // The middleware handles the initial redirect if there's no session cookie.
+    // This client-side check handles the case where the Firebase session has expired
+    // or the user logs out while on the site.
     if (!loading && !user) {
-        // This redirect is safe because it only runs after the initial auth check.
-        router.push('/login');
+      router.push('/login');
     }
   }, [user, loading, router]);
 
@@ -48,15 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         </div>
     );
   }
-
-  // If we are done loading and there is a user, render the children.
-  // Otherwise, the effect above will have already triggered a redirect.
-  // Returning null here prevents a flash of content during the redirect.
+  
   if (user) {
-    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
   }
-
-  return null;
+  
+  // If not loading and no user, the redirect effect above will have been triggered.
+  // Returning a loading screen here prevents a flash of unauthenticated content.
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+        <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
+        <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+    </div>
+  );
 }
 
 export const useAuth = () => {

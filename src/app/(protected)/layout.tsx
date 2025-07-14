@@ -86,6 +86,21 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
+  return (
+    <AuthProvider>
+      <LayoutContent>
+        {children}
+      </LayoutContent>
+    </AuthProvider>
+  );
+}
+
+function LayoutContent({ 
+    children
+}: { 
+    children: React.ReactNode 
+}) {
+  const { user } = useAuth(); // This hook now reliably provides the user object
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -124,35 +139,8 @@ export default function ProtectedLayout({
     router.push('/login');
   }
 
-  return (
-    <AuthProvider>
-      <LayoutContent onLogout={onLogout} pageTitle={pageTitle} currentRoute={currentRoute} pathname={pathname}>
-        {children}
-      </LayoutContent>
-    </AuthProvider>
-  );
-}
-
-function LayoutContent({ 
-    children, 
-    onLogout, 
-    pageTitle, 
-    currentRoute, 
-    pathname 
-}: { 
-    children: React.ReactNode, 
-    onLogout: () => void, 
-    pageTitle: string, 
-    currentRoute: string, 
-    pathname: string 
-}) {
-  const { user } = useAuth();
-  
-  if (!user) {
-    // This case should be handled by the AuthProvider's loading state,
-    // but as a fallback, we render nothing to prevent errors.
-    return null;
-  }
+  // The AuthProvider handles the loading state. 
+  // By the time this component renders, the user object is guaranteed to be available.
   
   return (
     <SidebarProvider>
