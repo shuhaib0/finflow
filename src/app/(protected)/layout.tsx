@@ -100,12 +100,12 @@ function LayoutContent({
 }: { 
     children: React.ReactNode 
 }) {
-  const { user } = useAuth(); // This hook now reliably provides the user object
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   useEffect(() => {
     const getTitle = () => {
@@ -139,9 +139,6 @@ function LayoutContent({
     router.push('/login');
   }
 
-  // The AuthProvider handles the loading state. 
-  // By the time this component renders, the user object is guaranteed to be available.
-  
   return (
     <SidebarProvider>
       <Sidebar>

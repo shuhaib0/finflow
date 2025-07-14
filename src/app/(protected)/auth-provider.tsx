@@ -26,16 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // The middleware handles the initial redirect if there's no session cookie.
-    // This client-side check handles the case where the Firebase session has expired
-    // or the user logs out while on the site.
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-
   if (loading) {
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -48,9 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (user) {
     return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
   }
-  
-  // If not loading and no user, the redirect effect above will have been triggered.
-  // Returning a loading screen here prevents a flash of unauthenticated content.
+
+  // If not loading and no user, middleware should have already redirected.
+  // This is a fallback to prevent rendering a broken state.
+  router.push('/login');
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
         <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
