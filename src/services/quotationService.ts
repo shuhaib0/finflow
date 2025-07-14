@@ -18,8 +18,13 @@ const toQuotationObject = (doc: any): Quotation => {
 
 export const getQuotations = async (): Promise<Quotation[]> => {
     const snapshot = await getDocs(quotationsCollection);
-    return snapshot.docs.map(toQuotationObject);
+    return snapshot.docs.map(toQuotationObject).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
+
+export const getQuotationCount = async (): Promise<number> => {
+    const snapshot = await getDocs(quotationsCollection);
+    return snapshot.size;
+}
 
 export const addQuotation = async (quotationData: Omit<Quotation, 'id'>): Promise<Quotation> => {
     const dataWithTimestamps = {
@@ -50,3 +55,5 @@ export const deleteQuotation = async (id: string): Promise<void> => {
     const quotationDoc = doc(db, 'quotations', id);
     await deleteDoc(quotationDoc);
 };
+
+    

@@ -6,14 +6,15 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import {
   addClient,
   findClientByName,
   getClients,
 } from '@/services/clientService';
 import { addTransaction, getTransactions } from '@/services/transactionService';
-import { addInvoice, getInvoices, getInvoiceCount } from '@/services/invoiceService';
+import { addInvoice, getInvoices, getInvoiceCount, updateInvoice } from '@/services/invoiceService';
+import { addQuotation, getQuotations, getQuotationCount, updateQuotation } from '@/services/quotationService';
 import type { InvoiceItem } from '@/types';
 
 // Tool to add a new transaction (income or expense)
@@ -148,6 +149,58 @@ const createInvoiceTool = ai.defineTool(
     }
 );
 
+// Tool to create a new quotation
+const createQuotationTool = ai.defineTool(
+  {
+    name: 'createQuotation',
+    description: 'Create a new quotation or proposal for a client.',
+    inputSchema: z.object({
+      clientName: z.string().describe("The name of the client for the quotation."),
+      items: z.array(z.object({
+          description: z.string(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+      })).describe("An array of items for the quotation."),
+      dueDate: z.string().describe("The expiry date for the quotation in YYYY-MM-DD format."),
+      currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']).default('USD'),
+    }),
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    try {
+      const client = await findClientByName(input.clientName);
+      if (!client) {
+        return `Error: Client with name '${input.clientName}' not found. Please create the client first.`;
+      }
+
+      const itemsWithTotal = input.items.map(item => ({
+          ...item,
+          total: item.quantity * item.unitPrice,
+      }));
+
+      const totalAmount = itemsWithTotal.reduce((acc, item) => acc + item.total, 0);
+      const quotationCount = await getQuotationCount();
+      
+      const newQuotation = {
+          clientRef: client.id,
+          items: itemsWithTotal,
+          totalAmount,
+          date: new Date().toISOString(),
+          dueDate: new Date(input.dueDate).toISOString(),
+          status: 'draft' as const,
+          quotationNumber: `QUO-${String(quotationCount + 1).padStart(3, '0')}`,
+          createdAt: new Date().toISOString(),
+          currency: input.currency,
+      };
+
+      await addQuotation(newQuotation);
+      return `Quotation ${newQuotation.quotationNumber} created successfully for ${client.name}.`;
+    } catch (e: any) {
+      return `Error: ${e.message}`;
+    }
+  }
+);
+
 // Tool to get a list of all clients
 const listClientsTool = ai.defineTool(
     {
@@ -165,6 +218,97 @@ const listClientsTool = ai.defineTool(
         return clients.map(c => ({ name: c.name, status: c.status, opportunityWorth: c.opportunityWorth }));
     }
 );
+
+// Tool to get a list of invoices with filtering
+const listInvoicesTool = ai.defineTool({
+  name: 'listInvoices',
+  description: 'Get a list of all invoices, optionally filtering by status.',
+  inputSchema: z.object({
+    status: z.enum(['draft', 'sent', 'paid', 'overdue']).optional().describe('Filter invoices by status.'),
+  }),
+  outputSchema: z.any(),
+}, async ({ status }) => {
+  let invoices = await getInvoices();
+  if (status) {
+    invoices = invoices.filter(inv => inv.status === status);
+  }
+  return invoices.map(inv => ({
+    invoiceNumber: inv.invoiceNumber,
+    clientRef: inv.clientRef,
+    totalAmount: inv.totalAmount,
+    status: inv.status,
+    dueDate: inv.dueDate,
+  }));
+});
+
+// Tool to get a list of quotations with filtering
+const listQuotationsTool = ai.defineTool({
+  name: 'listQuotations',
+  description: 'Get a list of all quotations, optionally filtering by status.',
+  inputSchema: z.object({
+    status: z.enum(['draft', 'sent', 'won', 'lost']).optional().describe('Filter quotations by status.'),
+  }),
+  outputSchema: z.any(),
+}, async ({ status }) => {
+  let quotations = await getQuotations();
+  if (status) {
+    quotations = quotations.filter(q => q.status === status);
+  }
+  return quotations.map(q => ({
+    quotationNumber: q.quotationNumber,
+    clientRef: q.clientRef,
+    totalAmount: q.totalAmount,
+    status: q.status,
+    dueDate: q.dueDate,
+  }));
+});
+
+// Tool to update invoice status
+const updateInvoiceStatusTool = ai.defineTool({
+  name: 'updateInvoiceStatus',
+  description: 'Update the status of a specific invoice.',
+  inputSchema: z.object({
+    invoiceNumber: z.string().describe('The number of the invoice to update.'),
+    status: z.enum(['draft', 'sent', 'paid', 'overdue']).describe('The new status for the invoice.'),
+  }),
+  outputSchema: z.string(),
+}, async ({ invoiceNumber, status }) => {
+  try {
+    const invoices = await getInvoices();
+    const invoice = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
+    if (!invoice) {
+      return `Error: Invoice with number '${invoiceNumber}' not found.`;
+    }
+    await updateInvoice(invoice.id, { status });
+    return `Status of invoice ${invoiceNumber} updated to ${status}.`;
+  } catch (e: any) {
+    return `Error: ${e.message}`;
+  }
+});
+
+// Tool to update quotation status
+const updateQuotationStatusTool = ai.defineTool({
+  name: 'updateQuotationStatus',
+  description: 'Update the status of a specific quotation.',
+  inputSchema: z.object({
+    quotationNumber: z.string().describe('The number of the quotation to update.'),
+    status: z.enum(['draft', 'sent', 'won', 'lost']).describe('The new status for the quotation.'),
+  }),
+  outputSchema: z.string(),
+}, async ({ quotationNumber, status }) => {
+  try {
+    const quotations = await getQuotations();
+    const quotation = quotations.find(q => q.quotationNumber === quotationNumber);
+    if (!quotation) {
+      return `Error: Quotation with number '${quotationNumber}' not found.`;
+    }
+    await updateQuotation(quotation.id, { status });
+    return `Status of quotation ${quotationNumber} updated to ${status}.`;
+  } catch (e: any) {
+    return `Error: ${e.message}`;
+  }
+});
+
 
 // Tool to get a financial summary
 const getFinancialSummaryTool = ai.defineTool(
@@ -208,7 +352,18 @@ const agent = ai.definePrompt({
     - If you cannot fulfill a request with the available tools, clearly state that you cannot perform the action and suggest what you can do.
     - Do not answer any questions that are not related to the company's financial data.
     - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").`,
-    tools: [addTransactionTool, addClientTool, createInvoiceTool, listClientsTool, getFinancialSummaryTool],
+    tools: [
+      addTransactionTool, 
+      addClientTool, 
+      createInvoiceTool, 
+      listClientsTool, 
+      getFinancialSummaryTool,
+      createQuotationTool,
+      listInvoicesTool,
+      listQuotationsTool,
+      updateInvoiceStatusTool,
+      updateQuotationStatusTool,
+    ],
 });
 
 export async function runAgent(prompt: string): Promise<string> {
@@ -217,3 +372,5 @@ export async function runAgent(prompt: string): Promise<string> {
     });
     return response.text();
 }
+
+    
