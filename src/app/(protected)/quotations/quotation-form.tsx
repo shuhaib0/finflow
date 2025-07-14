@@ -100,7 +100,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
             ...defaultValues,
             date: new Date(defaultValues.date), 
             dueDate: new Date(defaultValues.dueDate), 
-            items: defaultValues.items.map(item => ({...item})),
+            items: defaultValues.items.map(item => ({...item, tax: item.tax || 0, discount: item.discount || 0 })),
             currency: defaultValues.currency || 'USD',
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
@@ -252,7 +252,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Company Tax ID</FormLabel>
-                                        <FormControl><Input placeholder="e.g., GST12345" {...field} /></FormControl>
+                                        <FormControl><Input placeholder="e.g., GST12345" {...field} value={field.value || ''} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -445,14 +445,14 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
                                 control={form.control}
                                 name="billingAddress.addressLine1"
                                 render={({ field }) => (
-                                    <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                                 )}
                             />
-                            <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </TabsContent>
                     <TabsContent value="terms" className="mt-4">
@@ -462,7 +462,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Terms and Conditions</FormLabel>
-                                    <FormControl><Textarea placeholder="e.g., This quotation is valid for 30 days." {...field} rows={5} /></FormControl>
+                                    <FormControl><Textarea placeholder="e.g., This quotation is valid for 30 days." {...field} value={field.value || ''} rows={5} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -475,7 +475,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, onC
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Reference Number</FormLabel>
-                                    <FormControl><Input placeholder="Enter a reference number" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="Enter a reference number" {...field} value={field.value || ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}

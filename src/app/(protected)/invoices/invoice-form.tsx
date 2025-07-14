@@ -105,7 +105,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
             ...defaultValues,
             date: new Date(defaultValues.date), 
             dueDate: new Date(defaultValues.dueDate), 
-            items: defaultValues.items.map(item => ({...item})),
+            items: defaultValues.items.map(item => ({...item, tax: item.tax || 0, discount: item.discount || 0 })),
             currency: defaultValues.currency || 'USD',
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
@@ -278,7 +278,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                               render={({ field }) => (
                                   <FormItem>
                                       <FormLabel>Company Tax ID</FormLabel>
-                                      <FormControl><Input placeholder="e.g., GST12345" {...field} /></FormControl>
+                                      <FormControl><Input placeholder="e.g., GST12345" {...field} value={field.value || ''} /></FormControl>
                                       <FormMessage />
                                   </FormItem>
                               )}
@@ -471,14 +471,14 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                               control={form.control}
                               name="billingAddress.addressLine1"
                               render={({ field }) => (
-                                  <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} /></FormControl><FormMessage /></FormItem>
+                                  <FormItem className="md:col-span-2"><FormLabel>Billing Address</FormLabel><FormControl><Input placeholder="Line 1" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                               )}
                           />
-                          <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="billingAddress.addressLine2" render={({ field }) => (<FormItem><FormControl><Input placeholder="Line 2" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="billingAddress.city" render={({ field }) => (<FormItem><FormControl><Input placeholder="City" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="billingAddress.state" render={({ field }) => (<FormItem><FormControl><Input placeholder="State" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="billingAddress.postalCode" render={({ field }) => (<FormItem><FormControl><Input placeholder="Postal Code" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="billingAddress.country" render={({ field }) => (<FormItem><FormControl><Input placeholder="Country" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
                   </TabsContent>
                   <TabsContent value="terms" className="mt-4">
@@ -488,7 +488,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                           render={({ field }) => (
                               <FormItem>
                                   <FormLabel>Terms and Conditions</FormLabel>
-                                  <FormControl><Textarea placeholder="e.g., Payment is due within 30 days." {...field} rows={5} /></FormControl>
+                                  <FormControl><Textarea placeholder="e.g., Payment is due within 30 days." {...field} value={field.value || ''} rows={5} /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}
@@ -501,7 +501,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                           render={({ field }) => (
                               <FormItem>
                                   <FormLabel>Purchase Order (PO) Number</FormLabel>
-                                  <FormControl><Input placeholder="Enter PO Number" {...field} /></FormControl>
+                                  <FormControl><Input placeholder="Enter PO Number" {...field} value={field.value || ''} /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}

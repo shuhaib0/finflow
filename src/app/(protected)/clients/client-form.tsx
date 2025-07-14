@@ -291,7 +291,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                                 <FormLabel>Job Title</FormLabel>
                                 <FormControl>
-                                <Input placeholder="e.g., CEO" {...field} />
+                                <Input placeholder="e.g., CEO" {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -305,7 +305,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                             <FormLabel>Salutation</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., Mr, Mrs" {...field} />
+                                <Input placeholder="e.g., Mr, Mrs" {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -318,7 +318,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                             <FormLabel>Gender</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., Male, Female" {...field} />
+                                <Input placeholder="e.g., Male, Female" {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -366,7 +366,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                             <FormLabel>Middle Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="Michael" {...field} />
+                                <Input placeholder="Michael" {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -401,7 +401,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                             <FormLabel>Last Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="Smith" {...field} />
+                                <Input placeholder="Smith" {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -437,7 +437,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem className="md:col-span-2">
                                     <FormLabel>Please specify</FormLabel>
                                     <FormControl>
-                                    <Textarea placeholder="Describe the request..." {...field} />
+                                    <Textarea placeholder="Describe the request..." {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -471,7 +471,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="contact@innovate.com" {...field} />
+                                        <Input placeholder="contact@innovate.com" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -484,7 +484,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>Mobile No</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123-456-7890" {...field} />
+                                        <Input placeholder="123-456-7890" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -497,7 +497,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>Phone</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123-456-7890" {...field} />
+                                        <Input placeholder="123-456-7890" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -510,7 +510,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>Website</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="https://innovate.com" {...field} />
+                                        <Input placeholder="https://innovate.com" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -523,7 +523,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>WhatsApp</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123-456-7890" {...field} />
+                                        <Input placeholder="123-456-7890" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -536,7 +536,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                     <FormItem>
                                     <FormLabel>Phone Ext.</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123" {...field} />
+                                        <Input placeholder="123" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -554,7 +554,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem className="md:col-span-2">
                                     <FormLabel>Address Line 1</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="123 Main St" {...field} />
+                                        <Input placeholder="123 Main St" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -567,7 +567,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem className="md:col-span-2">
                                     <FormLabel>Address Line 2</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Suite 400" {...field} />
+                                        <Input placeholder="Suite 400" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -580,7 +580,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem>
                                     <FormLabel>City</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="New York" {...field} />
+                                        <Input placeholder="New York" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -593,7 +593,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem>
                                     <FormLabel>State / Province</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="NY" {...field} />
+                                        <Input placeholder="NY" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -606,7 +606,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem>
                                     <FormLabel>Postal Code</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="10001" {...field} />
+                                        <Input placeholder="10001" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -619,7 +619,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                                 <FormItem>
                                     <FormLabel>Country</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="USA" {...field} />
+                                        <Input placeholder="USA" {...field} value={field.value || ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -636,7 +636,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                                 <FormLabel>Source</FormLabel>
                                 <FormControl>
-                                <Input placeholder="e.g., Website, Referral" {...field} />
+                                <Input placeholder="e.g., Website, Referral" {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -649,7 +649,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                                 <FormLabel>Campaign</FormLabel>
                                 <FormControl>
-                                <Input placeholder="e.g., Summer 2024 Promo" {...field} />
+                                <Input placeholder="e.g., Summer 2024 Promo" {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -682,7 +682,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                             <FormItem>
                                 <FormLabel>{existingNotes.length > 0 ? 'Add a new note' : 'Add a note'}</FormLabel>
                                 <FormControl>
-                                <Textarea placeholder="Add a note..." {...field} />
+                                <Textarea placeholder="Add a note..." {...field} value={field.value || ''} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
