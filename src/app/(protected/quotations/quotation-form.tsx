@@ -210,9 +210,9 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 h-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 h-full overflow-hidden">
       
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full">
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
