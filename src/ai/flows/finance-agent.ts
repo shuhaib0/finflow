@@ -383,7 +383,7 @@ const agent = ai.definePrompt({
 
 export async function runAgent(prompt: string): Promise<string> {
   try {
-    const response = await agent.generate({ prompt });
+    const response = await agent({ prompt });
 
     console.log('AI agent response:', response);
 
