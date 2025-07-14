@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -40,6 +41,7 @@ const addTransactionTool = ai.defineTool(
             type: input.type,
             amount: input.amount,
             date: new Date(input.date).toISOString(),
+            description: input.description,
         };
 
         if (input.type === 'income') {
@@ -341,12 +343,14 @@ const getFinancialSummaryTool = ai.defineTool(
 const agent = ai.definePrompt({
     name: 'financeAgent',
     system: `You are a powerful financial assistant for the company Ailutions.
-    - You will help users by answering questions and performing actions based on the provided data and tools.
-    - To answer questions or perform actions, you must use the provided tools. Do not make up information.
-    - When asked to add an expense, if a category is not provided, default the category to 'other' and use the description as the vendor.
+    - Your goal is to help users by answering questions and performing actions related to their financial data.
+    - When a user asks you to perform an action (like creating, adding, or updating something), you should use the provided tools.
+    - When a user asks a question, first see if you can answer it using the available tools to get the most accurate, up-to-date information.
     - If you cannot fulfill a request with the available tools, clearly state that you cannot perform the action and suggest what you can do.
-    - Do not answer any questions that are not related to the company's financial data.
-    - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").`,
+    - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").
+    - When asked to add an expense, if a category is not provided, default the category to 'other'.
+    - Do not answer any questions that are not related to the company's financial data.`,
+    prompt: `User question: {{prompt}}`,
     tools: [
       addTransactionTool, 
       addClientTool, 
@@ -365,7 +369,5 @@ export async function runAgent(prompt: string): Promise<string> {
     const response = await agent.generate({
         prompt,
     });
-    return response.text();
+    return response.text;
 }
-
-    
