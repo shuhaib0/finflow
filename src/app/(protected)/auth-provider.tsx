@@ -26,6 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -39,9 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
   }
 
-  // If not loading and no user, middleware should have already redirected.
-  // This is a fallback to prevent rendering a broken state.
-  router.push('/login');
+  // If not loading and no user, we are redirecting. Show a loading state.
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
         <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
