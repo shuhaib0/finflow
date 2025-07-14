@@ -27,7 +27,7 @@ const addTransactionTool = ai.defineTool(
     inputSchema: z.object({
         type: z.enum(['income', 'expense']),
         amount: z.number(),
-        date: z.string().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
+        date: z.string().optional().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
         description: z.string().optional().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment". Defaults to "Unspecified Expense" if not provided for expenses.'),
         category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing", "travel", "office").'),
         vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft", "Figma").'),
