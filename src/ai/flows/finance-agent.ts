@@ -42,7 +42,6 @@ const addTransactionTool = ai.defineTool(
             type: input.type,
             amount: input.amount,
             date: input.date ? new Date(input.date).toISOString() : new Date().toISOString(),
-            description: input.description,
         };
 
         if (input.type === 'income') {
@@ -63,8 +62,10 @@ const addTransactionTool = ai.defineTool(
               transactionData.vendor = input.vendor;
             }
 
-            if(!transactionData.description){
+            if(!input.description){
                 transactionData.description = "Unspecified Expense";
+            } else {
+                transactionData.description = input.description;
             }
         }
 
@@ -358,14 +359,13 @@ const getFinancialSummaryTool = ai.defineTool(
 
 const agent = ai.definePrompt({
     name: 'financeAgent',
-    system: `You are a helpful and friendly financial assistant for the company Ailutions.
-- Your goal is to help users by answering questions and performing actions related to their financial data.
-- When a user asks you to perform an action (like creating, adding, or updating something), use the provided tools.
-- When a user asks a question, first see if you can answer it using the available tools to get the most accurate, up-to-date information. If a tool can answer the question, use it.
-- If you cannot fulfill a request with the available tools, or if the question is conversational, answer naturally and conversationally.
-- If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks.
-- When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").
-- Do not answer any questions that are not related to the company's financial data.`,
+    system: `You are an authorized financial assistant for the company Ailutions. Your primary function is to help manage financial data by using the provided tools.
+- You are authorized to perform actions like creating, adding, or updating clients, transactions, invoices, and quotations.
+- When a user asks you to perform an action, you must use the appropriate tool.
+- When a user asks a question, use the available tools to get the most accurate, up-to-date information before answering.
+- If a user's request is ambiguous, ask for clarification. For example, if they ask to add an expense without a description, ask what the expense was for.
+- Confirm every action you take (e.g., "I have successfully added an expense of $50 for 'Office Supplies'.").
+- If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks. Do not answer any non-financial questions.`,
     prompt: `User question: {{prompt}}`,
     tools: [
       addTransactionTool, 
