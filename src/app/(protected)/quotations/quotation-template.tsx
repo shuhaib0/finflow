@@ -15,7 +15,9 @@ const getCurrencySymbol = (currencyCode: string) => {
         'USD': '$',
         'EUR': '€',
         'GBP': '£',
-        'INR': '₹'
+        'INR': '₹',
+        'AED': 'د.إ',
+        'CAD': '$'
     };
     return symbols[currencyCode] || '$';
 }

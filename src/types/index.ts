@@ -1,6 +1,5 @@
 
 
-
 export type Note = {
     content: string;
     author: string;
@@ -62,7 +61,7 @@ export type SalesDocument = {
     companyTaxId?: string;
     date: string; // ISO string
     items: InvoiceItem[];
-    currency?: string;
+    currency?: 'USD' | 'EUR' | 'GBP' | 'INR' | 'AED' | 'CAD';
     totalAmount: number;
     tax?: number; // Overall tax percentage
     discount?: number; // Overall discount percentage
