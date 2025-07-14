@@ -35,6 +35,7 @@ const addTransactionTool = ai.defineTool(
           .optional()
           .describe('Category of the expense.'),
         vendor: z.string().optional().describe('Vendor for the expense.'),
+        description: z.string().optional().describe('A brief description of the transaction.')
       }),
     }),
     outputSchema: z.string(),
@@ -45,7 +46,14 @@ const addTransactionTool = ai.defineTool(
         return 'Error: Source is required for income transactions.';
       }
       if (input.type === 'expense' && !input.details.category) {
-        return 'Error: Category is required for expense transactions.';
+        // If category is missing but description is present, try to infer it.
+        // For this app, let's default to a category if one isn't clear.
+        if (input.details.description) {
+            input.details.category = 'other';
+            input.details.vendor = input.details.vendor || input.details.description;
+        } else {
+            return 'Error: Category is required for expense transactions.';
+        }
       }
       await addTransaction({
         type: input.type,
@@ -196,6 +204,7 @@ const agent = ai.definePrompt({
     system: `You are a powerful financial assistant for the company Ailutions.
     - You will help users by answering questions and performing actions based on the provided data and tools.
     - To answer questions or perform actions, you must use the provided tools. Do not make up information.
+    - When asked to add an expense, if a category is not provided, use the description to infer a vendor and set the category to 'other'.
     - If you cannot fulfill a request with the available tools, clearly state that you cannot perform the action and suggest what you can do.
     - Do not answer any questions that are not related to the company's financial data.
     - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").`,
