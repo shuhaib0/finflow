@@ -133,12 +133,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }
 
-  if (!user) {
-    // This case is handled by the AuthProvider's loading and redirect logic.
-    // Returning null here prevents rendering the layout without a user.
-    return null;
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>
