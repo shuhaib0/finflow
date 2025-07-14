@@ -50,12 +50,10 @@ const addTransactionTool = ai.defineTool(
             transactionData.source = input.source;
         } else { // expense
             if (!input.category) {
-                // If category is missing, default to 'other'
                 transactionData.category = 'other';
             } else {
                 transactionData.category = input.category;
             }
-            // Use the vendor if provided, otherwise it can be null
             transactionData.vendor = input.vendor;
         }
 
@@ -348,15 +346,14 @@ const getFinancialSummaryTool = ai.defineTool(
 
 const agent = ai.definePrompt({
     name: 'financeAgent',
-    system: `You are a powerful financial assistant for the company Ailutions.
-    - Your goal is to help users by answering questions and performing actions related to their financial data.
-    - When a user asks you to perform an action (like creating, adding, or updating something), you MUST use the provided tools.
-    - When a user asks a question, first see if you can answer it using the available tools to get the most accurate, up-to-date information. If a tool can answer the question, use it.
-    - If you cannot fulfill a request with the available tools, or if the question is conversational, answer naturally.
-    - If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks.
-    - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").
-    - When asked to add an expense, if a category is not provided, default the category to 'other'.
-    - Do not answer any questions that are not related to the company's financial data.`,
+    system: `You are a helpful and friendly financial assistant for the company Ailutions.
+- Your goal is to help users by answering questions and performing actions related to their financial data.
+- When a user asks you to perform an action (like creating, adding, or updating something), use the provided tools.
+- When a user asks a question, first see if you can answer it using the available tools to get the most accurate, up-to-date information. If a tool can answer the question, use it.
+- If you cannot fulfill a request with the available tools, or if the question is conversational, answer naturally and conversationally.
+- If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks.
+- When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").
+- Do not answer any questions that are not related to the company's financial data.`,
     prompt: `User question: {{prompt}}`,
     tools: [
       addTransactionTool, 
