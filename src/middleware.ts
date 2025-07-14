@@ -8,6 +8,11 @@ const publicRoutes = ['/login', '/signup'];
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // If the path is for a static file, do nothing.
+  if (path.startsWith('/_next/') || path.startsWith('/static/') || path.includes('.')) {
+    return NextResponse.next();
+  }
+
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route)) || path === '/';
 
   const sessionCookie = request.cookies.get('session')?.value;
