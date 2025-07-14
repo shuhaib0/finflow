@@ -86,20 +86,6 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AuthProvider>
-      <LayoutContent>
-        {children}
-      </LayoutContent>
-    </AuthProvider>
-  );
-}
-
-function LayoutContent({ 
-    children
-}: { 
-    children: React.ReactNode 
-}) {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -236,7 +222,9 @@ function LayoutContent({
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </main>
       </SidebarInset>
     </SidebarProvider>
