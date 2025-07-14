@@ -21,6 +21,11 @@ export const getInvoices = async (): Promise<Invoice[]> => {
     return snapshot.docs.map(toInvoiceObject);
 };
 
+export const getInvoiceCount = async (): Promise<number> => {
+    const snapshot = await getDocs(invoicesCollection);
+    return snapshot.size;
+}
+
 export const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber'> & { invoiceNumber: string, createdAt: string }): Promise<Invoice> => {
     const dataWithTimestamps = {
         ...invoiceData,

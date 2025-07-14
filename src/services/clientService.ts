@@ -22,6 +22,15 @@ export const getClients = async (): Promise<Client[]> => {
     return snapshot.docs.map(toClientObject);
 };
 
+export const findClientByName = async (name: string): Promise<Client | null> => {
+    const q = query(clientsCollection, where("name", "==", name));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return null;
+    }
+    return toClientObject(snapshot.docs[0]);
+}
+
 export const addClient = async (clientData: Omit<Client, 'id'>): Promise<Client> => {
     const dataToSave: { [key: string]: any } = { ...clientData };
     

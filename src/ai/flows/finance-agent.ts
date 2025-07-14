@@ -1,0 +1,210 @@
+'use server';
+
+/**
+ * @fileOverview A powerful AI agent for financial Q&A and actions.
+ * This agent uses tools to interact with the application's services.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import {
+  addClient,
+  findClientByName,
+  getClients,
+} from '@/services/clientService';
+import { addTransaction, getTransactions } from '@/services/transactionService';
+import { addInvoice, getInvoices, getInvoiceCount } from '@/services/invoiceService';
+import type { InvoiceItem } from '@/types';
+
+// Tool to add a new transaction (income or expense)
+const addTransactionTool = ai.defineTool(
+  {
+    name: 'addTransaction',
+    description:
+      'Add a new transaction, either an income or an expense. For expenses, category is required. For income, source is required.',
+    inputSchema: z.object({
+      type: z.enum(['income', 'expense']),
+      amount: z.number(),
+      date: z
+        .string()
+        .describe('The date of the transaction in YYYY-MM-DD format.'),
+      details: z.object({
+        source: z.string().optional().describe('Source of income.'),
+        category: z
+          .string()
+          .optional()
+          .describe('Category of the expense.'),
+        vendor: z.string().optional().describe('Vendor for the expense.'),
+      }),
+    }),
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    try {
+      if (input.type === 'income' && !input.details.source) {
+        return 'Error: Source is required for income transactions.';
+      }
+      if (input.type === 'expense' && !input.details.category) {
+        return 'Error: Category is required for expense transactions.';
+      }
+      await addTransaction({
+        type: input.type,
+        amount: input.amount,
+        date: new Date(input.date).toISOString(),
+        source: input.details.source,
+        category: input.details.category,
+        vendor: input.details.vendor,
+      });
+      return `Successfully added ${input.type} of ${input.amount}.`;
+    } catch (e: any) {
+      return `Error: ${e.message}`;
+    }
+  }
+);
+
+// Tool to create a new client
+const addClientTool = ai.defineTool(
+  {
+    name: 'addClient',
+    description: 'Create a new client in the system.',
+    inputSchema: z.object({
+      name: z.string().describe("The client's company name."),
+      contactPerson: z.string().describe('The main contact person.'),
+      email: z.string().email().describe('The email of the client.'),
+      phone: z.string().optional().describe('The phone number of the client.'),
+    }),
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    try {
+      await addClient({
+        ...input,
+        status: 'lead',
+      });
+      return `Client '${input.name}' created successfully.`;
+    } catch (e: any) {
+      return `Error: ${e.message}`;
+    }
+  }
+);
+
+// Tool to create a new invoice
+const createInvoiceTool = ai.defineTool(
+    {
+      name: 'createInvoice',
+      description: 'Create a new invoice for a client.',
+      inputSchema: z.object({
+        clientName: z.string().describe("The name of the client to invoice."),
+        items: z.array(z.object({
+            description: z.string(),
+            quantity: z.number(),
+            unitPrice: z.number(),
+        })).describe("An array of items for the invoice."),
+        dueDate: z.string().describe("The due date for the invoice in YYYY-MM-DD format."),
+        currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']).default('USD'),
+      }),
+      outputSchema: z.string(),
+    },
+    async (input) => {
+      try {
+        const client = await findClientByName(input.clientName);
+        if (!client) {
+          return `Error: Client with name '${input.clientName}' not found. Please create the client first.`;
+        }
+  
+        const itemsWithTotal = input.items.map(item => ({
+            ...item,
+            total: item.quantity * item.unitPrice,
+        }));
+
+        const totalAmount = itemsWithTotal.reduce((acc, item) => acc + item.total, 0);
+        const invoiceCount = await getInvoiceCount();
+
+        const newInvoice = {
+            clientRef: client.id,
+            items: itemsWithTotal,
+            totalAmount,
+            date: new Date().toISOString(),
+            dueDate: new Date(input.dueDate).toISOString(),
+            status: 'draft' as const,
+            invoiceNumber: `INV-${String(invoiceCount + 1).padStart(3, '0')}`,
+            createdAt: new Date().toISOString(),
+            currency: input.currency,
+        };
+  
+        await addInvoice(newInvoice);
+        return `Invoice ${newInvoice.invoiceNumber} created successfully for ${client.name}.`;
+      } catch (e: any) {
+        return `Error: ${e.message}`;
+      }
+    }
+);
+
+// Tool to get a list of all clients
+const listClientsTool = ai.defineTool(
+    {
+        name: 'listClients',
+        description: 'Get a list of all clients, including their name, status, and opportunity worth.',
+        inputSchema: z.object({}),
+        outputSchema: z.array(z.object({
+            name: z.string(),
+            status: z.string(),
+            opportunityWorth: z.number().optional(),
+        }))
+    },
+    async () => {
+        const clients = await getClients();
+        return clients.map(c => ({ name: c.name, status: c.status, opportunityWorth: c.opportunityWorth }));
+    }
+);
+
+// Tool to get a financial summary
+const getFinancialSummaryTool = ai.defineTool(
+    {
+        name: 'getFinancialSummary',
+        description: 'Get a summary of all financial data, including invoices and transactions, to answer questions about revenue, expenses, and profitability.',
+        inputSchema: z.object({}),
+        outputSchema: z.any()
+    },
+    async () => {
+        const [invoices, transactions] = await Promise.all([
+            getInvoices(),
+            getTransactions()
+        ]);
+
+        const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+        const totalRevenue = paidInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+        const totalExpenses = transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        return {
+            totalRevenue,
+            totalExpenses,
+            netProfit: totalRevenue - totalExpenses,
+            totalInvoices: invoices.length,
+            paidInvoices: paidInvoices.length,
+            unpaidInvoices: invoices.length - paidInvoices.length,
+            totalTransactions: transactions.length,
+        };
+    }
+);
+
+
+const agent = ai.definePrompt({
+    name: 'financeAgent',
+    system: `You are a powerful financial assistant for the company Ailutions.
+    - You will help users by answering questions and performing actions based on the provided data and tools.
+    - To answer questions or perform actions, you must use the provided tools. Do not make up information.
+    - If you cannot fulfill a request with the available tools, clearly state that you cannot perform the action and suggest what you can do.
+    - Do not answer any questions that are not related to the company's financial data.
+    - When creating entities like invoices or clients, confirm the action and its result (e.g., "Invoice INV-001 has been created for Client X.").`,
+    tools: [addTransactionTool, addClientTool, createInvoiceTool, listClientsTool, getFinancialSummaryTool],
+});
+
+export async function runAgent(prompt: string): Promise<string> {
+    const response = await agent.generate({
+        prompt,
+    });
+    return response.text();
+}

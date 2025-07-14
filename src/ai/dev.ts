@@ -1,4 +1,4 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/finance-qa.ts';
+import '@/ai/flows/finance-agent.ts';
