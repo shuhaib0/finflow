@@ -28,7 +28,7 @@ const addTransactionTool = ai.defineTool(
         type: z.enum(['income', 'expense']),
         amount: z.number(),
         date: z.string().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
-        description: z.string().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment".'),
+        description: z.string().optional().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment". Defaults to "Unspecified Expense" if not provided for expenses.'),
         category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing", "travel", "office").'),
         vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft", "Figma").'),
         source: z.string().optional().describe('Source of the income (e.g., "Invoice Payment", "Sale").'),
@@ -54,12 +54,15 @@ const addTransactionTool = ai.defineTool(
             } else {
                 transactionData.category = input.category;
             }
+            if(!input.description){
+                transactionData.description = "Unspecified Expense";
+            }
             transactionData.vendor = input.vendor;
         }
 
         await addTransaction(transactionData);
 
-        return `Successfully added ${input.type} of ${input.amount} ${input.currency} for "${input.description}".`;
+        return `Successfully added ${input.type} of ${input.amount} ${input.currency} for "${transactionData.description}".`;
     } catch (e: any) {
         return `Error: ${e.message}`;
     }
