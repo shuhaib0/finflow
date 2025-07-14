@@ -27,11 +27,12 @@ const addTransactionTool = ai.defineTool(
     inputSchema: z.object({
         type: z.enum(['income', 'expense']),
         amount: z.number(),
-        date: z.string().describe('The date of the transaction in YYYY-MM-DD format.'),
+        date: z.string().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
         description: z.string().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment".'),
-        category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing").'),
-        vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft").'),
+        category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing", "travel", "office").'),
+        vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft", "Figma").'),
         source: z.string().optional().describe('Source of the income (e.g., "Invoice Payment", "Sale").'),
+        currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']).default('USD'),
     }),
     outputSchema: z.string(),
   },
@@ -40,7 +41,7 @@ const addTransactionTool = ai.defineTool(
         const transactionData: any = {
             type: input.type,
             amount: input.amount,
-            date: new Date(input.date).toISOString(),
+            date: input.date ? new Date(input.date).toISOString() : new Date().toISOString(),
             description: input.description,
         };
 
@@ -54,13 +55,13 @@ const addTransactionTool = ai.defineTool(
             } else {
                 transactionData.category = input.category;
             }
-            // Use the description as the vendor if no vendor is provided
-            transactionData.vendor = input.vendor || input.description;
+            // Use the vendor if provided, otherwise it can be null
+            transactionData.vendor = input.vendor;
         }
 
         await addTransaction(transactionData);
 
-        return `Successfully added ${input.type} of ${input.amount} for "${input.description}".`;
+        return `Successfully added ${input.type} of ${input.amount} ${input.currency} for "${input.description}".`;
     } catch (e: any) {
         return `Error: ${e.message}`;
     }
@@ -78,6 +79,7 @@ const addClientTool = ai.defineTool(
       contactPerson: z.string().describe('The main contact person.'),
       email: z.string().email().describe('The email of the client.'),
       phone: z.string().optional().describe('The phone number of the client.'),
+      taxId: z.string().optional().describe("The client's tax ID."),
     }),
     outputSchema: z.string(),
   },
@@ -344,7 +346,7 @@ const agent = ai.definePrompt({
     name: 'financeAgent',
     system: `You are a powerful financial assistant for the company Ailutions.
     - Your goal is to help users by answering questions and performing actions related to their financial data.
-    - When a user asks you to perform an action (like creating, adding, or updating something), you must use the provided tools.
+    - When a user asks you to perform an action (like creating, adding, or updating something), you MUST use the provided tools.
     - When a user asks a question, first see if you can answer it using the available tools to get the most accurate, up-to-date information. If a tool can answer the question, use it.
     - If you cannot fulfill a request with the available tools, or if the question is conversational, answer naturally.
     - If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks.
@@ -372,3 +374,4 @@ export async function runAgent(prompt: string): Promise<string> {
     });
     return response.text;
 }
+
