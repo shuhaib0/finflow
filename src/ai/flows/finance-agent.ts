@@ -49,15 +49,11 @@ const addTransactionTool = ai.defineTool(
             if (!input.source) return 'Error: Source is required for income transactions.';
             transactionData.source = input.source;
         } else { // expense
-            if (!input.category) {
-                transactionData.category = 'other';
-            } else {
-                transactionData.category = input.category;
-            }
-            if(!input.description){
+            transactionData.category = input.category || 'other';
+            transactionData.vendor = input.vendor;
+            if(!transactionData.description){
                 transactionData.description = "Unspecified Expense";
             }
-            transactionData.vendor = input.vendor;
         }
 
         await addTransaction(transactionData);
