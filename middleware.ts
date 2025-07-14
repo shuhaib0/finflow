@@ -7,10 +7,10 @@ const publicRoutes = ['/login', '/signup'];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const sessionCookie = request.cookies.get('session')?.value;
 
-  // Handle root path separately to avoid infinite redirects
+  // For the root path, redirect based on auth status
   if (path === '/') {
-    const sessionCookie = request.cookies.get('session')?.value;
     if (sessionCookie) {
       try {
         await auth.verifySessionCookie(sessionCookie, true);
@@ -25,37 +25,41 @@ export async function middleware(request: NextRequest) {
     // No cookie, redirect to login
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  
+
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
 
-  const sessionCookie = request.cookies.get('session')?.value;
   let isAuthenticated = false;
+  let userClaims = null;
 
   if (sessionCookie) {
     try {
-      await auth.verifySessionCookie(sessionCookie, true);
+      userClaims = await auth.verifySessionCookie(sessionCookie, true);
       isAuthenticated = true;
     } catch (err) {
-      // Session is invalid, clear cookie
-      // The redirect will happen below if it's a protected route
-      const response = NextResponse.next();
+      // Session is invalid, clear cookie and redirect if on a protected route
+      const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('session');
       if (isProtectedRoute) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        return response;
       }
-      return response;
+      // if not a protected route, just clear cookie and continue
+      const nextResponse = NextResponse.next();
+      nextResponse.cookies.delete('session');
+      return nextResponse;
     }
   }
 
   if (isProtectedRoute && !isAuthenticated) {
+    // Not authenticated, redirect to login
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (isAuthenticated && isPublicRoute) {
+    // Authenticated, but on a public route, redirect to dashboard
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  
+
   return NextResponse.next();
 }
 
@@ -63,6 +67,13 @@ export async function middleware(request: NextRequest) {
 // It also specifies the runtime as 'nodejs', which is required for firebase-admin.
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
   runtime: 'nodejs',
