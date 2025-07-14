@@ -49,8 +49,20 @@ const addTransactionTool = ai.defineTool(
             if (!input.source) return 'Error: Source is required for income transactions.';
             transactionData.source = input.source;
         } else { // expense
-            transactionData.category = input.category || 'other';
-            transactionData.vendor = input.vendor;
+            if (!input.category && input.vendor) {
+              transactionData.category = "other";
+              transactionData.vendor = input.vendor;
+            } else if (!input.vendor && input.category) {
+              transactionData.category = input.category;
+              transactionData.vendor = "Unspecified Vendor";
+            } else if (!input.category && !input.vendor) {
+              transactionData.category = "other";
+              transactionData.vendor = "Unspecified Vendor";
+            } else {
+              transactionData.category = input.category;
+              transactionData.vendor = input.vendor;
+            }
+
             if(!transactionData.description){
                 transactionData.description = "Unspecified Expense";
             }
@@ -60,7 +72,8 @@ const addTransactionTool = ai.defineTool(
 
         return `Successfully added ${input.type} of ${input.amount} ${input.currency} for "${transactionData.description}".`;
     } catch (e: any) {
-        return `Error: ${e.message}`;
+        console.error('addTransactionTool error:', e);
+        return `Error: ${e.message || "Transaction failed unexpectedly."}`;
     }
   }
 );
