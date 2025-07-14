@@ -39,7 +39,6 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
   quantity: z.coerce.number().min(0.01, "Quantity must be positive."),
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive."),
-  total: z.coerce.number(),
 })
 
 const addressSchema = z.object({
@@ -85,7 +84,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
         status: "draft" as const,
         date: new Date(),
         dueDate: new Date(),
-        items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
+        items: [{ description: "", quantity: 1, unitPrice: 0 }],
         currency: 'USD',
         tax: 0,
         discount: 0,
@@ -211,9 +210,9 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden h-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 h-full">
       
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
@@ -424,7 +423,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                                         </div>
                                     </div>
                                 ))}
-                                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0, total: 0 })}>
+                                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
                                     Add Item
                                 </Button>
                                 </div>
