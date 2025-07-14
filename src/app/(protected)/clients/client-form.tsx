@@ -47,6 +47,7 @@ import type { Client, Note } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useAuth } from "../auth-provider"
 
 const formSchema = z.object({
   // General
@@ -116,6 +117,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     const router = useRouter();
     const [opportunityWorth, setOpportunityWorth] = useState("");
     const opportunityAlertDialogTrigger = useRef<HTMLButtonElement>(null);
+    const { user } = useAuth();
 
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
 
@@ -210,7 +212,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit((data) => onSubmit({ ...data, author: user?.displayName || "Admin User" }))} className="flex flex-col h-full">
         <div className="p-6 border-b flex justify-end gap-2">
             {isEditing ? (
                 <>
@@ -694,5 +696,3 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
-
-    

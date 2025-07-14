@@ -124,7 +124,6 @@ function ProtectedLayoutContent({
     router.push('/login');
   }
 
-  // The AuthProvider ensures loading is false and user is not null here.
   return (
     <SidebarProvider>
       <Sidebar>
@@ -227,6 +226,7 @@ function ProtectedLayoutContent({
     </SidebarProvider>
   )
 }
+
 
 export default function ProtectedLayout({
   children,
