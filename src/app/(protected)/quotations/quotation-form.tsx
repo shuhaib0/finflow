@@ -229,8 +229,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                     </div>
                 </div>
             </header>
-            <div className="flex-1 overflow-y-auto">
-                <div className="px-6 py-4 pb-48">
+            <ScrollArea className="flex-1">
+                <div className="px-6 py-4">
                     <Tabs defaultValue="details" className="w-full mb-6">
                         <TabsList>
                             <TabsTrigger value="details">Details</TabsTrigger>
@@ -502,7 +502,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                         </TabsContent>
                     </Tabs>
                 </div>
-            </div>
+            </ScrollArea>
             <footer className="p-6 border-t bg-background flex-shrink-0">
                 <div className="ml-auto w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
