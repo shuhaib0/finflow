@@ -80,162 +80,166 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const { user } = useAuth();
 
-  const [pageTitle, setPageTitle] = useState("Dashboard");
-  
-  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
-  
-  useEffect(() => {
-    const getTitle = () => {
-        if (pathname.startsWith('/clients')) {
-            const status = searchParams.get('status');
-            if (status === 'lead') return 'Leads';
-            if (status === 'opportunity') return 'Opportunities';
-            if (status === 'customer') return 'Customers';
-            return 'All Contacts';
-        }
-        for (const item of singleNavItems) {
-            if (pathname.startsWith(item.href)) return item.label;
-        }
-        for (const group of navItems) {
-            for (const subItem of group.subItems) {
-                // Use startsWith for query param routes
-                if (currentRoute.startsWith(subItem.href)) return subItem.label;
-            }
-        }
-        if (pathname.startsWith('/quotations')) return 'Quotations';
-        if (pathname.startsWith('/invoices')) return 'Invoices';
-        if (pathname.startsWith('/transactions')) return 'Transactions';
-        if (pathname.startsWith('/reports')) return 'Reports';
-        if (pathname.startsWith('/qna')) return 'AI Q&A';
-        return 'Dashboard';
-    }
-    setPageTitle(getTitle());
-  }, [pathname, searchParams, currentRoute]);
-
-  const onLogout = async () => {
-    await handleLogout(); 
-    router.push('/login');
-  }
-
-  return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="p-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-headline text-lg font-semibold text-sidebar-foreground"
-          >
-            <Icons.logo className="h-8 w-8 text-accent" />
-            <span className="group-data-[collapsible=icon]:hidden">
-              Ailutions
-            </span>
-          </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {singleNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        tooltip={item.tooltip}
-                        isActive={pathname === item.href}
-                        asChild
-                    >
-                        <Link href={item.href}>
-                            <item.icon />
-                            {item.label}
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-          <SidebarSeparator />
-            {navItems.map((group) => (
-                <SidebarMenu key={group.id}>
-                    <SidebarGroup>
-                        <SidebarGroupLabel className="flex items-center gap-2">
-                            <group.icon />
-                            {group.label}
-                        </SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenuSub>
-                                {group.subItems.map(subItem => (
-                                    <SidebarMenuSubItem key={subItem.href}>
-                                        <SidebarMenuSubButton isActive={currentRoute === subItem.href} asChild>
-                                          <Link href={subItem.href}>
-                                              {subItem.icon && <subItem.icon />}
-                                              <span>{subItem.label}</span>
-                                          </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                ))}
-                            </SidebarMenuSub>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarMenu>
-            ))}
-        </SidebarContent>
-        <SidebarFooter className="p-4">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="avatar person" />
-              <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-              <span className="font-semibold text-sm text-sidebar-foreground">
-                {user?.displayName || 'Admin User'}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {user?.email || 'admin@ailutions.com'}
-              </span>
-            </div>
-          </div>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Settings">
-                <Settings />
-                Settings
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Log Out" onClick={onLogout}>
-                <LogOut />
-                Log Out
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
-          <SidebarTrigger className="hidden md:flex" />
-          <div className="flex-1">
-            <h1 className="font-headline text-lg font-semibold">{pageTitle}</h1>
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
-  )
-}
-
-export default function RootProtectedLayout({
+export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <AuthProvider>
-      <ProtectedLayoutContent>
+      <LayoutContent>
         {children}
-      </ProtectedLayoutContent>
+      </LayoutContent>
     </AuthProvider>
   );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const { user } = useAuth();
+  
+    const [pageTitle, setPageTitle] = useState("Dashboard");
+    
+    const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
+    
+    useEffect(() => {
+      const getTitle = () => {
+          if (pathname.startsWith('/clients')) {
+              const status = searchParams.get('status');
+              if (status === 'lead') return 'Leads';
+              if (status === 'opportunity') return 'Opportunities';
+              if (status === 'customer') return 'Customers';
+              return 'All Contacts';
+          }
+          for (const item of singleNavItems) {
+              if (pathname.startsWith(item.href)) return item.label;
+          }
+          for (const group of navItems) {
+              for (const subItem of group.subItems) {
+                  if (currentRoute.startsWith(subItem.href)) return subItem.label;
+              }
+          }
+          if (pathname.startsWith('/quotations')) return 'Quotations';
+          if (pathname.startsWith('/invoices')) return 'Invoices';
+          if (pathname.startsWith('/transactions')) return 'Transactions';
+          if (pathname.startsWith('/reports')) return 'Reports';
+          if (pathname.startsWith('/qna')) return 'AI Q&A';
+          return 'Dashboard';
+      }
+      setPageTitle(getTitle());
+    }, [pathname, searchParams, currentRoute]);
+  
+    const onLogout = async () => {
+      await handleLogout(); 
+      router.push('/login');
+    }
+  
+    if (!user) {
+        return null;
+    }
+
+    return (
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader className="p-4">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 font-headline text-lg font-semibold text-sidebar-foreground"
+            >
+              <Icons.logo className="h-8 w-8 text-accent" />
+              <span className="group-data-[collapsible=icon]:hidden">
+                Ailutions
+              </span>
+            </Link>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {singleNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                          tooltip={item.tooltip}
+                          isActive={pathname === item.href}
+                          asChild
+                      >
+                          <Link href={item.href}>
+                              <item.icon />
+                              {item.label}
+                          </Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+            <SidebarSeparator />
+              {navItems.map((group) => (
+                  <SidebarMenu key={group.id}>
+                      <SidebarGroup>
+                          <SidebarGroupLabel className="flex items-center gap-2">
+                              <group.icon />
+                              {group.label}
+                          </SidebarGroupLabel>
+                          <SidebarGroupContent>
+                              <SidebarMenuSub>
+                                  {group.subItems.map(subItem => (
+                                      <SidebarMenuSubItem key={subItem.href}>
+                                          <SidebarMenuSubButton isActive={currentRoute === subItem.href} asChild>
+                                            <Link href={subItem.href}>
+                                                {subItem.icon && <subItem.icon />}
+                                                <span>{subItem.label}</span>
+                                            </Link>
+                                          </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                  ))}
+                              </SidebarMenuSub>
+                          </SidebarGroupContent>
+                      </SidebarGroup>
+                  </SidebarMenu>
+              ))}
+          </SidebarContent>
+          <SidebarFooter className="p-4">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="avatar person" />
+                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                <span className="font-semibold text-sm text-sidebar-foreground">
+                  {user?.displayName || 'Admin User'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {user?.email || 'admin@ailutions.com'}
+                </span>
+              </div>
+            </div>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Settings">
+                  <Settings />
+                  Settings
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Log Out" onClick={onLogout}>
+                  <LogOut />
+                  Log Out
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset>
+          <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
+            <SidebarTrigger className="hidden md:flex" />
+            <div className="flex-1">
+              <h1 className="font-headline text-lg font-semibold">{pageTitle}</h1>
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-4 lg:p-6">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    )
 }

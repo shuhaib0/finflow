@@ -24,8 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
     });
-
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -34,7 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/login');
     }
   }, [user, loading, router]);
-
 
   if (loading) {
     return (
@@ -45,12 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Render children only if user is authenticated and loading is complete
   if (user) {
-    return <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
   }
-
-  // If not loading and no user, we are likely redirecting, so return null or a loader to prevent flicker
+  
   return null;
 }
 
