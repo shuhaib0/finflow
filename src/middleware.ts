@@ -2,10 +2,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/firebase/admin'
 
-// Force the middleware to run on the Node.js runtime.
-// This is required to use 'firebase-admin' which is not compatible with the Edge runtime.
-export const runtime = 'nodejs';
-
 const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna', '/quotations']
 const publicRoutes = ['/login', '/signup']
 
@@ -45,4 +41,5 @@ export async function middleware(request: NextRequest) {
 // Match all paths except for static files, API routes, and image optimization.
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+  runtime: 'nodejs',
+};
