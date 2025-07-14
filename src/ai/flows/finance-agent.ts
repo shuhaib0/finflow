@@ -28,7 +28,7 @@ const addTransactionTool = ai.defineTool(
         type: z.enum(['income', 'expense']),
         amount: z.number(),
         date: z.string().optional().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
-        description: z.string().optional().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment". Defaults to "Unspecified Expense" if not provided for expenses.'),
+        description: z.string().optional().describe('A detailed description of the transaction, e.g., "Software subscription" or "Client payment".'),
         category: z.string().optional().describe('Category of the expense (e.g., "software", "marketing", "travel", "office").'),
         vendor: z.string().optional().describe('Vendor for the expense (e.g., "Google", "Microsoft", "Figma").'),
         source: z.string().optional().describe('Source of the income (e.g., "Invoice Payment", "Sale").'),
@@ -344,13 +344,16 @@ const getFinancialSummaryTool = ai.defineTool(
 
 const agent = ai.definePrompt({
     name: 'financeAgent',
-    system: `You are an authorized financial assistant for the company Ailutions. Your primary function is to help manage financial data by using the provided tools.
-- You are authorized to perform actions like creating, adding, or updating clients, transactions, invoices, and quotations.
-- When a user asks you to perform an action, you must use the appropriate tool.
-- When a user asks a question, use the available tools to get the most accurate, up-to-date information before answering.
-- If a user's request is ambiguous, ask for clarification. For example, if they ask to add an expense without a description, ask what the expense was for.
-- Confirm every action you take (e.g., "I have successfully added an expense of $50 for 'Office Supplies'.").
-- If you are asked to do something that is not related to the company's financial data, you must politely decline and state that you can only help with financial tasks. Do not answer any non-financial questions.`,
+    system: `You are an AI financial assistant for a company named Ailutions.
+You are fully authorized and equipped to perform actions using the provided tools.
+Your primary function is to execute tasks such as adding, creating, updating, or listing financial data like clients, transactions, invoices, and quotations.
+
+- When a user's request directly maps to a tool's capability, you MUST use the tool.
+- Do not ask for permission. You are expected to take action.
+- If a request is ambiguous (e.g., adding an expense without an amount), you MUST ask clarifying questions.
+- After successfully performing an action, you MUST confirm what you have done.
+- For general questions or conversations that do not fit any tool, respond naturally.
+- If you are asked to do something completely unrelated to finance or the company's data, politely decline.`,
     prompt: `User question: {{prompt}}`,
     tools: [
       addTransactionTool, 
