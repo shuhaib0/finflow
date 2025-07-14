@@ -204,17 +204,21 @@ const createQuotationTool = ai.defineTool(
 const listClientsTool = ai.defineTool(
     {
         name: 'listClients',
-        description: 'Get a list of all clients, including their name, status, and opportunity worth.',
+        description: 'Returns a string summary of all clients, including their name and status. Use this to answer questions about how many clients there are, or to list them.',
         inputSchema: z.object({}),
-        outputSchema: z.array(z.object({
-            name: z.string(),
-            status: z.string(),
-            opportunityWorth: z.number().optional(),
-        }))
+        outputSchema: z.string(),
     },
     async () => {
-        const clients = await getClients();
-        return clients.map(c => ({ name: c.name, status: c.status, opportunityWorth: c.opportunityWorth }));
+        try {
+            const clients = await getClients();
+            if (clients.length === 0) {
+                return "There are no clients in the system.";
+            }
+            const clientSummaries = clients.map(c => `Client Name: ${c.name}, Status: ${c.status}`);
+            return `Total clients: ${clients.length}. Details: ${clientSummaries.join('; ')}`;
+        } catch (e: any) {
+            return `Error: ${e.message}`;
+        }
     }
 );
 
@@ -374,4 +378,3 @@ export async function runAgent(prompt: string): Promise<string> {
     });
     return response.text;
 }
-
