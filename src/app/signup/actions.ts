@@ -1,10 +1,9 @@
+
 'use server'
 
 import { z } from 'zod'
-import { createSession } from '@/lib/auth'
-import { auth, db } from '@/lib/firebase'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { cookies } from 'next/headers'
+import { auth as adminAuth } from '@/lib/firebase/admin'
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -23,38 +22,32 @@ export async function handleSignUp(values: z.infer<typeof signUpSchema>) {
   const { name, email, password } = result.data
 
   try {
-    // Step 1: Create user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Step 2: Update the user's profile with their name
-    await updateProfile(user, { displayName: name });
-    
-    // Step 3: Create a corresponding user document in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        name: name,
-        email: email,
-        role: 'admin', // Assign a default role
-        createdAt: new Date().toISOString(),
+    const userRecord = await adminAuth.createUser({
+      email,
+      password,
+      displayName: name,
     });
 
-    // Step 4: Create a session for the new user
-    await createSession(user.uid)
+    // Create a session cookie
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(userRecord.uid, { expiresIn });
 
+    cookies().set('session', sessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      sameSite: 'lax',
+    });
+    
     return { success: true }
   } catch (error: any) {
+    console.error('Firebase sign-up error:', error);
     let errorMessage = 'An unexpected error occurred.'
-    switch (error.code) {
-      case 'auth/email-already-in-use':
+    if (error.code === 'auth/email-already-exists') {
         errorMessage = 'This email is already registered.'
-        break;
-      case 'auth/weak-password':
-        errorMessage = 'The password is too weak.'
-        break;
-      default:
-        console.error('Firebase sign-up error:', error);
-        break;
+    } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'The password is too weak. It must be at least 6 characters long.'
     }
     return { success: false, error: errorMessage }
   }

@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import type { Transaction } from '@/types';
 

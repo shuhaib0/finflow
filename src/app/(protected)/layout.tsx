@@ -122,6 +122,7 @@ function ProtectedLayoutContent({
   const onLogout = async () => {
     await handleLogout(); 
     router.push('/login');
+    router.refresh(); 
   }
 
   return (
