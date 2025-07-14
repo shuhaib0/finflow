@@ -86,14 +86,14 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  
-  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
-  
+
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+
   useEffect(() => {
     const getTitle = () => {
         if (pathname.startsWith('/clients')) {
@@ -128,20 +128,21 @@ export default function ProtectedLayout({
 
   return (
     <AuthProvider>
-      <LayoutContent onLogout={onLogout} pageTitle={pageTitle} currentRoute={currentRoute}>
+      <InnerLayout onLogout={onLogout} pageTitle={pageTitle} currentRoute={currentRoute}>
         {children}
-      </LayoutContent>
+      </InnerLayout>
     </AuthProvider>
   );
 }
 
-function LayoutContent({ children, onLogout, pageTitle, currentRoute }: { children: React.ReactNode, onLogout: () => void, pageTitle: string, currentRoute: string }) {
+function InnerLayout({ children, onLogout, pageTitle, currentRoute }: { children: React.ReactNode, onLogout: () => void, pageTitle: string, currentRoute: string }) {
   const { user } = useAuth();
-  const pathname = usePathname()
+  const pathname = usePathname();
 
+  // The AuthProvider shows a loading screen, so by the time we get here, user is guaranteed to be populated.
+  // This check is for type safety and to prevent rendering an unauthenticated layout in an edge case.
   if (!user) {
-    // This state is handled by the AuthProvider's loading screen
-    return null;
+    return null; 
   }
 
   return (
