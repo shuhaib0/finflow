@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -90,12 +91,20 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
         });
   }, [defaultValues, form]);
 
+  const handleFormSubmit = (data: TransactionFormValues) => {
+    const dataToSubmit = { ...data };
+    if (dataToSubmit.clientRef === 'none') {
+      dataToSubmit.clientRef = '';
+    }
+    onSubmit(dataToSubmit);
+  }
+
 
   const isEditing = !!defaultValues;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-6">
         <FormField
           control={form.control}
           name="type"
@@ -191,7 +200,7 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
                     <FormItem>
                     <FormLabel>Source</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g., Invoice Payment, Sale" {...field} />
+                        <Input placeholder="e.g., Invoice Payment, Sale" {...field} value={field.value || ''}/>
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -233,7 +242,7 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
                     <FormItem>
                     <FormLabel>Vendor (Optional)</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g., SaaS Inc." {...field} />
+                        <Input placeholder="e.g., SaaS Inc." {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -248,14 +257,14 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Associated Client (Optional)</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value || 'none'}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a client" />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {Object.entries(clientNames).map(([id, name]) => (
                         <SelectItem key={id} value={id}>{name}</SelectItem>
                     ))}

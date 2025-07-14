@@ -222,7 +222,7 @@ export default function TransactionsPage() {
                                         {t.type === 'income' ? t.source : t.vendor || 'N/A'}
                                     </div>
                                     <div className="text-sm text-muted-foreground">
-                                        {t.clientRef && clientNames[t.clientRef] ? `Client: ${"$"}{clientNames[t.clientRef]}` : ''}
+                                        {t.clientRef && clientNames[t.clientRef] ? `Client: ${clientNames[t.clientRef]}` : ''}
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -232,7 +232,7 @@ export default function TransactionsPage() {
                                 </TableCell>
                                 <TableCell>{format(new Date(t.date), 'MMM d, yyyy')}</TableCell>
                                 <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {t.type === 'income' ? '+' : '-'}${"$"}{t.amount.toFixed(2)}
+                                    {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                     <AlertDialog>
