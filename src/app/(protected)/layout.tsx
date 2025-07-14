@@ -85,12 +85,12 @@ function ProtectedLayoutContent({
 }: {
   children: React.ReactNode
 }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pageTitle, setPageTitle] = useState("Dashboard");
-  const currentRoute = pathname + (searchParams.toString() ? `?${"$"}{searchParams.toString()}` : '');
+  const currentRoute = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
 
   useEffect(() => {
     const getTitle = () => {
@@ -227,7 +227,6 @@ function ProtectedLayoutContent({
     </SidebarProvider>
   )
 }
-
 
 export default function ProtectedLayout({
   children,

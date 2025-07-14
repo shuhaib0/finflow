@@ -29,16 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // This effect handles redirection after the initial loading is complete.
-    // The middleware handles the initial server-side redirect if the cookie is missing.
-    // This client-side check is a fallback for cases like token expiration during a session.
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [loading, user, router]);
-
-  // While loading, show a full-screen loading indicator.
+  // While waiting for Firebase to confirm the auth state, show a loading screen.
   if (loading) {
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -48,19 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // If not loading and there's a user, render the children (the application).
+  // If loading is complete and we have a user, render the main application.
   if (user) {
-    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading: false }}>{children}</AuthContext.Provider>;
   }
 
-  // If not loading and no user, show a redirecting screen while the router push completes.
-  // This state is hit for a brief moment before the redirect happens.
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
-        <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
-        <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
-    </div>
-  );
+  // If loading is complete and there is no user, it means the user is logged out.
+  // The middleware will handle redirecting to the login page.
+  // We return null here to prevent rendering the protected content.
+  // This state should ideally not be reached if middleware is configured correctly,
+  // but it's a safe fallback.
+  return null;
 }
 
 export const useAuth = () => {
