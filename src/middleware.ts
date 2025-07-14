@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// Match all paths except for static files, API routes, and image optimization.
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }
