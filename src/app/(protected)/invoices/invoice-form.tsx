@@ -58,7 +58,7 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: "Due date is required."}),
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
-  currency: z.string().min(1, "Currency is required."),
+  currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']),
   tax: z.coerce.number().min(0).optional().default(0),
   discount: z.coerce.number().min(0).max(100).optional().default(0),
   billingAddress: addressSchema.optional(),
@@ -86,7 +86,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
         date: new Date(),
         dueDate: new Date(),
         items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
-        currency: 'USD',
+        currency: 'USD' as const,
         tax: 0,
         discount: 0,
         companyTaxId: '',
@@ -312,10 +312,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
                                                 </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                <SelectItem value="USD">USD ($)</SelectItem>
-                                                <SelectItem value="EUR">EUR (€)</SelectItem>
-                                                <SelectItem value="GBP">GBP (£)</SelectItem>
-                                                <SelectItem value="INR">INR (₹)</SelectItem>
+                                                    <SelectItem value="USD">USD ($)</SelectItem>
+                                                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                                                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                                                    <SelectItem value="INR">INR (₹)</SelectItem>
+                                                    <SelectItem value="AED">AED</SelectItem>
+                                                    <SelectItem value="CAD">CAD ($)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -540,5 +542,3 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     </Form>
   )
 }
-
-    
