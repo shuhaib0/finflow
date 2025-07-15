@@ -122,39 +122,39 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
 
     const form = useForm<ClientFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      salutation: "",
-      jobTitle: "",
-      gender: "",
-      status: "lead",
-      opportunityWorth: 0,
-      leadType: "",
-      requestType: "",
-      requestTypeOther: "",
-      email: "",
-      mobile: "",
-      phone: "",
-      website: "",
-      whatsapp: "",
-      phoneExt: "",
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-      source: "",
-      campaign: "",
-      newNote: "",
-      notes: [],
-      ...defaultValues,
-      firstName: defaultValues ? firstName : "",
-      middleName: defaultValues ? middleName : "",
-      lastName: defaultValues ? lastName : "",
-    },
-  })
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: "",
+            salutation: "",
+            jobTitle: "",
+            gender: "",
+            status: "lead",
+            opportunityWorth: 0,
+            leadType: "",
+            requestType: "",
+            requestTypeOther: "",
+            email: "",
+            mobile: "",
+            phone: "",
+            website: "",
+            whatsapp: "",
+            phoneExt: "",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            postalCode: "",
+            country: "",
+            source: "",
+            campaign: "",
+            newNote: "",
+            notes: [],
+            ...defaultValues,
+            firstName: defaultValues ? firstName : "",
+            middleName: defaultValues ? middleName : "",
+            lastName: defaultValues ? lastName : "",
+        },
+    });
 
   useEffect(() => {
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
@@ -188,8 +188,8 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         firstName: defaultValues ? firstName : "",
         middleName: defaultValues ? middleName : "",
         lastName: defaultValues ? lastName : "",
-    })
-  }, [defaultValues, form])
+    });
+  }, [defaultValues, form]);
 
   const watchedRequestType = form.watch("requestType");
   const existingNotes = form.watch("notes") || [];
@@ -206,7 +206,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSubmit({ ...data, author: user?.displayName || "Admin User" }))} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
         <div className="p-6 border-b flex justify-end gap-2">
             {isEditing ? (
                 <>
@@ -690,3 +690,5 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
+
+    
