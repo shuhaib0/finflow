@@ -221,57 +221,70 @@ export default function InvoicesPageComponent() {
     const handleDownloadPdf = async () => {
         const element = invoicePrintRef.current;
         if (!element) return;
-    
-        const canvas = await html2canvas(element, { 
-            scale: 2,
+
+        const canvas = await html2canvas(element, {
+            scale: 2, // Higher resolution
             useCORS: true,
-            allowTaint: true,
+            onclone: (document) => {
+                // On clone, we can manipulate the document before rendering
+                // This is useful for ensuring styles are applied
+            }
         });
+
         const data = canvas.toDataURL('image/png');
     
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         pdf.save(`invoice-${selectedInvoice?.invoiceNumber || 'new'}.pdf`);
-      };
+    };
     
-      const handlePrint = () => {
+    const handlePrint = () => {
         const node = invoicePrintRef.current;
         if (!node) return;
         
-        const printableContent = node.innerHTML;
         const printWindow = window.open('', '_blank');
         if (printWindow) {
-          printWindow.document.write(`
+            const allStyleSheets = Array.from(document.styleSheets)
+                .map(styleSheet => {
+                    try {
+                        return Array.from(styleSheet.cssRules)
+                            .map(rule => rule.cssText)
+                            .join('');
+                    } catch (e) {
+                        console.log('Cannot access stylesheet rules: ', styleSheet.href);
+                        return '';
+                    }
+                })
+                .join('\n');
+
+            printWindow.document.write(`
             <html>
               <head>
                 <title>Print Invoice</title>
-                <link rel="stylesheet" href="/globals.css">
                 <style>
-                  @media print {
-                    @page { size: A4; margin: 0; }
-                    body { margin: 0; }
-                    .a4-container {
-                        box-shadow: none;
-                        border: none;
-                        margin: 0;
-                        padding: 20mm;
-                    }
-                  }
+                  ${allStyleSheets}
+                  @page { size: A4; margin: 0; }
+                  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 </style>
               </head>
-              <body>${printableContent}</body>
+              <body>
+                <div class="a4-container printable-area">
+                  ${node.innerHTML}
+                </div>
+              </body>
             </html>
-          `);
-          printWindow.document.close();
-          printWindow.focus();
-          
-          setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-          }, 500);
+            `);
+
+            printWindow.document.close();
+            
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            }, 500); // Delay to ensure styles are applied
         }
       };
 
@@ -430,3 +443,5 @@ export default function InvoicesPageComponent() {
       </>
     );
 }
+
+    

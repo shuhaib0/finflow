@@ -42,19 +42,20 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
     tax,
   } = invoice;
 
-  const currencySymbol = getCurrencySymbol(currency || 'USD');
+  const currencyCode = currency || 'USD';
+  const currencySymbol = getCurrencySymbol(currencyCode);
 
-  const calculateTotals = (invoice: InvoiceTemplateProps['invoice']) => {
-    if (!invoice) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
+  const calculateTotals = (inv: InvoiceTemplateProps['invoice']) => {
+    if (!inv) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
     
-    const subtotal = invoice.items.reduce((acc, item) => {
+    const subtotal = inv.items.reduce((acc, item) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
         return acc + (quantity * unitPrice);
     }, 0);
 
-    const discountPercent = Number(invoice.discount) || 0;
-    const taxPercent = Number(invoice.tax) || 0;
+    const discountPercent = Number(inv.discount) || 0;
+    const taxPercent = Number(inv.tax) || 0;
 
     const totalDiscount = subtotal * (discountPercent / 100);
     const subtotalAfterDiscount = subtotal - totalDiscount;
@@ -82,7 +83,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
   const statusInfo = getStatusInfo(status);
 
   return (
-    <div className="bg-white text-gray-900 font-sans a4-container printable-area flex flex-col">
+    <div className="bg-white text-gray-900 font-sans a4-container flex flex-col">
       <header className="flex justify-between items-start mb-10 pb-6 border-b-2 border-primary">
         <div>
           <Icons.logo className="h-12 w-12 text-primary" />
@@ -152,23 +153,23 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
 
       <section className="flex justify-end mb-10">
         <div className="w-full max-w-sm text-md">
-          <div className="flex justify-between py-2">
+          <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
+            <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(subtotal)}</span>
           </div>
           {totalDiscount > 0 ? (
-            <div className="flex justify-between py-2 text-muted-foreground">
+            <div className="flex justify-between py-2 border-b border-gray-100 text-muted-foreground">
               <span>Discount ({discount}%)</span>
-              <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
+              <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(totalDiscount)}</span>
             </div>
           ) : null}
-          <div className="flex justify-between py-2 text-muted-foreground">
+          <div className="flex justify-between py-2 border-b border-gray-100 text-muted-foreground">
             <span>Tax ({tax}%)</span>
-            <span>{currencySymbol}{totalTax.toFixed(2)}</span>
+            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(totalTax)}</span>
           </div>
           <div className="flex justify-between py-4 bg-primary/10 px-4 mt-4 rounded-md text-primary">
             <span className="font-bold text-lg">Total Amount</span>
-            <span className="font-bold text-lg">{currencySymbol}{(Number(totalAmount) || 0).toFixed(2)}</span>
+            <span className="font-bold text-lg">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(Number(totalAmount) || 0)}</span>
           </div>
         </div>
       </section>
@@ -187,3 +188,5 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
     </div>
   )
 }
+
+    

@@ -42,19 +42,20 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
     tax,
   } = quotation;
 
-  const currencySymbol = getCurrencySymbol(currency || 'USD');
+  const currencyCode = currency || 'USD';
+  const currencySymbol = getCurrencySymbol(currencyCode);
 
-  const calculateTotals = (quotation: QuotationTemplateProps['quotation']) => {
-    if (!quotation) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
+  const calculateTotals = (q: QuotationTemplateProps['quotation']) => {
+    if (!q) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
     
-    const subtotal = quotation.items.reduce((acc, item) => {
+    const subtotal = q.items.reduce((acc, item) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
         return acc + (quantity * unitPrice);
     }, 0);
 
-    const discountPercent = Number(quotation.discount) || 0;
-    const taxPercent = Number(quotation.tax) || 0;
+    const discountPercent = Number(q.discount) || 0;
+    const taxPercent = Number(q.tax) || 0;
 
     const totalDiscount = subtotal * (discountPercent / 100);
     const subtotalAfterDiscount = subtotal - totalDiscount;
@@ -82,7 +83,7 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
   const statusInfo = getStatusInfo(status);
 
   return (
-    <div className="bg-white text-gray-900 font-sans a4-container printable-area flex flex-col">
+    <div className="bg-white text-gray-900 font-sans a4-container flex flex-col">
       <header className="flex justify-between items-start mb-10 pb-6 border-b-2 border-primary">
         <div>
           <Icons.logo className="h-12 w-12 text-primary" />
@@ -92,6 +93,9 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
         <div className="text-right">
           <h2 className="text-4xl font-bold text-foreground uppercase font-headline">Quotation</h2>
           <p className="text-sm text-muted-foreground mt-2"># {quotationNumber || 'QUO-XXXX'}</p>
+           <div className="mt-4">
+            <Badge variant={statusInfo.variant} className={`text-sm capitalize ${statusInfo.className}`}>{statusInfo.text}</Badge>
+          </div>
         </div>
       </header>
       
@@ -149,23 +153,23 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
 
       <section className="flex justify-end mb-10">
         <div className="w-full max-w-sm text-md">
-          <div className="flex justify-between py-2">
+          <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
+            <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(subtotal)}</span>
           </div>
           {totalDiscount > 0 ? (
-            <div className="flex justify-between py-2 text-muted-foreground">
+            <div className="flex justify-between py-2 border-b border-gray-100 text-muted-foreground">
               <span>Discount ({discount}%)</span>
-              <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
+              <span>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(totalDiscount)}</span>
             </div>
           ) : null}
-          <div className="flex justify-between py-2 text-muted-foreground">
+          <div className="flex justify-between py-2 border-b border-gray-100 text-muted-foreground">
             <span>Tax ({tax}%)</span>
-            <span>{currencySymbol}{totalTax.toFixed(2)}</span>
+            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(totalTax)}</span>
           </div>
           <div className="flex justify-between py-4 bg-primary/10 px-4 mt-4 rounded-md text-primary">
             <span className="font-bold text-lg">Total Amount</span>
-            <span className="font-bold text-lg">{currencySymbol}{(Number(totalAmount) || 0).toFixed(2)}</span>
+            <span className="font-bold text-lg">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(Number(totalAmount) || 0)}</span>
           </div>
         </div>
       </section>
@@ -184,3 +188,5 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
     </div>
   )
 }
+
+    

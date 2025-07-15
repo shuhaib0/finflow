@@ -81,13 +81,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   .a4-container {
     width: 210mm;
     min-height: 297mm;
     padding: 20mm;
-    margin: 10mm auto;
+    margin: 1rem auto;
     border: 1px #D3D3D3 solid;
     background: white;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
@@ -95,27 +97,25 @@
 
   @media print {
     body, html {
-        margin: 0;
-        padding: 0;
-        background: #fff;
-    }
-
-    .non-printable {
-      display: none !important;
+      margin: 0;
+      padding: 0;
+      background: #fff;
     }
     
     .printable-area {
-        visibility: visible;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: auto;
-        padding: 0;
-        margin: 0;
-        border: none;
-        box-shadow: none;
-        transform: scale(1) !important;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: auto;
+      padding: 0;
+      margin: 0;
+      border: none;
+      box-shadow: none;
+    }
+
+    .a4-container.printable-area {
+        padding: 20mm;
     }
 
     @page {
@@ -124,3 +124,5 @@
     }
   }
 }
+
+    
