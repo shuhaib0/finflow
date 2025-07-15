@@ -126,9 +126,6 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     defaultValues: {
       name: "",
       salutation: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
       jobTitle: "",
       gender: "",
       status: "lead",
@@ -164,9 +161,6 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     form.reset({
         name: "",
         salutation: "",
-        firstName: "",
-        middleName: "",
-        lastName: "",
         jobTitle: "",
         gender: "",
         status: "lead",
