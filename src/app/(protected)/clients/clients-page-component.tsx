@@ -155,17 +155,17 @@ export default function ClientsPageComponent() {
     }
     
     const authorName = user.displayName || "Admin User";
+    const { newNote, ...restOfClientData } = clientData;
 
     try {
         if (selectedClient) { 
           const existingNotes = selectedClient.notes || [];
-          const newNoteEntry: Note[] = clientData.newNote ? 
-            [{ content: clientData.newNote, author: authorName, createdAt: new Date().toISOString() }] 
+          const newNoteEntry: Note[] = newNote ? 
+            [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] 
             : [];
           
           const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           
-          const { newNote, ...restOfClientData } = clientData;
           const finalData = { ...restOfClientData, notes: updatedNotes };
     
           await updateClient(selectedClient.id, finalData);
@@ -179,7 +179,6 @@ export default function ClientsPageComponent() {
           });
     
         } else {
-          const { newNote, ...restOfClientData } = clientData;
           const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
           
           const newClientData = { ...restOfClientData, notes };
@@ -340,3 +339,5 @@ export default function ClientsPageComponent() {
     </>
   )
 }
+
+    

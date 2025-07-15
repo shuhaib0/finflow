@@ -113,9 +113,7 @@ const parseContactPerson = (contactPerson?: string) => {
 }
 
 const getInitialValues = (defaultValues?: Client | null) => {
-    const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
-    
-    const initialValues = {
+    const baseValues = {
         name: "",
         firstName: "",
         middleName: "",
@@ -146,12 +144,18 @@ const getInitialValues = (defaultValues?: Client | null) => {
         notes: [],
     };
 
+    if (!defaultValues) {
+        return baseValues;
+    }
+
+    const { firstName, middleName, lastName } = parseContactPerson(defaultValues.contactPerson);
+
     return {
-        ...initialValues,
+        ...baseValues,
         ...defaultValues,
-        firstName: defaultValues ? firstName : "",
-        middleName: defaultValues ? middleName : "",
-        lastName: defaultValues ? lastName : "",
+        firstName,
+        middleName,
+        lastName,
     };
 }
 
@@ -670,3 +674,5 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
+
+    

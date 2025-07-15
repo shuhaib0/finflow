@@ -37,6 +37,10 @@ export type Client = {
     source?: string;
     campaign?: string;
     notes?: Note[];
+    // Only used on the form, not saved to DB
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
 };
 
 export type InvoiceItem = {
@@ -126,3 +130,5 @@ export type User = {
     email: string;
     role: 'admin' | 'finance' | 'sales' | 'viewer';
 };
+
+    
