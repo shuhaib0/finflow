@@ -148,7 +148,7 @@ export default function ClientsPageComponent() {
     }
   }
 
-  const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
+  const handleFormSubmit = async (clientData: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string; newNote?: string }) => {
     if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
@@ -204,13 +204,13 @@ export default function ClientsPageComponent() {
   const getStatusVariant = (status: Client['status']) => {
     switch (status) {
       case 'lead':
-        return 'secondary';
+        return 'secondary' as const;
       case 'opportunity':
-        return 'default';
+        return 'default' as const;
       case 'customer':
-        return 'outline';
+        return 'outline' as const;
       default:
-        return 'secondary';
+        return 'secondary' as const;
     }
   }
 
