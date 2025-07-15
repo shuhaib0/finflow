@@ -39,6 +39,7 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
   quantity: z.coerce.number().min(0.01, "Quantity must be positive."),
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive."),
+  total: z.coerce.number(),
 })
 
 const addressSchema = z.object({
@@ -84,7 +85,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
         status: "draft" as const,
         date: new Date(),
         dueDate: new Date(),
-        items: [{ description: "", quantity: 1, unitPrice: 0 }],
+        items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
         currency: 'USD' as const,
         tax: 0,
         discount: 0,
@@ -202,7 +203,9 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
   const currentClient = clientMap[watchedClientRef];
 
   const constructedQuotation = {
-    ...(defaultValues || getInitialValues(null)),
+    id: defaultValues?.id || 'temp-id',
+    quotationNumber: defaultValues?.quotationNumber || 'QUO-PREVIEW',
+    createdAt: defaultValues?.createdAt || new Date().toISOString(),
     ...allFormValues,
     date: allFormValues.date.toISOString(),
     dueDate: allFormValues.dueDate.toISOString(),
@@ -428,7 +431,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                                             </div>
                                         </div>
                                     ))}
-                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
+                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0, total: 0 })}>
                                         Add Item
                                     </Button>
                                     </div>

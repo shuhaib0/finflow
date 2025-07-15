@@ -79,7 +79,7 @@ type InvoiceFormProps = {
   onClose: () => void;
 }
 
-const getInitialValues = (defaultValues?: Invoice | null) => {
+const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => {
     const baseValues = {
         clientRef: "",
         status: "draft" as const,
@@ -203,7 +203,9 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
   const currentClient = clientMap[watchedClientRef];
 
   const constructedInvoice = {
-    ...(defaultValues || getInitialValues()),
+    id: defaultValues?.id || 'temp-id',
+    invoiceNumber: defaultValues?.invoiceNumber || 'INV-PREVIEW',
+    createdAt: defaultValues?.createdAt || new Date().toISOString(),
     ...allFormValues,
     date: allFormValues.date.toISOString(),
     dueDate: allFormValues.dueDate.toISOString(),
