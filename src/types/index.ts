@@ -10,7 +10,7 @@ export type Client = {
     id: string;
     name: string;
     contactPerson: string;
-    email: string;
+    email?: string;
     phone?: string;
     status: 'lead' | 'opportunity' | 'customer';
     opportunityWorth?: number;

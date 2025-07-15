@@ -97,7 +97,7 @@ const formSchema = z.object({
 type ClientFormValues = z.infer<typeof formSchema>
 
 type ClientFormProps = {
-  onSubmit: (values: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string, newNote?: string }) => void;
+  onSubmit: (values: Omit<Client, "id"> & { newNote?: string }) => void;
   onStatusChange: (status: 'opportunity' | 'customer', worth?: number) => void;
   defaultValues?: Client | null;
   isEditing: boolean;
@@ -125,6 +125,9 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
+            firstName: "",
+            middleName: "",
+            lastName: "",
             salutation: "",
             jobTitle: "",
             gender: "",
@@ -160,6 +163,9 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
     form.reset({
         name: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
         salutation: "",
         jobTitle: "",
         gender: "",
@@ -690,5 +696,3 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
-
-    
