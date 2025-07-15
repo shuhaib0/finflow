@@ -58,7 +58,7 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: "Due date is required."}),
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
-  currency: z.string().min(1, "Currency is required."),
+  currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']),
   tax: z.coerce.number().min(0).optional().default(0),
   discount: z.coerce.number().min(0).max(100).optional().default(0),
   billingAddress: addressSchema.optional(),
@@ -86,7 +86,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
         date: new Date(),
         dueDate: new Date(),
         items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
-        currency: 'USD',
+        currency: 'USD' as const,
         tax: 0,
         discount: 0,
         companyTaxId: '',
@@ -542,3 +542,5 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     </Form>
   )
 }
+
+    

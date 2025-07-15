@@ -57,7 +57,7 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: "Expiry date is required."}),
   companyTaxId: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
-  currency: z.string().min(1, "Currency is required."),
+  currency: z.enum(['USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD']),
   tax: z.coerce.number().min(0).optional().default(0),
   discount: z.coerce.number().min(0).max(100).optional().default(0),
   billingAddress: addressSchema.optional(),
@@ -85,7 +85,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
         date: new Date(),
         dueDate: new Date(),
         items: [{ description: "", quantity: 1, unitPrice: 0 }],
-        currency: 'USD',
+        currency: 'USD' as const,
         tax: 0,
         discount: 0,
         companyTaxId: '',
@@ -210,7 +210,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden h-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 lg:grid-cols-2 flex-1 h-full overflow-hidden">
       
         <div className="flex flex-col h-full">
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
@@ -229,7 +229,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                     </div>
                 </div>
             </header>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
                 <ScrollArea className="h-full">
                     <div className="px-6 py-4">
                         <Tabs defaultValue="details" className="w-full mb-6">
@@ -542,3 +542,5 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
     </Form>
   )
 }
+
+    
