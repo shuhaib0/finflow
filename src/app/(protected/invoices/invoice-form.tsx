@@ -203,8 +203,12 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
   const currentClient = clientMap[watchedClientRef];
 
   const constructedInvoice = {
-    ...(defaultValues || getInitialValues()),
+    id: defaultValues?.id || 'temp-id',
+    invoiceNumber: defaultValues?.invoiceNumber || 'INV-PREVIEW',
+    createdAt: defaultValues?.createdAt || new Date().toISOString(),
     ...allFormValues,
+    date: allFormValues.date.toISOString(),
+    dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
   };
@@ -542,5 +546,3 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     </Form>
   )
 }
-
-    
