@@ -112,56 +112,10 @@ const parseContactPerson = (contactPerson?: string) => {
     return { firstName, middleName, lastName };
 }
 
-
-export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing }: ClientFormProps) {
-    const router = useRouter();
-    const [opportunityWorth, setOpportunityWorth] = useState("");
-    const opportunityAlertDialogTrigger = useRef<HTMLButtonElement>(null);
-    const { user } = useAuth();
-
+const getInitialValues = (defaultValues?: Client | null) => {
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
-
-    const form = useForm<ClientFormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: "",
-            firstName: "",
-            middleName: "",
-            lastName: "",
-            salutation: "",
-            jobTitle: "",
-            gender: "",
-            status: "lead",
-            opportunityWorth: 0,
-            leadType: "",
-            requestType: "",
-            requestTypeOther: "",
-            email: "",
-            mobile: "",
-            phone: "",
-            website: "",
-            whatsapp: "",
-            phoneExt: "",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            postalCode: "",
-            country: "",
-            source: "",
-            campaign: "",
-            newNote: "",
-            notes: [],
-            ...defaultValues,
-            firstName: defaultValues ? firstName : "",
-            middleName: defaultValues ? middleName : "",
-            lastName: defaultValues ? lastName : "",
-        },
-    });
-
-  useEffect(() => {
-    const { firstName, middleName, lastName } = parseContactPerson(defaultValues?.contactPerson);
-    form.reset({
+    
+    const initialValues = {
         name: "",
         firstName: "",
         middleName: "",
@@ -169,7 +123,7 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         salutation: "",
         jobTitle: "",
         gender: "",
-        status: "lead",
+        status: "lead" as const,
         opportunityWorth: 0,
         leadType: "",
         requestType: "",
@@ -190,11 +144,31 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         campaign: "",
         newNote: "",
         notes: [],
+    };
+
+    return {
+        ...initialValues,
         ...defaultValues,
         firstName: defaultValues ? firstName : "",
         middleName: defaultValues ? middleName : "",
         lastName: defaultValues ? lastName : "",
+    };
+}
+
+
+export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing }: ClientFormProps) {
+    const router = useRouter();
+    const [opportunityWorth, setOpportunityWorth] = useState("");
+    const opportunityAlertDialogTrigger = useRef<HTMLButtonElement>(null);
+    const { user } = useAuth();
+
+    const form = useForm<ClientFormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: getInitialValues(defaultValues),
     });
+
+  useEffect(() => {
+    form.reset(getInitialValues(defaultValues));
   }, [defaultValues, form]);
 
   const watchedRequestType = form.watch("requestType");
