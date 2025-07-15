@@ -96,6 +96,10 @@
   }
 
   @media print {
+    .print\:hidden {
+      display: none;
+    }
+
     body, html {
       margin: 0;
       padding: 0;
@@ -124,5 +128,3 @@
     }
   }
 }
-
-    

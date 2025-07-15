@@ -93,7 +93,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
         <div className="text-right">
           <h2 className="text-4xl font-bold text-foreground uppercase font-headline">Invoice</h2>
           <p className="text-sm text-muted-foreground mt-2"># {invoiceNumber || 'INV-XXXX'}</p>
-          <div className="mt-4">
+          <div className="mt-4 print:hidden">
             <Badge variant={statusInfo.variant} className={`text-sm capitalize ${statusInfo.className}`}>{statusInfo.text}</Badge>
           </div>
         </div>
@@ -103,11 +103,11 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
         <div>
           <h3 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider mb-2">Bill To</h3>
           <p className="font-bold text-lg text-primary">{client.name}</p>
-          <p className="text-sm text-muted-foreground">{client.addressLine1}</p>
+          {client.addressLine1 && <p className="text-sm text-muted-foreground">{client.addressLine1}</p>}
           {client.addressLine2 && <p className="text-sm text-muted-foreground">{client.addressLine2}</p>}
           <p className="text-sm text-muted-foreground">{`${client.city || ''} ${client.state || ''} ${client.postalCode || ''}`.trim()}</p>
-          <p className="text-sm text-muted-foreground">{client.country}</p>
-          <p className="text-sm text-muted-foreground mt-2">{client.email}</p>
+          {client.country && <p className="text-sm text-muted-foreground">{client.country}</p>}
+          {client.email && <p className="text-sm text-muted-foreground mt-2">{client.email}</p>}
         </div>
         <div className="text-right space-y-4">
           <div>
@@ -143,8 +143,8 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
                   {item.description}
                 </td>
                 <td className="p-3 text-center text-muted-foreground">{quantity}</td>
-                <td className="p-3 text-right text-muted-foreground">{currencySymbol}{unitPrice.toFixed(2)}</td>
-                <td className="p-3 text-right font-medium">{currencySymbol}{itemTotal.toFixed(2)}</td>
+                <td className="p-3 text-right text-muted-foreground">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(unitPrice)}</td>
+                <td className="p-3 text-right font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(itemTotal)}</td>
               </tr>
             )})}
           </tbody>
@@ -188,5 +188,3 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
     </div>
   )
 }
-
-    
