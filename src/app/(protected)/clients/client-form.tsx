@@ -69,6 +69,7 @@ const formSchema = z.object({
   website: z.string().optional(),
   whatsapp: z.string().optional(),
   phoneExt: z.string().optional(),
+  taxId: z.string().optional(),
   // Address
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
@@ -112,7 +113,7 @@ const parseContactPerson = (contactPerson?: string) => {
     return { firstName, middleName, lastName };
 }
 
-const getInitialValues = (defaultValues?: Client | null) => {
+const getInitialValues = (defaultValues?: Client | null): ClientFormValues => {
     const baseValues = {
         name: "",
         firstName: "",
@@ -132,6 +133,7 @@ const getInitialValues = (defaultValues?: Client | null) => {
         website: "",
         whatsapp: "",
         phoneExt: "",
+        taxId: "",
         addressLine1: "",
         addressLine2: "",
         city: "",
@@ -149,7 +151,7 @@ const getInitialValues = (defaultValues?: Client | null) => {
     }
 
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues.contactPerson);
-
+    
     return {
         ...baseValues,
         ...defaultValues,
@@ -525,6 +527,20 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                 </TabsContent>
                 <TabsContent value="address" className="mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <FormField
+                            control={form.control}
+                            name="taxId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Tax ID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. GST12345" {...field} value={field.value || ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="md:col-span-2"></div>
                         <FormField
                             control={form.control}
                             name="addressLine1"

@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PlusCircle } from "lucide-react"
@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 type DialogState = 'closed' | 'edit' | 'new';
 
@@ -132,9 +133,9 @@ export default function ClientsPageComponent() {
     
     try {
         await updateClient(selectedClient.id, updatedClientData);
-        const updatedClient = { ...selectedClient, ...updatedClientData };
-        setClients(clients.map(c => c.id === selectedClient.id ? updatedClient as Client : c));
-        setSelectedClient(updatedClient as Client);
+        const updatedClient = { ...selectedClient, ...updatedClientData } as Client;
+        setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
+        setSelectedClient(updatedClient);
         toast({
             title: `Contact converted to ${status}`,
             description: `${selectedClient.name} is now a ${status}.`,
@@ -148,7 +149,7 @@ export default function ClientsPageComponent() {
     }
   }
 
-  const handleFormSubmit = async (clientData: Omit<Client, "id" | "contactPerson" | "notes"> & { contactPerson: string; newNote?: string }) => {
+  const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
     if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;
@@ -169,9 +170,9 @@ export default function ClientsPageComponent() {
           const finalData = { ...restOfClientData, notes: updatedNotes };
     
           await updateClient(selectedClient.id, finalData);
-          const updatedClientWithNotes = { ...selectedClient, ...finalData };
+          const updatedClientWithNotes = { ...selectedClient, ...finalData } as Client;
           setClients(clients.map((c) =>
-            c.id === selectedClient.id ? updatedClientWithNotes as Client : c
+            c.id === selectedClient.id ? updatedClientWithNotes : c
           ));
           toast({
             title: "Contact Updated",
@@ -180,8 +181,7 @@ export default function ClientsPageComponent() {
     
         } else {
           const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
-          
-          const newClientData = { ...restOfClientData, notes };
+          const newClientData = { ...restOfClientData, notes, status: 'lead' as const };
     
           const newClient = await addClient(newClientData);
           setClients([...clients, newClient]);
@@ -201,7 +201,7 @@ export default function ClientsPageComponent() {
     }
   }
 
-  const getStatusVariant = (status: Client['status']) => {
+  const getStatusVariant = (status: Client['status']): VariantProps<typeof badgeVariants>['variant'] => {
     switch (status) {
       case 'lead':
         return 'secondary' as const;
@@ -328,6 +328,7 @@ export default function ClientsPageComponent() {
             </DialogHeader>
             {(dialogState === 'new' || dialogState === 'edit') && (
                 <ClientForm 
+                  key={selectedClient?.id || 'new'}
                   onSubmit={handleFormSubmit}
                   onStatusChange={handleStatusChange}
                   defaultValues={selectedClient}
@@ -339,5 +340,3 @@ export default function ClientsPageComponent() {
     </>
   )
 }
-
-    

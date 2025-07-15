@@ -130,5 +130,3 @@ export type User = {
     email: string;
     role: 'admin' | 'finance' | 'sales' | 'viewer';
 };
-
-    

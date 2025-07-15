@@ -2,9 +2,10 @@
 "use client"
 
 import { Icons } from "@/components/icons";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import type { Client, Quotation } from "@/types";
 import { format } from "date-fns";
+import type { VariantProps } from "class-variance-authority";
 
 type QuotationTemplateProps = {
   quotation: (Omit<Quotation, 'clientRef'> & { client?: Client | null }) | null;
@@ -66,17 +67,17 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
 
   const { subtotal, totalDiscount, totalTax } = calculateTotals(quotation);
 
-  const getStatusInfo = (status: Quotation['status']) => {
+  const getStatusInfo = (status: Quotation['status']): { variant: VariantProps<typeof badgeVariants>['variant']; text: string; className: string } => {
     switch (status) {
       case 'won':
-        return { variant: 'default', text: 'Won', className: 'bg-green-600 text-white' };
+        return { variant: 'default' as const, text: 'Won', className: 'bg-green-600 text-white' };
       case 'sent':
-        return { variant: 'secondary', text: 'Sent', className: 'bg-blue-500 text-white' };
+        return { variant: 'secondary' as const, text: 'Sent', className: 'bg-blue-500 text-white' };
       case 'lost':
-        return { variant: 'destructive', text: 'Lost', className: 'bg-red-600 text-white' };
+        return { variant: 'destructive' as const, text: 'Lost', className: 'bg-red-600 text-white' };
       case 'draft':
       default:
-        return { variant: 'outline', text: 'Draft', className: 'bg-gray-500 text-white' };
+        return { variant: 'outline' as const, text: 'Draft', className: 'bg-gray-500 text-white' };
     }
   };
 

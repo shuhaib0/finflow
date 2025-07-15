@@ -2,9 +2,10 @@
 "use client"
 
 import { Icons } from "@/components/icons";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import type { Client, Invoice } from "@/types";
 import { format } from "date-fns";
+import type { VariantProps } from "class-variance-authority";
 
 type InvoiceTemplateProps = {
   invoice: (Omit<Invoice, 'clientRef'> & { client?: Client | null }) | null;
@@ -66,17 +67,17 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
 
   const { subtotal, totalDiscount, totalTax } = calculateTotals(invoice);
 
-  const getStatusInfo = (status: Invoice['status']) => {
+  const getStatusInfo = (status: Invoice['status']): { variant: VariantProps<typeof badgeVariants>['variant']; text: string; className: string } => {
     switch (status) {
       case 'paid':
-        return { variant: 'default', text: 'Paid', className: 'bg-green-600 text-white' };
+        return { variant: 'default' as const, text: 'Paid', className: 'bg-green-600 text-white' };
       case 'sent':
-        return { variant: 'secondary', text: 'Sent', className: 'bg-blue-500 text-white' };
+        return { variant: 'secondary' as const, text: 'Sent', className: 'bg-blue-500 text-white' };
       case 'overdue':
-        return { variant: 'destructive', text: 'Overdue', className: 'bg-red-600 text-white' };
+        return { variant: 'destructive' as const, text: 'Overdue', className: 'bg-red-600 text-white' };
       case 'draft':
       default:
-        return { variant: 'outline', text: 'Draft', className: 'bg-gray-500 text-white' };
+        return { variant: 'outline' as const, text: 'Draft', className: 'bg-gray-500 text-white' };
     }
   };
 

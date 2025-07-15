@@ -115,10 +115,7 @@ const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => 
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
-            billingAddress: {
-                ...baseValues.billingAddress,
-                ...defaultValues.billingAddress
-            }
+            billingAddress: defaultValues.billingAddress ? { ...defaultValues.billingAddress } : baseValues.billingAddress
         };
     }
 
@@ -140,7 +137,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
 
   useEffect(() => {
     form.reset(getInitialValues(defaultValues));
-  }, [defaultValues, form])
+  }, [defaultValues, form.reset])
 
   useEffect(() => {
     if (watchedClientRef) {

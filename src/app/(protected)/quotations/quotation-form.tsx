@@ -79,7 +79,7 @@ type QuotationFormProps = {
   onClose: () => void;
 }
 
-const getInitialValues = (defaultValues?: Quotation | null) => {
+const getInitialValues = (defaultValues?: Quotation | null): QuotationFormValues => {
     const baseValues = {
         clientRef: "",
         status: "draft" as const,
@@ -115,10 +115,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
-            billingAddress: {
-                ...baseValues.billingAddress,
-                ...defaultValues.billingAddress
-            }
+            billingAddress: defaultValues.billingAddress ? { ...defaultValues.billingAddress } : baseValues.billingAddress
         };
     }
 
