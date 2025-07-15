@@ -205,6 +205,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
   const constructedInvoice = {
     ...(defaultValues || getInitialValues()),
     ...allFormValues,
+    date: allFormValues.date.toISOString(),
+    dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
   };

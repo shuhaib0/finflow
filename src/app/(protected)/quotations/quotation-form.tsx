@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Trash, X, Download, Printer } from "lucide-react"
 
@@ -204,6 +204,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
   const constructedQuotation = {
     ...(defaultValues || getInitialValues(null)),
     ...allFormValues,
+    date: allFormValues.date.toISOString(),
+    dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
   };
