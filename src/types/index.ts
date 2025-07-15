@@ -100,6 +100,7 @@ export type Expense = {
     amount: number;
     category: string;
     date: string; // ISO string
+    description?: string;
     clientRef?: string; // Refers to Client ID
     vendor?: string;
     notes?: string;
@@ -111,6 +112,7 @@ export type Income = {
     type: 'income';
     amount: number;
     source: string;
+    description?: string;
     clientRef?: string; // Refers to Client ID
     date: string; // ISO string
     notes?: string;

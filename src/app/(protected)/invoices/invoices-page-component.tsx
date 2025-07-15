@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from 'next/navigation'
 import jsPDF from "jspdf"
+import autoTable from 'jspdf-autotable'
 import html2canvas from "html2canvas"
 import {
   Table,
@@ -44,13 +45,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
-import type { Invoice, Client } from "@/types"
+import type { Invoice, Client, InvoiceItem } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
+
+const getCurrencySymbol = (currencyCode: string | undefined) => {
+    const symbols: { [key: string]: string } = {
+        'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'AED': 'د.إ', 'CAD': '$'
+    };
+    return symbols[currencyCode || 'USD'] || '$';
+}
 
 export default function InvoicesPageComponent() {
     const { toast } = useToast()
@@ -218,27 +226,162 @@ export default function InvoicesPageComponent() {
         }
     }
 
-    const handleDownloadPdf = async () => {
-        const element = invoicePrintRef.current;
-        if (!element) return;
+    const handleDownloadPdf = () => {
+        if (!selectedInvoice) return;
+        const client = clientMap[selectedInvoice.clientRef];
+        if (!client) return;
+    
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageMargin = 20;
+    
+        // Ailutions Header
+        doc.setFontSize(26);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(75, 0, 130); // Deep Indigo
+        doc.text("Ailutions Inc.", pageMargin, 22);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        doc.text("123 Innovation Drive, Tech City, 12345", pageMargin, 28);
+    
+        // Invoice Title
+        doc.setFontSize(28);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 34, 34);
+        doc.text("INVOICE", pageWidth - pageMargin, 22, { align: "right" });
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`# ${selectedInvoice.invoiceNumber}`, pageWidth - pageMargin, 28, { align: "right" });
+    
+        // Line separator
+        doc.setDrawColor(75, 0, 130);
+        doc.setLineWidth(0.5);
+        doc.line(pageMargin, 38, pageWidth - pageMargin, 38);
+    
+        // Bill To section
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text("BILL TO", pageMargin, 48);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(75, 0, 130);
+        doc.text(client.name, pageMargin, 55);
+    
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        let yPos = 60;
+        if(client.addressLine1) { doc.text(client.addressLine1, pageMargin, yPos); yPos += 5; }
+        if(client.addressLine2) { doc.text(client.addressLine2, pageMargin, yPos); yPos += 5; }
+        const cityStateZip = `${client.city || ''} ${client.state || ''} ${client.postalCode || ''}`.trim();
+        if(cityStateZip) { doc.text(cityStateZip, pageMargin, yPos); yPos += 5; }
+        if(client.country) { doc.text(client.country, pageMargin, yPos); yPos += 5; }
+        
+        // Dates section
+        const datesX = pageWidth - pageMargin - 60;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(100);
+        doc.text("Invoice Date:", datesX, 48);
+        doc.text("Due Date:", datesX, 55);
 
-        const canvas = await html2canvas(element, {
-            scale: 2, // Higher resolution
-            useCORS: true,
-            onclone: (document) => {
-                // On clone, we can manipulate the document before rendering
-                // This is useful for ensuring styles are applied
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(34, 34, 34);
+        doc.text(format(new Date(selectedInvoice.date), "MMMM d, yyyy"), datesX + 25, 48);
+        doc.text(format(new Date(selectedInvoice.dueDate), "MMMM d, yyyy"), datesX + 25, 55);
+
+
+        // Table
+        const currencySymbol = getCurrencySymbol(selectedInvoice.currency);
+        const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
+        const tableRows: (string | number)[][] = selectedInvoice.items.map((item: InvoiceItem) => [
+            item.description,
+            item.quantity,
+            `${currencySymbol}${(item.unitPrice || 0).toFixed(2)}`,
+            `${currencySymbol}${(item.quantity * item.unitPrice).toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: yPos + 10,
+            theme: 'striped',
+            headStyles: {
+                fillColor: [240, 240, 240], // Light Gray
+                textColor: [75, 0, 130], // Deep Indigo
+                fontStyle: 'bold'
+            },
+            styles: {
+                cellPadding: 3,
+                fontSize: 10
+            },
+            columnStyles: {
+                1: { halign: 'center' },
+                2: { halign: 'right' },
+                3: { halign: 'right' }
+            },
+            didDrawPage: (data) => {
+                // Totals
+                let finalY = (data.cursor?.y || 0) + 10;
+                
+                const calculateTotals = (inv: Invoice) => {
+                    const subtotal = inv.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+                    const discountPercent = Number(inv.discount) || 0;
+                    const taxPercent = Number(inv.tax) || 0;
+                    const totalDiscount = subtotal * (discountPercent / 100);
+                    const subtotalAfterDiscount = subtotal - totalDiscount;
+                    const totalTax = subtotalAfterDiscount * (taxPercent / 100);
+                    return { subtotal, totalDiscount, totalTax };
+                };
+                
+                const { subtotal, totalDiscount, totalTax } = calculateTotals(selectedInvoice!);
+    
+                const totalsX = pageWidth - pageMargin - 50;
+                const totalsValueX = pageWidth - pageMargin;
+    
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(100);
+                doc.text("Subtotal:", totalsX, finalY);
+                doc.text(`${currencySymbol}${subtotal.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+                finalY += 7;
+                
+                if (totalDiscount > 0) {
+                    doc.text(`Discount (${selectedInvoice.discount}%):`, totalsX, finalY);
+                    doc.text(`-${currencySymbol}${totalDiscount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+                    finalY += 7;
+                }
+    
+                doc.text(`Tax (${selectedInvoice.tax}%):`, totalsX, finalY);
+                doc.text(`${currencySymbol}${totalTax.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+                finalY += 7;
+    
+                doc.setLineWidth(0.2);
+                doc.line(totalsX, finalY - 3, totalsValueX, finalY - 3);
+    
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(34, 34, 34);
+                doc.text("Total:", totalsX, finalY + 2);
+                doc.text(`${currencySymbol}${selectedInvoice.totalAmount.toFixed(2)}`, totalsValueX, finalY + 2, { align: 'right' });
             }
         });
 
-        const data = canvas.toDataURL('image/png');
+        // Terms
+        const finalY = (doc as any).lastAutoTable.finalY || doc.internal.pageSize.getHeight() - 50;
+        if(selectedInvoice.terms) {
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text("Terms & Conditions", pageMargin, finalY + 20);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(selectedInvoice.terms, pageMargin, finalY + 25, {
+                maxWidth: pageWidth - (pageMargin * 2)
+            });
+        }
     
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        pdf.addImage(data, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-        pdf.save(`invoice-${selectedInvoice?.invoiceNumber || 'new'}.pdf`);
+        doc.save(`Invoice-${selectedInvoice.invoiceNumber}.pdf`);
     };
     
     const handlePrint = () => {
@@ -443,5 +586,3 @@ export default function InvoicesPageComponent() {
       </>
     );
 }
-
-    
