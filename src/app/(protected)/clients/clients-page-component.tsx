@@ -35,7 +35,7 @@ import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PlusCircle } from "lucide-react"
-import { ClientForm } from "./client-form"
+import { ClientForm, type ClientFormValues } from "./client-form"
 import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
@@ -150,7 +150,7 @@ export default function ClientsPageComponent() {
     }
   }
 
-  const handleFormSubmit = async (clientData: Omit<Client, "id"> & { newNote?: string }) => {
+  const handleFormSubmit = async (clientData: ClientFormValues) => {
     if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a contact." });
         return;

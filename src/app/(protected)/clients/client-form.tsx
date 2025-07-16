@@ -95,10 +95,10 @@ const formSchema = z.object({
     return true;
 }, { message: "Please specify the 'other' request type.", path: ["requestTypeOther"]});
 
-type ClientFormValues = z.infer<typeof formSchema>
+export type ClientFormValues = z.infer<typeof formSchema>
 
 type ClientFormProps = {
-  onSubmit: (values: Omit<Client, "id"> & { newNote?: string }) => void;
+  onSubmit: (values: ClientFormValues) => void;
   onStatusChange: (status: 'opportunity' | 'customer', worth?: number) => void;
   defaultValues?: Client | null;
   isEditing: boolean;
@@ -114,9 +114,8 @@ const parseContactPerson = (contactPerson?: string) => {
 }
 
 const getInitialValues = (defaultValues?: Client | null): ClientFormValues => {
-    const baseValues: ClientFormValues = {
+    const baseValues: Omit<ClientFormValues, 'contactPerson'> = {
         name: "",
-        contactPerson: "",
         firstName: "",
         middleName: "",
         lastName: "",
@@ -148,7 +147,10 @@ const getInitialValues = (defaultValues?: Client | null): ClientFormValues => {
     };
 
     if (!defaultValues) {
-        return baseValues;
+        return {
+            ...baseValues,
+            contactPerson: ''
+        };
     }
 
     const { firstName, middleName, lastName } = parseContactPerson(defaultValues.contactPerson);
