@@ -299,7 +299,7 @@ export default function TransactionsPage() {
                 </DialogHeader>
                 <TransactionForm
                     onSubmit={handleFormSubmit}
-                    defaultValues={selectedTransaction}
+                    defaultValues={selectedTransaction || undefined}
                     clientNames={clientNames}
                 />
             </DialogContent>

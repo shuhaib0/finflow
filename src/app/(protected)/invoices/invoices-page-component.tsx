@@ -51,7 +51,7 @@ import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, getInvoiceCount, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { getCompanyDetails } from "@/services/companyService"
-import { useAuth } from "../auth-provider"
+import { useAuth } from "@/app/(protected)/auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
