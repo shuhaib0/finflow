@@ -176,6 +176,7 @@ export default function ClientsPageComponent() {
           setClients(clients.map((c) =>
             c.id === selectedClient.id ? updatedClientWithNotes : c
           ));
+          setSelectedClient(updatedClientWithNotes);
           toast({
             title: "Contact Updated",
             description: "The contact details have been updated.",
@@ -187,12 +188,12 @@ export default function ClientsPageComponent() {
     
           const newClient = await addClient(newClientData);
           setClients([...clients, newClient]);
+          setDialogState('closed');
           toast({
             title: "Contact Created",
             description: "A new contact has been added successfully.",
           });
         }
-        setDialogState('closed');
     } catch (error) {
         console.error("Failed to save client:", error);
         toast({

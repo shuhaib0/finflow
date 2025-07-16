@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import jsPDF from "jspdf"
 import autoTable from 'jspdf-autotable'
 import {
@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -44,14 +45,14 @@ import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
-import { InvoiceForm } from "./invoice-form"
-import type { Invoice, Client, InvoiceItem, Company } from "@/types"
+import { QuotationForm } from "./quotation-form"
+import type { Quotation, Client, InvoiceItem, Company } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { getInvoices, addInvoice, updateInvoice, getInvoiceCount, deleteInvoice } from "@/services/invoiceService"
-import { getClients } from "@/services/clientService"
-import { getCompanyDetails } from "@/services/companyService"
 import { useAuth } from "../auth-provider"
+import { getClients } from "@/services/clientService"
+import { getQuotations, addQuotation, updateQuotation, deleteQuotation, getQuotationCount } from "@/services/quotationService"
+import { getCompanyDetails } from "@/services/companyService"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
@@ -61,190 +62,188 @@ const getCurrencySymbol = (currencyCode: string | undefined) => {
     return symbols[currencyCode || 'USD'] || '$';
 }
 
-export default function InvoicesPageComponent() {
+export default function QuotationsPageComponent() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [quotations, setQuotations] = useState<Quotation[]>([])
     const [clients, setClients] = useState<Client[]>([]);
     const [company, setCompany] = useState<Company | null>(null);
     const [pageLoading, setPageLoading] = useState(true);
-    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+    const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const invoicePrintRef = useRef<HTMLDivElement>(null);
     const { user, loading: authLoading } = useAuth();
-
+    const quotationPrintRef = useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+        if (authLoading || !user) {
+            setPageLoading(!user);
+            return;
+        }
+        
+        const fetchData = async () => {
+          setPageLoading(true);
+          try {
+            const [quotationsData, clientsData, companyData] = await Promise.all([
+              getQuotations(user.uid),
+              getClients(user.uid),
+              getCompanyDetails(user.uid),
+            ]);
+            setQuotations(quotationsData);
+            setClients(clientsData);
+            setCompany(companyData);
+          } catch (error) {
+            console.error("Failed to fetch data:", error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Could not load quotations or client data.",
+            });
+          } finally {
+            setPageLoading(false);
+          }
+        };
+        
+        fetchData();
+    }, [user, authLoading, toast]);
+    
     const clientMap = useMemo(() => {
         return clients.reduce((acc, client) => {
           acc[client.id] = client;
           return acc;
         }, {} as { [key: string]: Client });
       }, [clients]);
-    
-    useEffect(() => {
-      if (authLoading || !user) {
-        setPageLoading(!user);
-        return;
-      }
-      
-      const fetchData = async () => {
-        setPageLoading(true);
-        try {
-          const [invoicesData, clientsData, companyData] = await Promise.all([
-            getInvoices(user.uid),
-            getClients(user.uid),
-            getCompanyDetails(user.uid),
-          ]);
-          setInvoices(invoicesData);
-          setClients(clientsData);
-          setCompany(companyData);
-        } catch (error) {
-          console.error("Failed to fetch data:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not load invoices or client data.",
-          });
-        } finally {
-          setPageLoading(false);
-        }
-      };
-      
-      fetchData();
-    }, [user, authLoading, toast]);
 
-
-    const handleFormSubmit = async (invoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">, fromConversion = false) => {
-      if (!user) {
-        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save an invoice." });
-        return;
-      }
-
-      try {
-        if (selectedInvoice && selectedInvoice.id && !fromConversion) { 
-            await updateInvoice(selectedInvoice.id, invoiceData);
-            const updatedInvoice = { ...selectedInvoice, ...invoiceData } as Invoice;
-            setInvoices(
-              invoices.map((inv) =>
-                inv.id === selectedInvoice.id ? updatedInvoice : inv
-              )
-            )
-            setSelectedInvoice(updatedInvoice); 
-            toast({
-              title: "Invoice Updated",
-              description: "The invoice details have been updated.",
-            })
-        } else {
-          const invoiceCount = await getInvoiceCount(user.uid);
-          const newInvoiceData = {
-            ...invoiceData,
-            userId: user.uid,
-            id: '', 
-            invoiceNumber: `INV-${String(invoiceCount + 1).padStart(3, '0')}`,
-            createdAt: new Date().toISOString(),
-          }
-          const newInvoice = await addInvoice(newInvoiceData);
-          setInvoices(prev => [...prev, newInvoice]);
-          setSelectedInvoice(newInvoice);
-          toast({
-            title: fromConversion ? "Invoice Converted" : "Invoice Created",
-            description: fromConversion 
-              ? `Invoice ${newInvoice.invoiceNumber} created from quotation.`
-              : "The new invoice has been added successfully.",
-          });
-          if (!fromConversion) {
-            setIsDialogOpen(false);
-          }
-        }
-      } catch(error) {
-          toast({ variant: "destructive", title: "Error", description: "Failed to save invoice." });
-      }
-    }
-
-    useEffect(() => {
+      useEffect(() => {
         if (pageLoading || !user) return;
 
         const createForClient = searchParams.get('createForClient');
         if (createForClient) {
-            setSelectedInvoice({
+            setSelectedQuotation({
                 id: '',
                 userId: user.uid,
-                invoiceNumber: '',
+                quotationNumber: '',
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
                 totalAmount: 0,
-                currency: 'USD',
                 date: new Date().toISOString(),
                 dueDate: new Date().toISOString(),
                 status: 'draft',
                 createdAt: new Date().toISOString(),
             });
             setIsDialogOpen(true);
-            router.replace('/invoices', { scroll: false });
+            router.replace('/quotations', { scroll: false });
         }
+    }, [searchParams, router, user, pageLoading]);
 
-        const fromQuotation = searchParams.get('fromQuotation');
-        if (fromQuotation) {
-            try {
-                const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
-                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber"> = {
-                    ...quotationData,
-                    status: 'draft',
-                    userId: user.uid,
-                    dueDate: new Date().toISOString(), 
-                    quotationRef: quotationData.id,
-                };
-                handleFormSubmit(newInvoiceData, true);
-            } catch (error) {
-                console.error("Failed to parse quotation data:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Conversion Failed",
-                    description: "There was an error converting the quotation to an invoice."
-                });
-            }
-            router.replace('/invoices', { scroll: false });
-        }
-    
-    }, [searchParams, router, pageLoading, user, toast]);
-  
-    const handleAddInvoice = () => {
-      if(!user) return;
-      setSelectedInvoice(null)
+    const handleAddQuotation = () => {
+      if (!user) return;
+      setSelectedQuotation(null)
       setIsDialogOpen(true)
     }
   
-    const handleEditInvoice = (invoice: Invoice) => {
-      setSelectedInvoice(invoice)
+    const handleEditQuotation = (quotation: Quotation) => {
+      setSelectedQuotation(quotation)
       setIsDialogOpen(true)
     }
   
-    const handleDeleteInvoice = async (invoiceId: string) => {
+    const handleDeleteQuotation = async (quotationId: string) => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete a quotation." });
+        return;
+      }
+      try {
+        await deleteQuotation(quotationId);
+        setQuotations(quotations.filter((q) => q.id !== quotationId))
+        toast({
+            title: "Quotation Deleted",
+            description: "The quotation has been successfully deleted.",
+        });
+      } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to delete quotation.",
+        });
+      }
+    }
+
+    const handleStatusChange = async (quotationId: string, status: 'won' | 'lost') => {
         if (!user) {
-            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete an invoice." });
+            toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to update status." });
             return;
         }
         try {
-            await deleteInvoice(invoiceId);
-            setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId));
+            await updateQuotation(quotationId, { status });
+            setQuotations(quotations.map(q => q.id === quotationId ? {...q, status} : q));
             toast({
-                title: "Invoice Deleted",
-                description: "The invoice has been successfully deleted.",
+                title: `Quotation marked as ${status}`,
+                description: "The quotation status has been updated."
             });
-        } catch(error) {
-            toast({ variant: "destructive", title: "Error", description: "Failed to delete invoice." });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to update quotation status.",
+            });
         }
     }
 
+    const handleConvertToInvoice = (quotation: Quotation) => {
+        const { quotationNumber, ...invoiceData } = quotation;
+        const fullInvoiceData = { ...invoiceData, quotationRef: quotation.id };
+        router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
+    }
+  
+    const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber" | "userId">) => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
+        return;
+      }
+      try {
+        if (selectedQuotation && selectedQuotation.id) {
+            await updateQuotation(selectedQuotation.id, quotationData);
+            const updatedQuotation = { ...selectedQuotation, ...quotationData } as Quotation;
+            setQuotations(
+                quotations.map((q) =>
+                  q.id === selectedQuotation.id ? updatedQuotation : q
+                )
+            );
+            setSelectedQuotation(updatedQuotation);
+            toast({
+              title: "Quotation Updated",
+              description: "The quotation details have been updated.",
+            });
+        } else {
+          const quotationCount = await getQuotationCount(user.uid);
+          const newQuotationData = {
+            ...quotationData,
+            userId: user.uid,
+            quotationNumber: `QUO-${String(quotationCount + 1).padStart(3, '0')}`,
+            createdAt: new Date().toISOString(),
+          }
+          const newQuotation = await addQuotation(newQuotationData);
+          setQuotations([...quotations, newQuotation])
+          setIsDialogOpen(false)
+          toast({
+            title: "Quotation Created",
+            description: "The new quotation has been added successfully.",
+          });
+        }
+      } catch(error) {
+          toast({ variant: "destructive", title: "Error", description: "Failed to create quotation." });
+      }
+    }
+
     const handleDownloadPdf = () => {
-        if (!selectedInvoice) return;
-        const client = clientMap[selectedInvoice.clientRef];
+        if (!selectedQuotation) return;
+        const client = clientMap[selectedQuotation.clientRef];
         if (!client || !company) return;
     
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageMargin = 20;
-    
+
         doc.setFontSize(26);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(75, 0, 130); 
@@ -257,23 +256,23 @@ export default function InvoicesPageComponent() {
         doc.setFontSize(28);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(34, 34, 34);
-        doc.text("INVOICE", pageWidth - pageMargin, 22, { align: "right" });
+        doc.text("QUOTATION", pageWidth - pageMargin, 22, { align: "right" });
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(`# ${selectedInvoice.invoiceNumber}`, pageWidth - pageMargin, 28, { align: "right" });
+        doc.text(`# ${selectedQuotation.quotationNumber}`, pageWidth - pageMargin, 28, { align: "right" });
     
         doc.setDrawColor(75, 0, 130);
         doc.setLineWidth(0.5);
         doc.line(pageMargin, 38, pageWidth - pageMargin, 38);
-    
+
         doc.setFontSize(10);
         doc.setTextColor(150);
-        doc.text("BILL TO", pageMargin, 48);
+        doc.text("PROPOSAL FOR", pageMargin, 48);
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(75, 0, 130);
         doc.text(client.name, pageMargin, 55);
-    
+
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
@@ -283,23 +282,22 @@ export default function InvoicesPageComponent() {
         const cityStateZip = `${client.city || ''} ${client.state || ''} ${client.postalCode || ''}`.trim();
         if(cityStateZip) { doc.text(cityStateZip, pageMargin, yPos); yPos += 5; }
         if(client.country) { doc.text(client.country, pageMargin, yPos); yPos += 5; }
-        
+
         const datesX = pageWidth - pageMargin - 60;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(100);
-        doc.text("Invoice Date:", datesX, 48);
-        doc.text("Due Date:", datesX, 55);
+        doc.text("Quotation Date:", datesX, 48);
+        doc.text("Expires On:", datesX, 55);
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(34, 34, 34);
-        doc.text(format(new Date(selectedInvoice.date), "MMMM d, yyyy"), datesX + 25, 48);
-        doc.text(format(new Date(selectedInvoice.dueDate), "MMMM d, yyyy"), datesX + 25, 55);
+        doc.text(format(new Date(selectedQuotation.date), "MMMM d, yyyy"), datesX + 28, 48);
+        doc.text(format(new Date(selectedQuotation.dueDate), "MMMM d, yyyy"), datesX + 28, 55);
 
-
-        const currencySymbol = getCurrencySymbol(selectedInvoice.currency);
+        const currencySymbol = getCurrencySymbol(selectedQuotation.currency);
         const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
-        const tableRows: (string | number)[][] = selectedInvoice.items.map((item: InvoiceItem) => [
+        const tableRows: (string | number)[][] = selectedQuotation.items.map((item: InvoiceItem) => [
             item.description,
             item.quantity,
             `${currencySymbol}${(item.unitPrice || 0).toFixed(2)}`,
@@ -312,8 +310,8 @@ export default function InvoicesPageComponent() {
             startY: yPos + 10,
             theme: 'striped',
             headStyles: {
-                fillColor: [240, 240, 240], 
-                textColor: [75, 0, 130], 
+                fillColor: [240, 240, 240],
+                textColor: [75, 0, 130],
                 fontStyle: 'bold'
             },
             styles: {
@@ -328,17 +326,17 @@ export default function InvoicesPageComponent() {
             didDrawPage: (data) => {
                 let finalY = (data.cursor?.y || 0) + 10;
                 
-                const calculateTotals = (inv: Invoice) => {
-                    const subtotal = inv.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-                    const discountPercent = Number(inv.discount) || 0;
-                    const taxPercent = Number(inv.tax) || 0;
+                const calculateTotals = (q: Quotation) => {
+                    const subtotal = q.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+                    const discountPercent = Number(q.discount) || 0;
+                    const taxPercent = Number(q.tax) || 0;
                     const totalDiscount = subtotal * (discountPercent / 100);
                     const subtotalAfterDiscount = subtotal - totalDiscount;
                     const totalTax = subtotalAfterDiscount * (taxPercent / 100);
                     return { subtotal, totalDiscount, totalTax };
                 };
                 
-                const { subtotal, totalDiscount, totalTax } = calculateTotals(selectedInvoice!);
+                const { subtotal, totalDiscount, totalTax } = calculateTotals(selectedQuotation!);
     
                 const totalsX = pageWidth - pageMargin - 50;
                 const totalsValueX = pageWidth - pageMargin;
@@ -351,12 +349,12 @@ export default function InvoicesPageComponent() {
                 finalY += 7;
                 
                 if (totalDiscount > 0) {
-                    doc.text(`Discount (${selectedInvoice.discount}%):`, totalsX, finalY);
+                    doc.text(`Discount (${selectedQuotation.discount}%):`, totalsX, finalY);
                     doc.text(`-${currencySymbol}${totalDiscount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
                     finalY += 7;
                 }
     
-                doc.text(`Tax (${selectedInvoice.tax}%):`, totalsX, finalY);
+                doc.text(`Tax (${selectedQuotation.tax}%):`, totalsX, finalY);
                 doc.text(`${currencySymbol}${totalTax.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
                 finalY += 7;
     
@@ -367,27 +365,27 @@ export default function InvoicesPageComponent() {
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(34, 34, 34);
                 doc.text("Total:", totalsX, finalY + 2);
-                doc.text(`${currencySymbol}${selectedInvoice.totalAmount.toFixed(2)}`, totalsValueX, finalY + 2, { align: 'right' });
+                doc.text(`${currencySymbol}${selectedQuotation.totalAmount.toFixed(2)}`, totalsValueX, finalY + 2, { align: 'right' });
             }
         });
-
+        
         const finalY = (doc as any).lastAutoTable.finalY || doc.internal.pageSize.getHeight() - 50;
-        if(selectedInvoice.terms) {
+        if(selectedQuotation.terms) {
             doc.setFontSize(10);
             doc.setTextColor(150);
             doc.text("Terms & Conditions", pageMargin, finalY + 20);
             doc.setFontSize(8);
             doc.setTextColor(100);
-            doc.text(selectedInvoice.terms, pageMargin, finalY + 25, {
+            doc.text(selectedQuotation.terms, pageMargin, finalY + 25, {
                 maxWidth: pageWidth - (pageMargin * 2)
             });
         }
     
-        doc.save(`Invoice-${selectedInvoice.invoiceNumber}.pdf`);
-    };
+        doc.save(`Quotation-${selectedQuotation.quotationNumber}.pdf`);
+      };
     
-    const handlePrint = () => {
-        const node = invoicePrintRef.current;
+      const handlePrint = () => {
+        const node = quotationPrintRef.current;
         if (!node) return;
         
         const printWindow = window.open('', '_blank');
@@ -405,10 +403,10 @@ export default function InvoicesPageComponent() {
                 })
                 .join('\n');
 
-            printWindow.document.write(`
+          printWindow.document.write(`
             <html>
               <head>
-                <title>Print Invoice</title>
+                <title>Print Quotation</title>
                 <style>
                   ${allStyleSheets}
                   @page { size: A4; margin: 0; }
@@ -421,33 +419,34 @@ export default function InvoicesPageComponent() {
                 </div>
               </body>
             </html>
-            `);
+          `);
 
-            printWindow.document.close();
-            
-            setTimeout(() => {
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            }, 500);
+          printWindow.document.close();
+          
+          setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+          }, 500);
         }
       };
 
-    const getStatusVariant = (status: Invoice['status']): VariantProps<typeof badgeVariants>['variant'] => {
+    const getStatusVariant = (status: Quotation['status']): VariantProps<typeof badgeVariants>['variant'] => {
         switch (status) {
-          case 'paid':
-            return 'default' as const;
+          case 'won':
+            return 'default' as const
           case 'sent':
-            return 'secondary' as const;
-          case 'overdue':
-            return 'destructive' as const;
+            return 'secondary' as const
+          case 'lost':
+            return 'destructive' as const
           case 'draft':
-            return 'outline' as const;
+          default:
+            return 'outline' as const
         }
       }
 
-    const isEditing = !!selectedInvoice;
-
+    const isEditing = !!selectedQuotation;
+    
     if (pageLoading || authLoading) {
         return (
             <Card>
@@ -455,9 +454,9 @@ export default function InvoicesPageComponent() {
                     <div className="flex items-center justify-between">
                         <div>
                             <Skeleton className="h-7 w-48" />
-                            <Skeleton className="h-4 w-64 mt-2" />
+                            <Skeleton className="h-4 w-72 mt-2" />
                         </div>
-                        <Skeleton className="h-9 w-32" />
+                        <Skeleton className="h-9 w-36" />
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -477,26 +476,26 @@ export default function InvoicesPageComponent() {
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="font-headline">Invoices</CardTitle>
+                        <CardTitle className="font-headline">Quotations</CardTitle>
                         <CardDescription>
-                            Create and manage your invoices here.
+                            Manage your sales quotations and proposals.
                         </CardDescription>
                     </div>
-                    <Button size="sm" className="gap-1" onClick={handleAddInvoice}>
+                    <Button size="sm" className="gap-1" onClick={handleAddQuotation}>
                         <PlusCircle className="h-4 w-4" />
-                        New Invoice
+                        New Quotation
                     </Button>
                 </div>
             </CardHeader>
             <CardContent>
-                {invoices.length > 0 ? (
+                {quotations.length > 0 ? (
                 <Table>
                     <TableHeader>
                     <TableRow>
                         <TableHead>Number</TableHead>
                         <TableHead>Client</TableHead>
                         <TableHead>Amount</TableHead>
-                        <TableHead>Due Date</TableHead>
+                        <TableHead>Expires On</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>
                         <span className="sr-only">Actions</span>
@@ -504,20 +503,20 @@ export default function InvoicesPageComponent() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {invoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
+                    {quotations.map((q) => (
+                        <TableRow key={q.id}>
                         <TableCell 
                             className="font-medium cursor-pointer hover:underline"
-                            onClick={() => handleEditInvoice(invoice)}
+                            onClick={() => handleEditQuotation(q)}
                         >
-                            {invoice.invoiceNumber}
+                            {q.quotationNumber}
                         </TableCell>
-                        <TableCell>{clientMap[invoice.clientRef]?.name || 'Unknown Client'}</TableCell>
-                        <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'USD' }).format(invoice.totalAmount)}</TableCell>
-                        <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
+                        <TableCell>{clientMap[q.clientRef]?.name || 'Unknown Client'}</TableCell>
+                        <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: q.currency || 'USD' }).format(q.totalAmount)}</TableCell>
+                        <TableCell>{format(new Date(q.dueDate), "MMM d, yyyy")}</TableCell>
                         <TableCell>
-                            <Badge variant={getStatusVariant(invoice.status)} className="capitalize">
-                            {invoice.status}
+                            <Badge variant={getStatusVariant(q.status)} className="capitalize">
+                            {q.status}
                             </Badge>
                         </TableCell>
                         <TableCell>
@@ -531,7 +530,20 @@ export default function InvoicesPageComponent() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditQuotation(q)}>Edit</DropdownMenuItem>
+                                {q.status !== 'won' && (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(q.id, 'won')}>Mark as Won</DropdownMenuItem>
+                                )}
+                                {q.status !== 'lost' && (
+                                     <DropdownMenuItem onClick={() => handleStatusChange(q.id, 'lost')}>Mark as Lost</DropdownMenuItem>
+                                )}
+                                {q.status === 'won' && (
+                                    <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleConvertToInvoice(q)}>Convert to Invoice</DropdownMenuItem>
+                                    </>
+                                )}
+                                <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem className="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
                                 </AlertDialogTrigger>
@@ -541,12 +553,12 @@ export default function InvoicesPageComponent() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the invoice.
+                                    This action cannot be undone. This will permanently delete the quotation.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handleDeleteQuotation(q.id)} className="bg-destructive hover:bg-destructive/90">
                                     Delete
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -559,26 +571,31 @@ export default function InvoicesPageComponent() {
                 </Table>
                 ) : (
                 <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                    <h3 className="text-lg font-semibold">No Invoices Yet</h3>
+                    <h3 className="text-lg font-semibold">No Quotations Yet</h3>
                     <p className="text-sm text-muted-foreground mt-2">
-                        Click "New Invoice" to get started.
+                        Click "New Quotation" to get started.
                     </p>
                 </div>
                 )}
             </CardContent>
         </Card>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setSelectedQuotation(null);
+            }
+            setIsDialogOpen(isOpen);
+        }}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full flex flex-col p-0 gap-0 sm:rounded-none">
                 <DialogHeader className="p-4 border-b">
-                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Invoice ${selectedInvoice?.invoiceNumber}` : "New Invoice"}</DialogTitle>
-                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new invoice."}</DialogDescription>
+                    <DialogTitle className="text-2xl font-headline font-semibold">{isEditing ? `Edit Quotation ${selectedQuotation?.quotationNumber}` : "New Quotation"}</DialogTitle>
+                    <DialogDescription>{isEditing ? "Update the details below." : "Fill in the details to create a new quotation."}</DialogDescription>
                 </DialogHeader>
-                <InvoiceForm 
+                <QuotationForm 
                   onSubmit={handleFormSubmit}
-                  defaultValues={selectedInvoice}
+                  defaultValues={selectedQuotation}
                   clients={clients}
                   isEditing={isEditing}
-                  printRef={invoicePrintRef}
+                  printRef={quotationPrintRef}
                   onPrint={handlePrint}
                   onDownload={handleDownloadPdf}
                   onClose={() => setIsDialogOpen(false)}

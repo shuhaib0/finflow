@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import type { Quotation, InvoiceItem, Client } from "@/types"
+import type { Quotation, InvoiceItem, Client, Company } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { QuotationTemplate } from "./quotation-template"
 
@@ -39,6 +39,7 @@ const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required."),
   quantity: z.coerce.number().min(0.01, "Quantity must be positive."),
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive."),
+  total: z.coerce.number(),
 })
 
 const addressSchema = z.object({
@@ -68,7 +69,7 @@ const formSchema = z.object({
 type QuotationFormValues = z.infer<typeof formSchema>
 
 type QuotationFormProps = {
-  onSubmit: (values: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => void;
+  onSubmit: (values: Omit<Quotation, "id" | "createdAt" | "quotationNumber" | "userId">) => void;
   defaultValues?: Quotation | null;
   clients: Client[];
   isEditing: boolean;
@@ -76,15 +77,16 @@ type QuotationFormProps = {
   onPrint: () => void;
   onDownload: () => void;
   onClose: () => void;
+  company: Company | null;
 }
 
-const getInitialValues = (defaultValues?: Quotation | null) => {
-    const baseValues = {
+const getInitialValues = (defaultValues?: Quotation | null): QuotationFormValues => {
+    const baseValues: Omit<QuotationFormValues, 'date' | 'dueDate' | 'items'> & { date: Date; dueDate: Date; items: any[] } = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
         dueDate: new Date(),
-        items: [{ description: "", quantity: 1, unitPrice: 0 }],
+        items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
         currency: 'USD' as const,
         tax: 0,
         discount: 0,
@@ -124,7 +126,7 @@ const getInitialValues = (defaultValues?: Quotation | null) => {
     return baseValues;
 }
 
-export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: QuotationFormProps) {
+export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose, company }: QuotationFormProps) {
   const form = useForm<QuotationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -134,6 +136,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
     control: form.control,
     name: "items",
   })
+
+  const { formState: { isDirty, isSubmitting } } = form;
   
   const watchedClientRef = form.watch("clientRef");
 
@@ -176,7 +180,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
   const allFormValues = form.watch();
   const { subtotal, totalTax, totalAmount, totalDiscount } = calculateTotals(allFormValues.items, allFormValues.discount, allFormValues.tax);
 
-  const handleFormSubmit = (values: QuotationFormValues) => {
+  const handleFormSubmit = async (values: QuotationFormValues) => {
     const { totalAmount: finalTotal } = calculateTotals(values.items, values.discount, values.tax);
     const itemsWithTotal = values.items.map(item => {
       const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
@@ -186,13 +190,14 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
       }
     });
     
-    onSubmit({
+    await onSubmit({
       ...values,
       date: values.date.toISOString(),
       dueDate: values.dueDate.toISOString(),
       items: itemsWithTotal,
       totalAmount: finalTotal,
     })
+    form.reset(values);
   }
   
   const clientMap = clients.reduce((acc, client) => {
@@ -210,6 +215,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
     dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
+    userId: defaultValues?.userId || '',
   };
 
   return (
@@ -220,8 +226,8 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
-                        <Button type="submit">
-                            {isEditing ? "Save Changes" : "Create Quotation"}
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "Saving..." : (isEditing ? `Save Changes ${isDirty ? '*' : ''}` : "Create Quotation")}
                         </Button>
                          {isEditing && (
                         <>
@@ -430,7 +436,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                                             </div>
                                         </div>
                                     ))}
-                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
+                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unitPrice: 0, total: 0 })}>
                                         Add Item
                                     </Button>
                                     </div>
@@ -537,7 +543,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
         <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
             <ScrollArea className="h-full w-full">
                 <div ref={printRef} className="my-6">
-                    <QuotationTemplate quotation={constructedQuotation} />
+                    <QuotationTemplate quotation={constructedQuotation} company={company} />
                 </div>
             </ScrollArea>
         </div>

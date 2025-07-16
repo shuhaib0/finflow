@@ -30,7 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { Invoice, InvoiceItem, Client } from "@/types"
+import type { Invoice, InvoiceItem, Client, Company } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceTemplate } from "./invoice-template"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -69,7 +69,7 @@ const formSchema = z.object({
 type InvoiceFormValues = z.infer<typeof formSchema>
 
 type InvoiceFormProps = {
-  onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => void;
+  onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "userId">) => void;
   defaultValues?: Invoice | null;
   clients: Client[];
   isEditing: boolean;
@@ -77,10 +77,11 @@ type InvoiceFormProps = {
   onPrint: () => void;
   onDownload: () => void;
   onClose: () => void;
+  company: Company | null;
 }
 
-const getInitialValues = (defaultValues?: Invoice | null) => {
-    const baseValues = {
+const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => {
+    const baseValues: Omit<InvoiceFormValues, 'date' | 'dueDate' | 'items'> & { date: Date; dueDate: Date; items: any[] } = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
@@ -125,7 +126,7 @@ const getInitialValues = (defaultValues?: Invoice | null) => {
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose, company }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -135,6 +136,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     control: form.control,
     name: "items",
   })
+
+  const { formState: { isDirty, isSubmitting } } = form;
   
   const watchedClientRef = form.watch("clientRef");
 
@@ -177,7 +180,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
   const allFormValues = form.watch();
   const { subtotal, totalTax, totalAmount, totalDiscount } = calculateTotals(allFormValues.items, allFormValues.discount, allFormValues.tax);
 
-  const handleFormSubmit = (values: InvoiceFormValues) => {
+  const handleFormSubmit = async (values: InvoiceFormValues) => {
     const { totalAmount: finalTotal } = calculateTotals(values.items, values.discount, values.tax);
     const itemsWithTotal = values.items.map(item => {
         const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
@@ -187,13 +190,14 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
         }
     });
     
-    onSubmit({
+    await onSubmit({
       ...values,
       date: values.date.toISOString(),
       dueDate: values.dueDate.toISOString(),
       items: itemsWithTotal,
       totalAmount: finalTotal,
     })
+    form.reset(values);
   }
 
   const clientMap = clients.reduce((acc, client) => {
@@ -211,6 +215,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
+    userId: defaultValues?.userId || '',
   };
 
 
@@ -222,8 +227,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
-                        <Button type="submit">
-                            {isEditing ? "Save Changes" : "Create Invoice"}
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "Saving..." : (isEditing ? `Save Changes ${isDirty ? '*' : ''}` : "Create Invoice")}
                         </Button>
                         {isEditing && (
                         <>
@@ -537,7 +542,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
         <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
             <ScrollArea className="h-full w-full">
                 <div ref={printRef} className="my-6">
-                    <InvoiceTemplate invoice={constructedInvoice} />
+                    <InvoiceTemplate invoice={constructedInvoice} company={company} />
                 </div>
             </ScrollArea>
         </div>
