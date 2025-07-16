@@ -132,9 +132,10 @@ export default function TransactionsPage() {
         }
         try {
             if (selectedTransaction) {
+                const updatedTransaction = { ...selectedTransaction, ...data } as Transaction;
                 await updateTransaction(selectedTransaction.id, data);
                 const updatedTransactions = transactions.map((t) =>
-                    t.id === selectedTransaction.id ? { ...selectedTransaction, ...data } : t
+                    t.id === selectedTransaction.id ? updatedTransaction : t
                 ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setTransactions(updatedTransactions);
                 toast({
