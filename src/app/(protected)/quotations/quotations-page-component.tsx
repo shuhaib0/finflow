@@ -69,7 +69,7 @@ export default function QuotationsPageComponent() {
     const [quotations, setQuotations] = useState<Quotation[]>([])
     const [clients, setClients] = useState<Client[]>([]);
     const [company, setCompany] = useState<Company | null>(null);
-    const [pageLoading, setPageLoading = useState(true);
+    const [pageLoading, setPageLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const { user, loading: authLoading } = useAuth();
@@ -77,7 +77,7 @@ export default function QuotationsPageComponent() {
     
     useEffect(() => {
         if (authLoading || !user) {
-            setPageLoading(!user);
+            setPageLoading(false);
             return;
         }
         
@@ -134,7 +134,7 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, user, pageLoading]);
+    }, [searchParams, router, user, pageLoading, toast]);
 
     const handleAddQuotation = () => {
       if (!user) return;
@@ -635,4 +635,3 @@ export default function QuotationsPageComponent() {
       </>
     );
 }
-
