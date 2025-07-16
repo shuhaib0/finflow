@@ -76,9 +76,8 @@ export default function QuotationsPageComponent() {
     const quotationPrintRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
-        if (authLoading) return;
-        if (!user) {
-            setPageLoading(false);
+        if (authLoading || !user) {
+            setPageLoading(!user);
             return;
         }
         
@@ -246,17 +245,15 @@ export default function QuotationsPageComponent() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageMargin = 20;
 
-        // Ailutions Header
         doc.setFontSize(26);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(75, 0, 130); // Deep Indigo
+        doc.setTextColor(75, 0, 130); 
         doc.text(company.name, pageMargin, 22);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
         doc.text(company.address || "", pageMargin, 28);
     
-        // Quotation Title
         doc.setFontSize(28);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(34, 34, 34);
@@ -265,12 +262,10 @@ export default function QuotationsPageComponent() {
         doc.setTextColor(100);
         doc.text(`# ${selectedQuotation.quotationNumber}`, pageWidth - pageMargin, 28, { align: "right" });
     
-        // Line separator
         doc.setDrawColor(75, 0, 130);
         doc.setLineWidth(0.5);
         doc.line(pageMargin, 38, pageWidth - pageMargin, 38);
 
-        // Bill To section
         doc.setFontSize(10);
         doc.setTextColor(150);
         doc.text("PROPOSAL FOR", pageMargin, 48);
@@ -289,7 +284,6 @@ export default function QuotationsPageComponent() {
         if(cityStateZip) { doc.text(cityStateZip, pageMargin, yPos); yPos += 5; }
         if(client.country) { doc.text(client.country, pageMargin, yPos); yPos += 5; }
 
-        // Dates section
         const datesX = pageWidth - pageMargin - 60;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -302,7 +296,6 @@ export default function QuotationsPageComponent() {
         doc.text(format(new Date(selectedQuotation.date), "MMMM d, yyyy"), datesX + 28, 48);
         doc.text(format(new Date(selectedQuotation.dueDate), "MMMM d, yyyy"), datesX + 28, 55);
 
-        // Table
         const currencySymbol = getCurrencySymbol(selectedQuotation.currency);
         const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
         const tableRows: (string | number)[][] = selectedQuotation.items.map((item: InvoiceItem) => [
@@ -377,7 +370,6 @@ export default function QuotationsPageComponent() {
             }
         });
         
-        // Terms
         const finalY = (doc as any).lastAutoTable.finalY || doc.internal.pageSize.getHeight() - 50;
         if(selectedQuotation.terms) {
             doc.setFontSize(10);

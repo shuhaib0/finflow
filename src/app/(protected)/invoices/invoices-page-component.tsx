@@ -48,7 +48,7 @@ import { InvoiceForm } from "./invoice-form"
 import type { Invoice, Client, InvoiceItem, Company } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { getInvoices, addInvoice, updateInvoice, deleteInvoice, getInvoiceCount } from "@/services/invoiceService"
+import { getInvoices, addInvoice, updateInvoice, getInvoiceCount } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { getCompanyDetails } from "@/services/companyService"
 import { useAuth } from "../auth-provider"
@@ -82,10 +82,8 @@ export default function InvoicesPageComponent() {
       }, [clients]);
     
     useEffect(() => {
-      if (authLoading) return;
-
-      if (!user) {
-        setPageLoading(false);
+      if (authLoading || !user) {
+        setPageLoading(!user);
         return;
       }
       
@@ -205,7 +203,7 @@ export default function InvoicesPageComponent() {
             router.replace('/invoices', { scroll: false });
         }
     
-    }, [searchParams, router, pageLoading, user, toast, handleFormSubmit]);
+    }, [searchParams, router, pageLoading, user, toast]);
   
     const handleAddInvoice = () => {
       if(!user) return;
@@ -244,17 +242,15 @@ export default function InvoicesPageComponent() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageMargin = 20;
     
-        // Ailutions Header
         doc.setFontSize(26);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(75, 0, 130); // Deep Indigo
+        doc.setTextColor(75, 0, 130); 
         doc.text(company.name, pageMargin, 22);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
         doc.text(company.address || "", pageMargin, 28);
     
-        // Invoice Title
         doc.setFontSize(28);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(34, 34, 34);
@@ -263,12 +259,10 @@ export default function InvoicesPageComponent() {
         doc.setTextColor(100);
         doc.text(`# ${selectedInvoice.invoiceNumber}`, pageWidth - pageMargin, 28, { align: "right" });
     
-        // Line separator
         doc.setDrawColor(75, 0, 130);
         doc.setLineWidth(0.5);
         doc.line(pageMargin, 38, pageWidth - pageMargin, 38);
     
-        // Bill To section
         doc.setFontSize(10);
         doc.setTextColor(150);
         doc.text("BILL TO", pageMargin, 48);
@@ -287,7 +281,6 @@ export default function InvoicesPageComponent() {
         if(cityStateZip) { doc.text(cityStateZip, pageMargin, yPos); yPos += 5; }
         if(client.country) { doc.text(client.country, pageMargin, yPos); yPos += 5; }
         
-        // Dates section
         const datesX = pageWidth - pageMargin - 60;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -301,7 +294,6 @@ export default function InvoicesPageComponent() {
         doc.text(format(new Date(selectedInvoice.dueDate), "MMMM d, yyyy"), datesX + 25, 55);
 
 
-        // Table
         const currencySymbol = getCurrencySymbol(selectedInvoice.currency);
         const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
         const tableRows: (string | number)[][] = selectedInvoice.items.map((item: InvoiceItem) => [
@@ -317,8 +309,8 @@ export default function InvoicesPageComponent() {
             startY: yPos + 10,
             theme: 'striped',
             headStyles: {
-                fillColor: [240, 240, 240], // Light Gray
-                textColor: [75, 0, 130], // Deep Indigo
+                fillColor: [240, 240, 240], 
+                textColor: [75, 0, 130], 
                 fontStyle: 'bold'
             },
             styles: {
@@ -331,7 +323,6 @@ export default function InvoicesPageComponent() {
                 3: { halign: 'right' }
             },
             didDrawPage: (data) => {
-                // Totals
                 let finalY = (data.cursor?.y || 0) + 10;
                 
                 const calculateTotals = (inv: Invoice) => {
@@ -377,7 +368,6 @@ export default function InvoicesPageComponent() {
             }
         });
 
-        // Terms
         const finalY = (doc as any).lastAutoTable.finalY || doc.internal.pageSize.getHeight() - 50;
         if(selectedInvoice.terms) {
             doc.setFontSize(10);
@@ -436,7 +426,7 @@ export default function InvoicesPageComponent() {
                 printWindow.focus();
                 printWindow.print();
                 printWindow.close();
-            }, 500); // Delay to ensure styles are applied
+            }, 500);
         }
       };
 
