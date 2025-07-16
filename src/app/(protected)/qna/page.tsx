@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from "react"
@@ -10,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { handleQuestion } from "./actions"
+import { useAuth } from "../auth-provider"
 
 type Message = {
   role: "user" | "assistant"
@@ -21,6 +23,7 @@ type FormValues = {
 }
 
 export default function QnaPage() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -32,7 +35,7 @@ export default function QnaPage() {
   const { register, handleSubmit, reset } = useForm<FormValues>()
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    if (!data.query || isLoading) return
+    if (!data.query || isLoading || !user) return
     
     setIsLoading(true)
     const userMessage: Message = { role: "user", content: data.query }
@@ -40,7 +43,7 @@ export default function QnaPage() {
     reset()
 
     try {
-      const assistantResponse = await handleQuestion(data.query)
+      const assistantResponse = await handleQuestion(data.query, user.uid)
       const assistantMessage: Message = { role: "assistant", content: assistantResponse }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
@@ -120,9 +123,9 @@ export default function QnaPage() {
                     {...register("query")}
                     placeholder="e.g., Show revenue in June..."
                     autoComplete="off"
-                    disabled={isLoading}
+                    disabled={isLoading || !user}
                 />
-                <Button type="submit" size="icon" disabled={isLoading}>
+                <Button type="submit" size="icon" disabled={isLoading || !user}>
                     <SendHorizonal className="h-4 w-4" />
                 </Button>
             </form>

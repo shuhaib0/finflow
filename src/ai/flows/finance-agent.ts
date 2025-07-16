@@ -16,7 +16,6 @@ import {
 import { addTransaction, getTransactions } from '@/services/transactionService';
 import { addInvoice, getInvoices, getInvoiceCount, updateInvoice } from '@/services/invoiceService';
 import { addQuotation, getQuotations, getQuotationCount, updateQuotation } from '@/services/quotationService';
-import type { InvoiceItem } from '@/types';
 
 // Tool to add a new transaction (income or expense)
 const addTransactionTool = ai.defineTool(
@@ -25,6 +24,7 @@ const addTransactionTool = ai.defineTool(
     description:
       'Add a new transaction, either an income or an expense. For income, source is required. For expenses, infer a category if possible; otherwise, it will default to "other".',
     inputSchema: z.object({
+        userId: z.string().describe("The ID of the user performing the action."),
         type: z.enum(['income', 'expense']),
         amount: z.number(),
         date: z.string().optional().describe('The date of the transaction in YYYY-MM-DD format. Defaults to today if not specified.'),
@@ -39,6 +39,7 @@ const addTransactionTool = ai.defineTool(
   async (input) => {
     try {
         const transactionData: any = {
+            userId: input.userId,
             type: input.type,
             amount: input.amount,
             date: input.date ? new Date(input.date).toISOString() : new Date().toISOString(),
@@ -71,6 +72,7 @@ const addClientTool = ai.defineTool(
     name: 'addClient',
     description: 'Create a new client in the system.',
     inputSchema: z.object({
+      userId: z.string().describe("The ID of the user performing the action."),
       name: z.string().describe("The client's company name."),
       contactPerson: z.string().describe('The main contact person.'),
       email: z.string().email().describe('The email of the client.'),
@@ -81,8 +83,10 @@ const addClientTool = ai.defineTool(
   },
   async (input) => {
     try {
+      const { userId, ...clientData } = input;
       await addClient({
-        ...input,
+        ...clientData,
+        userId: userId,
         status: 'lead',
       });
       return `Client '${input.name}' created successfully.`;
@@ -98,6 +102,7 @@ const createInvoiceTool = ai.defineTool(
       name: 'createInvoice',
       description: 'Create a new invoice for a client.',
       inputSchema: z.object({
+        userId: z.string().describe("The ID of the user performing the action."),
         clientName: z.string().describe("The name of the client to invoice."),
         items: z.array(z.object({
             description: z.string(),
@@ -111,7 +116,7 @@ const createInvoiceTool = ai.defineTool(
     },
     async (input) => {
       try {
-        const client = await findClientByName(input.clientName);
+        const client = await findClientByName(input.userId, input.clientName);
         if (!client) {
           return `Error: Client with name '${input.clientName}' not found. Please create the client first.`;
         }
@@ -122,9 +127,10 @@ const createInvoiceTool = ai.defineTool(
         }));
 
         const totalAmount = itemsWithTotal.reduce((acc, item) => acc + item.total, 0);
-        const invoiceCount = await getInvoiceCount();
+        const invoiceCount = await getInvoiceCount(input.userId);
 
         const newInvoice = {
+            userId: input.userId,
             clientRef: client.id,
             items: itemsWithTotal,
             totalAmount,
@@ -150,6 +156,7 @@ const createQuotationTool = ai.defineTool(
     name: 'createQuotation',
     description: 'Create a new quotation or proposal for a client.',
     inputSchema: z.object({
+      userId: z.string().describe("The ID of the user performing the action."),
       clientName: z.string().describe("The name of the client for the quotation."),
       items: z.array(z.object({
           description: z.string(),
@@ -163,7 +170,7 @@ const createQuotationTool = ai.defineTool(
   },
   async (input) => {
     try {
-      const client = await findClientByName(input.clientName);
+      const client = await findClientByName(input.userId, input.clientName);
       if (!client) {
         return `Error: Client with name '${input.clientName}' not found. Please create the client first.`;
       }
@@ -174,9 +181,10 @@ const createQuotationTool = ai.defineTool(
       }));
 
       const totalAmount = itemsWithTotal.reduce((acc, item) => acc + item.total, 0);
-      const quotationCount = await getQuotationCount();
+      const quotationCount = await getQuotationCount(input.userId);
       
       const newQuotation = {
+          userId: input.userId,
           clientRef: client.id,
           items: itemsWithTotal,
           totalAmount,
@@ -201,12 +209,14 @@ const listClientsTool = ai.defineTool(
     {
         name: 'listClients',
         description: 'Returns a string summary of all clients, including their name and status. Use this to answer questions about how many clients there are, or to list them.',
-        inputSchema: z.object({}),
+        inputSchema: z.object({
+            userId: z.string().describe("The ID of the user performing the action."),
+        }),
         outputSchema: z.string(),
     },
-    async () => {
+    async ({ userId }) => {
         try {
-            const clients = await getClients();
+            const clients = await getClients(userId);
             if (clients.length === 0) {
                 return "There are no clients in the system.";
             }
@@ -223,11 +233,12 @@ const listInvoicesTool = ai.defineTool({
   name: 'listInvoices',
   description: 'Get a list of all invoices, optionally filtering by status.',
   inputSchema: z.object({
+    userId: z.string().describe("The ID of the user performing the action."),
     status: z.enum(['draft', 'sent', 'paid', 'overdue']).optional().describe('Filter invoices by status.'),
   }),
   outputSchema: z.any(),
-}, async ({ status }) => {
-  let invoices = await getInvoices();
+}, async ({ userId, status }) => {
+  let invoices = await getInvoices(userId);
   if (status) {
     invoices = invoices.filter(inv => inv.status === status);
   }
@@ -245,11 +256,12 @@ const listQuotationsTool = ai.defineTool({
   name: 'listQuotations',
   description: 'Get a list of all quotations, optionally filtering by status.',
   inputSchema: z.object({
+    userId: z.string().describe("The ID of the user performing the action."),
     status: z.enum(['draft', 'sent', 'won', 'lost']).optional().describe('Filter quotations by status.'),
   }),
   outputSchema: z.any(),
-}, async ({ status }) => {
-  let quotations = await getQuotations();
+}, async ({ userId, status }) => {
+  let quotations = await getQuotations(userId);
   if (status) {
     quotations = quotations.filter(q => q.status === status);
   }
@@ -267,13 +279,14 @@ const updateInvoiceStatusTool = ai.defineTool({
   name: 'updateInvoiceStatus',
   description: 'Update the status of a specific invoice.',
   inputSchema: z.object({
+    userId: z.string().describe("The ID of the user performing the action."),
     invoiceNumber: z.string().describe('The number of the invoice to update.'),
     status: z.enum(['draft', 'sent', 'paid', 'overdue']).describe('The new status for the invoice.'),
   }),
   outputSchema: z.string(),
-}, async ({ invoiceNumber, status }) => {
+}, async ({ userId, invoiceNumber, status }) => {
   try {
-    const invoices = await getInvoices();
+    const invoices = await getInvoices(userId);
     const invoice = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
     if (!invoice) {
       return `Error: Invoice with number '${invoiceNumber}' not found.`;
@@ -290,13 +303,14 @@ const updateQuotationStatusTool = ai.defineTool({
   name: 'updateQuotationStatus',
   description: 'Update the status of a specific quotation.',
   inputSchema: z.object({
+    userId: z.string().describe("The ID of the user performing the action."),
     quotationNumber: z.string().describe('The number of the quotation to update.'),
     status: z.enum(['draft', 'sent', 'won', 'lost']).describe('The new status for the quotation.'),
   }),
   outputSchema: z.string(),
-}, async ({ quotationNumber, status }) => {
+}, async ({ userId, quotationNumber, status }) => {
   try {
-    const quotations = await getQuotations();
+    const quotations = await getQuotations(userId);
     const quotation = quotations.find(q => q.quotationNumber === quotationNumber);
     if (!quotation) {
       return `Error: Quotation with number '${quotationNumber}' not found.`;
@@ -314,13 +328,15 @@ const getFinancialSummaryTool = ai.defineTool(
     {
         name: 'getFinancialSummary',
         description: 'Get a summary of all financial data, including invoices and transactions, to answer questions about revenue, expenses, and profitability.',
-        inputSchema: z.object({}),
+        inputSchema: z.object({
+            userId: z.string().describe("The ID of the user performing the action."),
+        }),
         outputSchema: z.any()
     },
-    async () => {
+    async ({ userId }) => {
         const [invoices, transactions] = await Promise.all([
-            getInvoices(),
-            getTransactions()
+            getInvoices(userId),
+            getTransactions(userId)
         ]);
 
         const paidInvoices = invoices.filter(inv => inv.status === 'paid');
@@ -347,6 +363,7 @@ const agent = ai.definePrompt({
     system: `You are an AI financial assistant for a company named Ailutions.
 You are fully authorized and equipped to perform actions using the provided tools.
 Your primary function is to execute tasks such as adding, creating, updating, or listing financial data like clients, transactions, invoices, and quotations.
+You MUST pass the userId provided in the prompt to every tool you call.
 
 - When a user's request directly maps to a tool's capability, you MUST use the tool.
 - Do not ask for permission. You are expected to take action.
@@ -354,7 +371,8 @@ Your primary function is to execute tasks such as adding, creating, updating, or
 - After successfully performing an action, you MUST confirm what you have done.
 - For general questions or conversations that do not fit any tool, respond naturally.
 - If you are asked to do something completely unrelated to finance or the company's data, politely decline.`,
-    prompt: `User question: {{prompt}}`,
+    prompt: `User question: {{prompt}}
+User ID: {{userId}}`,
     tools: [
       addTransactionTool, 
       addClientTool, 
@@ -369,9 +387,9 @@ Your primary function is to execute tasks such as adding, creating, updating, or
     ],
 });
 
-export async function runAgent(prompt: string): Promise<string> {
+export async function runAgent(prompt: string, userId: string): Promise<string> {
   try {
-    const response = await agent({ prompt });
+    const response = await agent({ prompt, userId });
 
     console.log('AI agent response:', response);
 

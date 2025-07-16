@@ -52,7 +52,7 @@ export const addClient = async (clientData: Omit<Client, 'id'>): Promise<Client>
     };
 };
 
-export const updateClient = async (id: string, clientData: Partial<Client>): Promise<void> => {
+export const updateClient = async (id: string, clientData: Partial<Omit<Client, 'id' | 'userId'>>): Promise<void> => {
     const clientDoc = doc(db, 'clients', id);
     const dataToUpdate: { [key: string]: any } = { ...clientData };
 
