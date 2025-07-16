@@ -73,6 +73,7 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
   });
 
   const transactionType = form.watch("type");
+  const { formState: { isSubmitting } } = form;
 
   useEffect(() => {
     form.reset(defaultValues 
@@ -272,10 +273,11 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
             )}
             />
 
-        <Button type="submit" className="w-full">
-          {isEditing ? "Update Transaction" : "Add Transaction"}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (isEditing ? 'Updating...' : 'Adding...') : (isEditing ? "Update Transaction" : "Add Transaction")}
         </Button>
       </form>
     </Form>
   )
 }
+

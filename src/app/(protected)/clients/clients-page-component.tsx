@@ -51,7 +51,7 @@ export default function ClientsPageComponent() {
   const statusFilter = searchParams.get('status')
   
   const [clients, setClients] = useState<Client[]>([])
-  const [pageLoading, setPageLoading] = useState(true);
+  const [pageLoading, setPageLoading = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [dialogState, setDialogState] = useState<DialogState>('closed');
   const { user, loading: authLoading } = useAuth();
@@ -343,3 +343,4 @@ export default function ClientsPageComponent() {
     </>
   )
 }
+

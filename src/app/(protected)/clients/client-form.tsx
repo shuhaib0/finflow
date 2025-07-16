@@ -176,6 +176,8 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
         defaultValues: getInitialValues(defaultValues),
     });
 
+    const { formState: { isSubmitting } } = form;
+
   useEffect(() => {
     form.reset(getInitialValues(defaultValues));
   }, [defaultValues, form]);
@@ -238,10 +240,10 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <Button type="submit">Save</Button>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save'}</Button>
                 </>
             ) : (
-                <Button type="submit">Create</Button>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create'}</Button>
             )}
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -693,3 +695,4 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
+
