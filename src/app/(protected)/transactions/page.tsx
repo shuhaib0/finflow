@@ -43,7 +43,7 @@ import { MoreHorizontal, PlusCircle, TrendingDown, TrendingUp } from "lucide-rea
 import type { Transaction, Client } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { TransactionForm } from "./transaction-form"
+import { TransactionForm, type TransactionFormValues } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
@@ -125,15 +125,21 @@ export default function TransactionsPage() {
         }
     }
 
-    const handleFormSubmit = async (data: Omit<Transaction, 'id'>) => {
+    const handleFormSubmit = async (data: TransactionFormValues) => {
         if (!user) {
             toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a transaction." });
             return;
         }
+        
+        const dataToSave = {
+            ...data,
+            date: data.date.toISOString(),
+        }
+
         try {
             if (selectedTransaction) {
-                const updatedTransaction = { ...selectedTransaction, ...data } as Transaction;
-                await updateTransaction(selectedTransaction.id, data);
+                const updatedTransaction = { ...selectedTransaction, ...dataToSave } as Transaction;
+                await updateTransaction(selectedTransaction.id, dataToSave);
                 const updatedTransactions = transactions.map((t) =>
                     t.id === selectedTransaction.id ? updatedTransaction : t
                 ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -143,8 +149,8 @@ export default function TransactionsPage() {
                     description: "The transaction details have been updated.",
                 });
             } else {
-                const newTransaction = await addTransaction(data);
-                setTransactions([...transactions, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                const newTransaction = await addTransaction(dataToSave);
+                setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
                 toast({
                     title: "Transaction Added",
                     description: "The new transaction has been added successfully.",

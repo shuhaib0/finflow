@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -49,7 +48,7 @@ const formSchema = z.object({
     return true;
 }, { message: "Category is required for expenses.", path: ["category"]});
 
-type TransactionFormValues = z.infer<typeof formSchema>
+export type TransactionFormValues = z.infer<typeof formSchema>
 type Transaction = (Income | Expense) & { type: 'income' | 'expense' };
 
 
