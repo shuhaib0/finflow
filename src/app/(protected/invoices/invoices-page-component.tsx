@@ -187,9 +187,8 @@ export default function InvoicesPageComponent() {
         if (fromQuotation) {
             try {
                 const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
-                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber"> = {
+                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "userId"> = {
                     ...quotationData,
-                    userId: user.uid,
                     status: 'draft' as const,
                     dueDate: new Date().toISOString(), 
                     quotationRef: quotationData.id,
@@ -619,4 +618,3 @@ export default function InvoicesPageComponent() {
     );
 }
 
-    
