@@ -6,8 +6,21 @@ export type Note = {
     createdAt: string; // ISO string
 };
 
+export type Company = {
+    id: string;
+    userId: string;
+    name: string;
+    logoUrl?: string;
+    address?: string;
+    taxId?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+}
+
 export type Client = {
     id: string;
+    userId: string;
     name: string;
     contactPerson: string;
     email?: string;
@@ -61,6 +74,7 @@ export type Address = {
 
 export type SalesDocument = {
     id: string;
+    userId: string;
     clientRef: string;
     companyTaxId?: string;
     date: string; // ISO string
@@ -91,6 +105,7 @@ export type Invoice = SalesDocument & {
 
 export type Payment = {
     id:string;
+    userId: string;
     invoiceRef: string; // Refers to Invoice ID
     amountPaid: number;
     date: string; // ISO string
@@ -100,6 +115,7 @@ export type Payment = {
 
 export type Expense = {
     id: string;
+    userId: string;
     type: 'expense';
     amount: number;
     category: string;
@@ -113,6 +129,7 @@ export type Expense = {
 
 export type Income = {
     id: string;
+    userId: string;
     type: 'income';
     amount: number;
     source: string;

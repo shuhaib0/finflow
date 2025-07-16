@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from 'next/navigation'
 import jsPDF from "jspdf"
 import autoTable from 'jspdf-autotable'
-import html2canvas from "html2canvas"
 import {
   Table,
   TableBody,
@@ -39,20 +38,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import type { VariantProps } from "class-variance-authority"
 
 import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { InvoiceForm } from "./invoice-form"
-import type { Invoice, Client, InvoiceItem } from "@/types"
+import type { Invoice, Client, InvoiceItem, Company } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
-import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/services/invoiceService"
+import { getInvoices, addInvoice, updateInvoice, deleteInvoice, getInvoiceCount } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
+import { getCompanyDetails } from "@/services/companyService"
 import { useAuth } from "../auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { VariantProps } from "class-variance-authority"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
     const symbols: { [key: string]: string } = {
@@ -67,6 +67,7 @@ export default function InvoicesPageComponent() {
     const searchParams = useSearchParams()
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [company, setCompany] = useState<Company | null>(null);
     const [pageLoading, setPageLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -91,12 +92,14 @@ export default function InvoicesPageComponent() {
       const fetchData = async () => {
         setPageLoading(true);
         try {
-          const [invoicesData, clientsData] = await Promise.all([
-            getInvoices(),
-            getClients(),
+          const [invoicesData, clientsData, companyData] = await Promise.all([
+            getInvoices(user.uid),
+            getClients(user.uid),
+            getCompanyDetails(user.uid),
           ]);
           setInvoices(invoicesData);
           setClients(clientsData);
+          setCompany(companyData);
         } catch (error) {
           console.error("Failed to fetch data:", error);
           toast({
@@ -122,7 +125,7 @@ export default function InvoicesPageComponent() {
       try {
         if (selectedInvoice && selectedInvoice.id && !fromConversion) { 
             await updateInvoice(selectedInvoice.id, invoiceData);
-            const updatedInvoice = { ...selectedInvoice, ...invoiceData };
+            const updatedInvoice = { ...selectedInvoice, ...invoiceData } as Invoice;
             setInvoices(
               invoices.map((inv) =>
                 inv.id === selectedInvoice.id ? updatedInvoice : inv
@@ -134,10 +137,12 @@ export default function InvoicesPageComponent() {
               description: "The invoice details have been updated.",
             })
         } else {
+          const invoiceCount = await getInvoiceCount(user.uid);
           const newInvoiceData = {
             ...invoiceData,
+            userId: user.uid,
             id: '', 
-            invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
+            invoiceNumber: `INV-${String(invoiceCount + 1).padStart(3, '0')}`,
             createdAt: new Date().toISOString(),
           }
           const newInvoice = await addInvoice(newInvoiceData);
@@ -162,6 +167,7 @@ export default function InvoicesPageComponent() {
         if (createForClient) {
             setSelectedInvoice({
                 id: '',
+                userId: user.uid,
                 invoiceNumber: '',
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
@@ -182,6 +188,7 @@ export default function InvoicesPageComponent() {
                 const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
                 const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber"> = {
                     ...quotationData,
+                    userId: user.uid,
                     status: 'draft' as const,
                     dueDate: new Date().toISOString(), 
                     quotationRef: quotationData.id,
@@ -201,6 +208,7 @@ export default function InvoicesPageComponent() {
     }, [searchParams, router, pageLoading, user, toast, handleFormSubmit]);
   
     const handleAddInvoice = () => {
+      if(!user) return;
       setSelectedInvoice(null)
       setIsDialogOpen(true)
     }
@@ -230,7 +238,7 @@ export default function InvoicesPageComponent() {
     const handleDownloadPdf = () => {
         if (!selectedInvoice) return;
         const client = clientMap[selectedInvoice.clientRef];
-        if (!client) return;
+        if (!client || !company) return;
     
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -240,11 +248,11 @@ export default function InvoicesPageComponent() {
         doc.setFontSize(26);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(75, 0, 130); // Deep Indigo
-        doc.text("Ailutions Inc.", pageMargin, 22);
+        doc.text(company.name, pageMargin, 22);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
-        doc.text("123 Innovation Drive, Tech City, 12345", pageMargin, 28);
+        doc.text(company.address || "", pageMargin, 28);
     
         // Invoice Title
         doc.setFontSize(28);
@@ -581,6 +589,7 @@ export default function InvoicesPageComponent() {
                   onPrint={handlePrint}
                   onDownload={handleDownloadPdf}
                   onClose={() => setIsDialogOpen(false)}
+                  company={company}
                 />
             </DialogContent>
         </Dialog>

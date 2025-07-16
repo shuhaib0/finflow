@@ -44,8 +44,8 @@ export default function ReportsPageComponent() {
             setLoading(true)
             try {
                 const [invoicesData, transactionsData] = await Promise.all([
-                    getInvoices(),
-                    getTransactions()
+                    getInvoices(user!.uid),
+                    getTransactions(user!.uid)
                 ]);
                 setInvoices(invoicesData);
                 setTransactions(transactionsData);

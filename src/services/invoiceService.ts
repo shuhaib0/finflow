@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where, getCountFromServer } from 'firebase/firestore';
 import type { Invoice } from '@/types';
 
 const invoicesCollection = collection(db, 'invoices');
@@ -16,14 +16,16 @@ const toInvoiceObject = (doc: any): Invoice => {
     };
 };
 
-export const getInvoices = async (): Promise<Invoice[]> => {
-    const snapshot = await getDocs(invoicesCollection);
+export const getInvoices = async (userId: string): Promise<Invoice[]> => {
+    const q = query(invoicesCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(toInvoiceObject).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
-export const getInvoiceCount = async (): Promise<number> => {
-    const snapshot = await getDocs(invoicesCollection);
-    return snapshot.size;
+export const getInvoiceCount = async (userId: string): Promise<number> => {
+    const q = query(invoicesCollection, where("userId", "==", userId));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
 }
 
 export const addInvoice = async (invoiceData: Omit<Invoice, 'id'>): Promise<Invoice> => {
@@ -55,5 +57,3 @@ export const deleteInvoice = async (id: string): Promise<void> => {
     const invoiceDoc = doc(db, 'invoices', id);
     await deleteDoc(invoiceDoc);
 };
-
-    

@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from 'next/navigation'
 import jsPDF from "jspdf"
 import autoTable from 'jspdf-autotable'
-import html2canvas from "html2canvas"
 import {
   Table,
   TableBody,
@@ -40,18 +39,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import type { VariantProps } from "class-variance-authority"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { QuotationForm } from "./quotation-form"
-import type { Quotation, Client, InvoiceItem } from "@/types"
+import type { Quotation, Client, InvoiceItem, Company } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { useAuth } from "../auth-provider"
 import { getClients } from "@/services/clientService"
-import { getQuotations, addQuotation, updateQuotation, deleteQuotation } from "@/services/quotationService"
+import { getQuotations, addQuotation, updateQuotation, deleteQuotation, getQuotationCount } from "@/services/quotationService"
+import { getCompanyDetails } from "@/services/companyService"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
@@ -67,6 +68,7 @@ export default function QuotationsPageComponent() {
     const searchParams = useSearchParams()
     const [quotations, setQuotations] = useState<Quotation[]>([])
     const [clients, setClients] = useState<Client[]>([]);
+    const [company, setCompany] = useState<Company | null>(null);
     const [pageLoading, setPageLoading] = useState(true);
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -83,12 +85,14 @@ export default function QuotationsPageComponent() {
         const fetchData = async () => {
           setPageLoading(true);
           try {
-            const [quotationsData, clientsData] = await Promise.all([
-              getQuotations(),
-              getClients(),
+            const [quotationsData, clientsData, companyData] = await Promise.all([
+              getQuotations(user.uid),
+              getClients(user.uid),
+              getCompanyDetails(user.uid),
             ]);
             setQuotations(quotationsData);
             setClients(clientsData);
+            setCompany(companyData);
           } catch (error) {
             console.error("Failed to fetch data:", error);
             toast({
@@ -118,6 +122,7 @@ export default function QuotationsPageComponent() {
         if (createForClient) {
             setSelectedQuotation({
                 id: '',
+                userId: user.uid,
                 quotationNumber: '',
                 clientRef: createForClient,
                 items: [{ description: "", quantity: 1, unitPrice: 0, total: 0 }],
@@ -133,6 +138,7 @@ export default function QuotationsPageComponent() {
     }, [searchParams, router, user, pageLoading]);
 
     const handleAddQuotation = () => {
+      if (!user) return;
       setSelectedQuotation(null)
       setIsDialogOpen(true)
     }
@@ -190,7 +196,7 @@ export default function QuotationsPageComponent() {
         router.push(`/invoices?fromQuotation=${encodeURIComponent(JSON.stringify(fullInvoiceData))}`);
     }
   
-    const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => {
+    const handleFormSubmit = async (quotationData: Omit<Quotation, "id" | "createdAt" | "quotationNumber" | "userId">) => {
       if (!user) {
         toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to save a quotation." });
         return;
@@ -198,7 +204,7 @@ export default function QuotationsPageComponent() {
       try {
         if (selectedQuotation && selectedQuotation.id) {
             await updateQuotation(selectedQuotation.id, quotationData);
-            const updatedQuotation = { ...selectedQuotation, ...quotationData };
+            const updatedQuotation = { ...selectedQuotation, ...quotationData } as Quotation;
             setQuotations(
                 quotations.map((q) =>
                   q.id === selectedQuotation.id ? updatedQuotation : q
@@ -210,11 +216,12 @@ export default function QuotationsPageComponent() {
               description: "The quotation details have been updated.",
             });
         } else {
+          const quotationCount = await getQuotationCount(user.uid);
           const newQuotationData = {
             ...quotationData,
-            quotationNumber: `QUO-${String(quotations.length + 1).padStart(3, '0')}`,
+            userId: user.uid,
+            quotationNumber: `QUO-${String(quotationCount + 1).padStart(3, '0')}`,
             createdAt: new Date().toISOString(),
-            status: 'draft' as const,
           }
           const newQuotation = await addQuotation(newQuotationData);
           setQuotations([...quotations, newQuotation])
@@ -233,7 +240,7 @@ export default function QuotationsPageComponent() {
     const handleDownloadPdf = () => {
         if (!selectedQuotation) return;
         const client = clientMap[selectedQuotation.clientRef];
-        if (!client) return;
+        if (!client || !company) return;
     
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -243,11 +250,11 @@ export default function QuotationsPageComponent() {
         doc.setFontSize(26);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(75, 0, 130); // Deep Indigo
-        doc.text("Ailutions Inc.", pageMargin, 22);
+        doc.text(company.name, pageMargin, 22);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
-        doc.text("123 Innovation Drive, Tech City, 12345", pageMargin, 28);
+        doc.text(company.address || "", pageMargin, 28);
     
         // Quotation Title
         doc.setFontSize(28);
@@ -433,17 +440,17 @@ export default function QuotationsPageComponent() {
         }
       };
 
-    const getStatusVariant = (status: Quotation['status']) => {
+    const getStatusVariant = (status: Quotation['status']): VariantProps<typeof badgeVariants>['variant'] => {
         switch (status) {
           case 'won':
-            return 'default' 
+            return 'default' as const
           case 'sent':
-            return 'secondary'
+            return 'secondary' as const
           case 'lost':
-            return 'destructive'
+            return 'destructive' as const
           case 'draft':
           default:
-            return 'outline'
+            return 'outline' as const
         }
       }
 
@@ -601,6 +608,7 @@ export default function QuotationsPageComponent() {
                   onPrint={handlePrint}
                   onDownload={handleDownloadPdf}
                   onClose={() => setIsDialogOpen(false)}
+                  company={company}
                 />
             </DialogContent>
         </Dialog>

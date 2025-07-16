@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from 'react-hook-form'
@@ -6,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
+import { signInWithCustomToken } from "firebase/auth";
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +24,8 @@ import { Icons } from '@/components/icons'
 import { handleSignUp } from './actions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Terminal } from 'lucide-react'
+import { auth as clientAuth } from '@/lib/firebase/client'
+import { createSession } from '../login/actions'
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -49,8 +53,23 @@ export default function SignUpPage() {
     
     const result = await handleSignUp(values)
 
-    if (result.success) {
-      router.push('/dashboard')
+    if (result.success && result.token) {
+        try {
+            const userCredential = await signInWithCustomToken(clientAuth, result.token);
+            const idToken = await userCredential.user.getIdToken();
+            const sessionResult = await createSession({ idToken });
+
+            if (sessionResult.success) {
+                router.push('/dashboard');
+            } else {
+                setError(sessionResult.error || 'Failed to create session.');
+                setIsSubmitting(false);
+            }
+        } catch (authError) {
+            console.error("Custom token sign-in error:", authError);
+            setError("Failed to log in after sign up.");
+            setIsSubmitting(false);
+        }
     } else {
       setError(result.error || 'An unexpected error occurred.')
       setIsSubmitting(false)

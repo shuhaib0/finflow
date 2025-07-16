@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where, getCountFromServer } from 'firebase/firestore';
 import type { Quotation } from '@/types';
 
 const quotationsCollection = collection(db, 'quotations');
@@ -16,14 +16,16 @@ const toQuotationObject = (doc: any): Quotation => {
     };
 };
 
-export const getQuotations = async (): Promise<Quotation[]> => {
-    const snapshot = await getDocs(quotationsCollection);
+export const getQuotations = async (userId: string): Promise<Quotation[]> => {
+    const q = query(quotationsCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(toQuotationObject).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
-export const getQuotationCount = async (): Promise<number> => {
-    const snapshot = await getDocs(quotationsCollection);
-    return snapshot.size;
+export const getQuotationCount = async (userId: string): Promise<number> => {
+    const q = query(quotationsCollection, where("userId", "==", userId));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
 }
 
 export const addQuotation = async (quotationData: Omit<Quotation, 'id'>): Promise<Quotation> => {
@@ -55,5 +57,3 @@ export const deleteQuotation = async (id: string): Promise<void> => {
     const quotationDoc = doc(db, 'quotations', id);
     await deleteDoc(quotationDoc);
 };
-
-    

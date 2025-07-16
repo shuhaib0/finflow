@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import type { Quotation, InvoiceItem, Client } from "@/types"
+import type { Quotation, InvoiceItem, Client, Company } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { QuotationTemplate } from "./quotation-template"
 
@@ -69,7 +69,7 @@ const formSchema = z.object({
 type QuotationFormValues = z.infer<typeof formSchema>
 
 type QuotationFormProps = {
-  onSubmit: (values: Omit<Quotation, "id" | "createdAt" | "quotationNumber">) => void;
+  onSubmit: (values: Omit<Quotation, "id" | "createdAt" | "quotationNumber" | "userId">) => void;
   defaultValues?: Quotation | null;
   clients: Client[];
   isEditing: boolean;
@@ -77,10 +77,11 @@ type QuotationFormProps = {
   onPrint: () => void;
   onDownload: () => void;
   onClose: () => void;
+  company: Company | null;
 }
 
 const getInitialValues = (defaultValues?: Quotation | null): QuotationFormValues => {
-    const baseValues = {
+    const baseValues: QuotationFormValues = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
@@ -122,7 +123,7 @@ const getInitialValues = (defaultValues?: Quotation | null): QuotationFormValues
     return baseValues;
 }
 
-export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: QuotationFormProps) {
+export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose, company }: QuotationFormProps) {
   const form = useForm<QuotationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -208,6 +209,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
     dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
+    userId: defaultValues?.userId || '',
   };
 
   return (
@@ -535,7 +537,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
         <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
             <ScrollArea className="h-full w-full">
                 <div ref={printRef} className="my-6">
-                    <QuotationTemplate quotation={constructedQuotation} />
+                    <QuotationTemplate quotation={constructedQuotation} company={company} />
                 </div>
             </ScrollArea>
         </div>

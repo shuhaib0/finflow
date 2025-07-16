@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase/client';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
-import type { Client, Note } from '@/types';
+import type { Client } from '@/types';
 
 const clientsCollection = collection(db, 'clients');
 
@@ -17,13 +17,14 @@ const toClientObject = (doc: any): Client => {
     };
 };
 
-export const getClients = async (): Promise<Client[]> => {
-    const snapshot = await getDocs(clientsCollection);
+export const getClients = async (userId: string): Promise<Client[]> => {
+    const q = query(clientsCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(toClientObject);
 };
 
-export const findClientByName = async (name: string): Promise<Client | null> => {
-    const q = query(clientsCollection, where("name", "==", name));
+export const findClientByName = async (userId: string, name: string): Promise<Client | null> => {
+    const q = query(clientsCollection, where("userId", "==", userId), where("name", "==", name));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return null;

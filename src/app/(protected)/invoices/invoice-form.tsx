@@ -30,7 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { Invoice, InvoiceItem, Client } from "@/types"
+import type { Invoice, InvoiceItem, Client, Company } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceTemplate } from "./invoice-template"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -69,7 +69,7 @@ const formSchema = z.object({
 type InvoiceFormValues = z.infer<typeof formSchema>
 
 type InvoiceFormProps = {
-  onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber">) => void;
+  onSubmit: (values: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "userId">) => void;
   defaultValues?: Invoice | null;
   clients: Client[];
   isEditing: boolean;
@@ -77,10 +77,11 @@ type InvoiceFormProps = {
   onPrint: () => void;
   onDownload: () => void;
   onClose: () => void;
+  company: Company | null;
 }
 
 const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => {
-    const baseValues = {
+    const baseValues: InvoiceFormValues = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
@@ -122,7 +123,7 @@ const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => 
     return baseValues;
 }
 
-export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose }: InvoiceFormProps) {
+export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, printRef, onPrint, onDownload, onClose, company }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(defaultValues),
@@ -137,7 +138,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
 
   useEffect(() => {
     form.reset(getInitialValues(defaultValues));
-  }, [defaultValues, form.reset])
+  }, [defaultValues, form])
 
   useEffect(() => {
     if (watchedClientRef) {
@@ -208,6 +209,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     dueDate: allFormValues.dueDate.toISOString(),
     totalAmount: totalAmount,
     client: currentClient,
+    userId: defaultValues?.userId || '',
   };
 
 
@@ -534,7 +536,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
         <div className="bg-muted/30 lg:border-l h-full flex items-center justify-center">
             <ScrollArea className="h-full w-full">
                 <div ref={printRef} className="my-6">
-                    <InvoiceTemplate invoice={constructedInvoice} />
+                    <InvoiceTemplate invoice={constructedInvoice} company={company} />
                 </div>
             </ScrollArea>
         </div>

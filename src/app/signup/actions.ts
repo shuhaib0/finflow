@@ -3,7 +3,8 @@
 
 import { z } from 'zod'
 import { cookies } from 'next/headers'
-import { auth as adminAuth } from '@/lib/firebase/admin'
+import { auth as adminAuth, db } from '@/lib/firebase/admin'
+import { collection, addDoc } from 'firebase/firestore'
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -27,20 +28,25 @@ export async function handleSignUp(values: z.infer<typeof signUpSchema>) {
       password,
       displayName: name,
     });
+    
+    // Create a corresponding company profile for the new user
+    await addDoc(collection(db, 'companies'), {
+      userId: userRecord.uid,
+      name: `${name}'s Company`,
+      address: '',
+      taxId: '',
+      contactEmail: email,
+    });
 
     // Create a session cookie
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const sessionCookie = await adminAuth.createSessionCookie(userRecord.uid, { expiresIn });
-
-    cookies().set('session', sessionCookie, {
-      maxAge: expiresIn,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-    });
+    // This needs to be done via a custom token, as creating a session cookie from UID is deprecated client-side.
+    // For simplicity in this server action, we'll create a custom token and let the client sign in with it.
+    const customToken = await adminAuth.createCustomToken(userRecord.uid);
     
-    return { success: true }
+    // We cannot set the cookie here directly after signup in a reliable way that works with client-side redirects.
+    // Instead, we return the custom token and let the client complete the sign-in process.
+    return { success: true, token: customToken }
   } catch (error: any) {
     console.error('Firebase sign-up error:', error);
     let errorMessage = 'An unexpected error occurred.'

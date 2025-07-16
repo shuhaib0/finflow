@@ -114,6 +114,7 @@ function ProtectedLayoutContent({
         if (pathname.startsWith('/transactions')) return 'Transactions';
         if (pathname.startsWith('/reports')) return 'Reports';
         if (pathname.startsWith('/qna')) return 'AI Q&A';
+        if (pathname.startsWith('/settings')) return 'Settings';
         return 'Dashboard';
     }
     setPageTitle(getTitle());
@@ -199,10 +200,9 @@ function ProtectedLayoutContent({
           </div>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Settings">
-                <Settings />
-                Settings
-              </SidebarMenuButton>
+                <SidebarMenuButton tooltip="Settings" isActive={pathname === '/settings'} asChild>
+                    <Link href="/settings"><Settings /> Settings</Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Log Out" onClick={onLogout}>

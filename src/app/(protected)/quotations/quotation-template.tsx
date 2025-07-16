@@ -3,12 +3,14 @@
 
 import { Icons } from "@/components/icons";
 import { Badge, badgeVariants } from "@/components/ui/badge";
-import type { Client, Quotation } from "@/types";
+import type { Client, Quotation, Company } from "@/types";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
+import Image from "next/image";
 
 type QuotationTemplateProps = {
   quotation: (Omit<Quotation, 'clientRef'> & { client?: Client | null }) | null;
+  company: Company | null;
 }
 
 const getCurrencySymbol = (currencyCode: string) => {
@@ -24,7 +26,7 @@ const getCurrencySymbol = (currencyCode: string) => {
 }
 
 
-export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
+export function QuotationTemplate({ quotation, company }: QuotationTemplateProps) {
   if (!quotation || !quotation.client) {
     return <div className="p-10 text-center text-muted-foreground a4-container flex items-center justify-center bg-white">No quotation data to display. Select a client and fill in the details.</div>;
   }
@@ -44,6 +46,7 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
   } = quotation;
 
   const currencyCode = currency || 'USD';
+  const currencySymbol = getCurrencySymbol(currencyCode);
 
   const calculateTotals = (q: QuotationTemplateProps['quotation']) => {
     if (!q) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
@@ -86,9 +89,13 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
     <div className="bg-white text-gray-900 font-sans a4-container flex flex-col">
       <header className="flex justify-between items-start mb-10 pb-6 border-b-2 border-primary">
         <div>
-          <Icons.logo className="h-12 w-12 text-primary" />
-          <h1 className="text-2xl font-bold font-headline mt-4 text-primary">Ailutions Inc.</h1>
-          <p className="text-xs text-muted-foreground">123 Innovation Drive, Tech City, 12345</p>
+          {company?.logoUrl ? (
+            <Image src={company.logoUrl} alt={`${company.name} logo`} width={128} height={48} className="h-12 w-auto object-contain"/>
+          ) : (
+            <Icons.logo className="h-12 w-12 text-primary" />
+          )}
+          <h1 className="text-2xl font-bold font-headline mt-4 text-primary">{company?.name || 'Your Company'}</h1>
+          <p className="text-xs text-muted-foreground whitespace-pre-line">{company?.address || '123 Innovation Drive, Tech City, 12345'}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold text-foreground uppercase font-headline">Quotation</h2>
@@ -183,7 +190,7 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
 
       <footer className="text-center text-xs text-muted-foreground pt-6 border-t mt-auto">
         <p>We appreciate your business!</p>
-        <p>Ailutions Inc. | contact@ailutions.com | www.ailutions.com</p>
+        <p>{company?.name} | {company?.contactEmail} | {company?.website}</p>
       </footer>
     </div>
   )

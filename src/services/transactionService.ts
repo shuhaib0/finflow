@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where } from 'firebase/firestore';
 import type { Transaction } from '@/types';
 
 const transactionsCollection = collection(db, 'transactions');
@@ -14,8 +14,9 @@ const toTransactionObject = (doc: any): Transaction => {
     } as Transaction;
 };
 
-export const getTransactions = async (): Promise<Transaction[]> => {
-    const snapshot = await getDocs(transactionsCollection);
+export const getTransactions = async (userId: string): Promise<Transaction[]> => {
+    const q = query(transactionsCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(toTransactionObject);
 };
 

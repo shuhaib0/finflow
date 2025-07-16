@@ -70,8 +70,8 @@ export default function TransactionsPage() {
             setPageLoading(true);
             try {
                 const [transactionsData, clientsData] = await Promise.all([
-                    getTransactions(),
-                    getClients(),
+                    getTransactions(user.uid),
+                    getClients(user.uid),
                 ]);
                 
                 setTransactions(transactionsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -134,7 +134,8 @@ export default function TransactionsPage() {
         const dataToSave = {
             ...data,
             date: data.date.toISOString(),
-        }
+            userId: user.uid,
+        };
 
         try {
             if (selectedTransaction) {
@@ -149,7 +150,7 @@ export default function TransactionsPage() {
                     description: "The transaction details have been updated.",
                 });
             } else {
-                const newTransaction = await addTransaction(dataToSave);
+                const newTransaction = await addTransaction(dataToSave as Omit<Transaction, 'id'>);
                 setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
                 toast({
                     title: "Transaction Added",
