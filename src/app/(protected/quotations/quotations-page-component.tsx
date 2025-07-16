@@ -134,7 +134,7 @@ export default function QuotationsPageComponent() {
             setIsDialogOpen(true);
             router.replace('/quotations', { scroll: false });
         }
-    }, [searchParams, router, user, pageLoading]);
+    }, [searchParams, router, user, pageLoading, toast]);
 
     const handleAddQuotation = () => {
       if (!user) return;
@@ -635,3 +635,6 @@ export default function QuotationsPageComponent() {
       </>
     );
 }
+
+
+    
