@@ -35,8 +35,9 @@ export default function ReportsPageComponent() {
     const { toast } = useToast()
     
     useEffect(() => {
-        if (authLoading || !user) {
-            if (!authLoading) setLoading(false);
+        if (authLoading) return;
+        if (!user) {
+            setLoading(false);
             return;
         }
 
@@ -44,8 +45,8 @@ export default function ReportsPageComponent() {
             setLoading(true)
             try {
                 const [invoicesData, transactionsData] = await Promise.all([
-                    getInvoices(user!.uid),
-                    getTransactions(user!.uid)
+                    getInvoices(user.uid),
+                    getTransactions(user.uid)
                 ]);
                 setInvoices(invoicesData);
                 setTransactions(transactionsData);

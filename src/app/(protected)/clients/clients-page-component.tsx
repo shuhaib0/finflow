@@ -67,7 +67,7 @@ export default function ClientsPageComponent() {
     const fetchClients = async () => {
       setPageLoading(true);
       try {
-        const clientsData = await getClients();
+        const clientsData = await getClients(user.uid);
         setClients(clientsData);
       } catch (error) {
         console.error("Failed to fetch clients:", error);
@@ -158,6 +158,7 @@ export default function ClientsPageComponent() {
     
     const authorName = user.displayName || "Admin User";
     const { newNote, ...restOfClientData } = clientData;
+    const finalClientData = { ...restOfClientData, userId: user.uid };
 
     try {
         if (selectedClient) { 
@@ -168,7 +169,7 @@ export default function ClientsPageComponent() {
           
           const updatedNotes = [...existingNotes, ...newNoteEntry].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           
-          const finalData = { ...restOfClientData, notes: updatedNotes };
+          const finalData = { ...finalClientData, notes: updatedNotes };
     
           await updateClient(selectedClient.id, finalData);
           const updatedClientWithNotes = { ...selectedClient, ...finalData, id: selectedClient.id } as Client;
@@ -182,7 +183,7 @@ export default function ClientsPageComponent() {
     
         } else {
           const notes: Note[] = newNote ? [{ content: newNote, author: authorName, createdAt: new Date().toISOString() }] : [];
-          const newClientData = { ...restOfClientData, notes, status: 'lead' as const };
+          const newClientData = { ...finalClientData, notes, status: 'lead' as const };
     
           const newClient = await addClient(newClientData);
           setClients([...clients, newClient]);
