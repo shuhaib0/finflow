@@ -77,7 +77,7 @@ export default function QuotationsPageComponent() {
     
     useEffect(() => {
         if (authLoading || !user) {
-            setPageLoading(!user);
+            setPageLoading(false);
             return;
         }
         
