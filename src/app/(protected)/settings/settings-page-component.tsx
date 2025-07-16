@@ -16,8 +16,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "../auth-provider"
 import { useToast } from "@/hooks/use-toast"
-import { getCompanyDetails, updateCompanyDetails } from "@/services/companyService"
+import { getCompanyDetails, updateCompanyDetails, createCompanyDetails } from "@/services/companyService"
 import type { Company } from "@/types"
+
+const websiteRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/;
 
 const formSchema = z.object({
   name: z.string().min(2, "Company name must be at least 2 characters."),
@@ -25,7 +27,9 @@ const formSchema = z.object({
   taxId: z.string().optional(),
   contactEmail: z.string().email("Invalid email address.").optional().or(z.literal('')),
   contactPhone: z.string().optional(),
-  website: z.string().url("Invalid URL.").optional().or(z.literal('')),
+  website: z.string().refine((val) => !val || websiteRegex.test(val), {
+    message: "Please enter a valid website URL (e.g., website.com)",
+  }).optional().or(z.literal('')),
   logoUrl: z.string().url().optional().or(z.literal('')),
 })
 
@@ -65,6 +69,10 @@ export default function SettingsPageComponent() {
         if (companyDetails) {
           setCompany(companyDetails)
           form.reset(companyDetails)
+        } else {
+            // If no company details, set default name from user profile
+            form.setValue('name', user.displayName ? `${user.displayName}'s Company` : 'My Company');
+            form.setValue('contactEmail', user.email || '');
         }
       } catch (error) {
         console.error("Failed to fetch company details:", error)
@@ -107,22 +115,34 @@ export default function SettingsPageComponent() {
   }
 
   async function onSubmit(values: SettingsFormValues) {
-    if (!user || !company) return
+    if (!user) return;
 
     try {
-      await updateCompanyDetails(company.id, values)
-      setCompany({ ...company, ...values })
-      toast({
-        title: "Settings Saved",
-        description: "Your company details have been updated successfully.",
-      })
+      if (company && company.id) {
+        // Update existing company details
+        await updateCompanyDetails(company.id, values);
+        setCompany({ ...company, ...values });
+        toast({
+          title: "Settings Saved",
+          description: "Your company details have been updated successfully.",
+        });
+      } else {
+        // Create new company details
+        const newCompanyData = { ...values, userId: user.uid };
+        const newCompany = await createCompanyDetails(newCompanyData);
+        setCompany(newCompany);
+        toast({
+          title: "Company Profile Created",
+          description: "Your company details have been saved.",
+        });
+      }
     } catch (error) {
-      console.error("Failed to update company details:", error)
+      console.error("Failed to save company details:", error);
       toast({
         variant: "destructive",
         title: "Save Failed",
         description: "There was an error saving your settings.",
-      })
+      });
     }
   }
 
@@ -236,7 +256,7 @@ export default function SettingsPageComponent() {
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://yourcompany.com" {...field} value={field.value || ''} />
+                        <Input placeholder="yourcompany.com" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -303,4 +323,3 @@ function SettingsPageSkeleton() {
         </Card>
     );
 }
-
