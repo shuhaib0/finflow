@@ -237,173 +237,182 @@ export default function QuotationsPageComponent() {
     }
 
     const handleDownloadPdf = () => {
-      if (!selectedQuotation) return;
-      const client = clientMap[selectedQuotation.clientRef];
-      if (!client || !company) return;
-  
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const pageMargin = 20;
-
-      // Header
-      if (company.logoUrl) {
-        doc.addImage(company.logoUrl, 'PNG', pageMargin, 15, 30, 12, undefined, 'FAST');
-      }
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(75, 0, 130);
-      doc.text(company.name, pageMargin, 35);
-      
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      const companyAddress = doc.splitTextToSize(company.address || "", 60);
-      doc.text(companyAddress, pageMargin, 40);
-
-      doc.setFontSize(28);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(34, 34, 34);
-      doc.text("QUOTATION", pageWidth - pageMargin, 22, { align: "right" });
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`# ${selectedQuotation.quotationNumber}`, pageWidth - pageMargin, 28, { align: "right" });
-  
-      doc.setDrawColor(75, 0, 130);
-      doc.setLineWidth(0.5);
-      doc.line(pageMargin, 55, pageWidth - pageMargin, 55);
-
-      // Client & Dates Info
-      let yPos = 65;
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text("BILL TO", pageMargin, yPos);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(75, 0, 130);
-      doc.text(client.name, pageMargin, yPos + 7);
-  
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      let addressY = yPos + 12;
-      if(client.addressLine1) { doc.text(client.addressLine1, pageMargin, addressY); addressY += 5; }
-      const cityStateZip = `${client.city || ''} ${client.state || ''} ${client.postalCode || ''}`.trim();
-      if(cityStateZip) { doc.text(cityStateZip, pageMargin, addressY); addressY += 5; }
-      if(client.country) { doc.text(client.country, pageMargin, addressY); addressY += 5; }
-      
-      const datesX = pageWidth - pageMargin;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(100);
-      doc.text("Quotation Date:", datesX, yPos, { align: 'right' });
-      doc.text("Expires On:", datesX, yPos + 7, { align: 'right' });
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(34, 34, 34);
-      doc.text(format(new Date(selectedQuotation.date), "MMMM d, yyyy"), datesX, yPos + 3, { align: 'right' });
-      doc.text(format(new Date(selectedQuotation.dueDate), "MMMM d, yyyy"), datesX, yPos + 10, { align: 'right' });
-
-      // Table
-      const currencySymbol = getCurrencySymbol(selectedQuotation.currency);
-      const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
-      const tableRows: (string | number)[][] = selectedQuotation.items.map((item: InvoiceItem) => [
-          item.description,
-          item.quantity,
-          `${currencySymbol}${(item.unitPrice || 0).toFixed(2)}`,
-          `${currencySymbol}${(item.quantity * item.unitPrice).toFixed(2)}`
-      ]);
-
-      autoTable(doc, {
-          head: [tableColumn],
-          body: tableRows,
-          startY: addressY + 10,
-          theme: 'striped',
-          headStyles: {
-              fillColor: [240, 240, 240], 
-              textColor: [75, 0, 130], 
-              fontStyle: 'bold'
-          },
-          styles: {
-              cellPadding: 3,
-              fontSize: 10
-          },
-          columnStyles: {
-              1: { halign: 'center' },
-              2: { halign: 'right' },
-              3: { halign: 'right' }
-          },
-      });
-
-      // Totals
-      let finalY = (doc as any).lastAutoTable.finalY + 10;
-      
-      const calculateTotals = (q: Quotation) => {
-          const subtotal = q.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-          const discountPercent = Number(q.discount) || 0;
-          const taxPercent = Number(q.tax) || 0;
-          const totalDiscount = subtotal * (discountPercent / 100);
-          const subtotalAfterDiscount = subtotal - totalDiscount;
-          const totalTax = subtotalAfterDiscount * (taxPercent / 100);
-          return { subtotal, totalDiscount, totalTax };
-      };
-      
-      const { subtotal, totalDiscount, totalTax } = calculateTotals(selectedQuotation!);
-  
-      const totalsX = pageWidth - pageMargin - 60;
-      const totalsValueX = pageWidth - pageMargin;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      doc.text("Subtotal:", totalsX, finalY);
-      doc.text(`${currencySymbol}${subtotal.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
-      finalY += 7;
-      
-      if (totalDiscount > 0) {
-          doc.text(`Discount (${selectedQuotation.discount}%):`, totalsX, finalY);
-          doc.text(`-${currencySymbol}${totalDiscount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
-          finalY += 7;
-      }
-
-      doc.text(`Tax (${selectedQuotation.tax}%):`, totalsX, finalY);
-      doc.text(`${currencySymbol}${totalTax.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
-      finalY += 10;
-
-      // Draw Total box
-      doc.setFillColor(240, 240, 255);
-      doc.rect(totalsX - 10, finalY - 5, 70, 10, 'F');
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(75, 0, 130);
-      doc.text("Total Amount", totalsX - 5, finalY);
-      doc.text(`${currencySymbol}${selectedQuotation.totalAmount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
-
-      // Terms and Conditions
-      let termsY = finalY + 20;
-      if(selectedQuotation.terms) {
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(150);
-          doc.text("Terms & Conditions", pageMargin, termsY);
-          doc.setFontSize(8);
-          doc.setTextColor(100);
-          const termsText = doc.splitTextToSize(selectedQuotation.terms, pageWidth - (pageMargin * 2));
-          doc.text(termsText, pageMargin, termsY + 5);
-      }
-
-      // Footer
-      const footerY = pageHeight - 15;
-      doc.setLineWidth(0.2);
-      doc.line(pageMargin, footerY - 5, pageWidth - pageMargin, footerY - 5);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text("We appreciate your business!", pageWidth / 2, footerY, { align: 'center' });
-      const footerContact = `${company.name} | ${company.contactEmail || ''} | ${company.website || ''}`;
-      doc.text(footerContact, pageWidth / 2, footerY + 4, { align: 'center' });
+        if (!selectedQuotation) return;
+        const client = clientMap[selectedQuotation.clientRef];
+        if (!client || !company) return;
     
-      doc.save(`Quotation-${selectedQuotation.quotationNumber}.pdf`);
-    };
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageMargin = 20;
+
+        // Header
+        // doc.addImage(company.logoUrl, 'PNG', pageMargin, 15, 30, 12);
+        
+        doc.setFontSize(20);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(75, 0, 130); // Primary color
+        doc.text(company.name, pageMargin, 30);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        const companyAddress = doc.splitTextToSize(company.address || "", 60);
+        doc.text(companyAddress, pageMargin, 37);
+
+        doc.setFontSize(28);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 34, 34);
+        doc.text("QUOTATION", pageWidth - pageMargin, 30, { align: "right" });
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`# ${selectedQuotation.quotationNumber}`, pageWidth - pageMargin, 37, { align: "right" });
+    
+        doc.setDrawColor(75, 0, 130); // Primary color
+        doc.setLineWidth(0.5);
+        doc.line(pageMargin, 55, pageWidth - pageMargin, 55);
+
+        // Billing Info & Dates
+        let yPos = 65;
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text("PROPOSAL FOR", pageMargin, yPos);
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(75, 0, 130); // Primary color
+        doc.text(client.name, pageMargin, yPos + 7);
+    
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        let addressY = yPos + 12;
+        if(client.addressLine1) { doc.text(client.addressLine1, pageMargin, addressY); addressY += 5; }
+        const cityStateZip = `${client.city || ''} ${client.state || ''} ${client.postalCode || ''}`.trim();
+        if(cityStateZip) { doc.text(cityStateZip, pageMargin, addressY); addressY += 5; }
+        if(client.country) { doc.text(client.country, pageMargin, addressY); }
+        
+        const datesX = pageWidth - pageMargin;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        doc.text("QUOTATION DATE", datesX, yPos, { align: 'right' });
+        doc.text(format(new Date(selectedQuotation.date), "MMMM d, yyyy"), datesX, yPos + 5, { align: 'right' });
+        doc.text("EXPIRES ON", datesX, yPos + 12, { align: 'right' });
+        doc.text(format(new Date(selectedQuotation.dueDate), "MMMM d, yyyy"), datesX, yPos + 17, { align: 'right' });
+
+        // Items Table
+        const currencySymbol = getCurrencySymbol(selectedQuotation.currency);
+        const tableColumn = ["Description", "Qty", "Unit Price", "Total"];
+        const tableRows: (string | number)[][] = selectedQuotation.items.map((item: InvoiceItem) => [
+            item.description,
+            item.quantity,
+            `${currencySymbol}${(item.unitPrice || 0).toFixed(2)}`,
+            `${currencySymbol}${(item.quantity * item.unitPrice).toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: addressY + 15,
+            theme: 'plain',
+            headStyles: {
+                fillColor: [243, 238, 247], // light purple
+                textColor: [75, 0, 130], // primary
+                fontStyle: 'bold'
+            },
+            styles: {
+                cellPadding: 3,
+                fontSize: 10
+            },
+            columnStyles: {
+                1: { halign: 'center' },
+                2: { halign: 'right' },
+                3: { halign: 'right' }
+            },
+        });
+
+        // Totals Section
+        let finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        const calculateTotals = (q: Quotation) => {
+            const subtotal = q.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+            const discountPercent = Number(q.discount) || 0;
+            const taxPercent = Number(q.tax) || 0;
+            const totalDiscount = subtotal * (discountPercent / 100);
+            const subtotalAfterDiscount = subtotal - totalDiscount;
+            const totalTax = subtotalAfterDiscount * (taxPercent / 100);
+            return { subtotal, totalDiscount, totalTax };
+        };
+        
+        const { subtotal, totalDiscount, totalTax } = calculateTotals(selectedQuotation!);
+
+        const totalsX = pageWidth - pageMargin - 80;
+        const totalsValueX = pageWidth - pageMargin;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+
+        doc.text("Subtotal:", totalsX, finalY, { align: 'right' });
+        doc.text(`${currencySymbol}${subtotal.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+        finalY += 7;
+        
+        if (totalDiscount > 0) {
+            doc.text(`Discount (${selectedQuotation.discount}%):`, totalsX, finalY, { align: 'right' });
+            doc.text(`-${currencySymbol}${totalDiscount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+            finalY += 7;
+        }
+
+        doc.text(`Tax (${selectedQuotation.tax}%):`, totalsX, finalY, { align: 'right' });
+        doc.text(`${currencySymbol}${totalTax.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+        finalY += 10;
+
+        // Draw Total Amount box
+        const totalBoxWidth = 80;
+        doc.setFillColor(243, 238, 247); // light purple
+        doc.rect(pageWidth - pageMargin - totalBoxWidth, finalY - 5, totalBoxWidth, 10, 'F');
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(75, 0, 130); // primary
+        doc.text("Total Amount", pageWidth - pageMargin - totalBoxWidth + 5, finalY);
+        doc.text(`${currencySymbol}${selectedQuotation.totalAmount.toFixed(2)}`, totalsValueX, finalY, { align: 'right' });
+        
+        // Terms and Footer
+        let bottomY = doc.internal.pageSize.getHeight() - 15;
+        
+        // Footer first to determine its height
+        const footerText1 = "We appreciate your business!";
+        const footerText2 = `${company.name} | ${company.contactEmail || ''} | ${company.website || ''}`;
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(footerText1, pageWidth / 2, bottomY, { align: 'center' });
+        doc.text(footerText2, pageWidth / 2, bottomY + 4, { align: 'center' });
+        
+        // Now Terms, positioned above the footer
+        if(selectedQuotation.terms) {
+            let termsY = finalY + 30;
+            const termsText = doc.splitTextToSize(selectedQuotation.terms, pageWidth - (pageMargin * 2));
+            const termsHeight = doc.getTextDimensions(termsText).h;
+            
+            // If terms would overlap footer, move them up.
+            if (termsY + termsHeight > bottomY - 10) {
+                termsY = bottomY - 10 - termsHeight;
+            }
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(150);
+            doc.text("TERMS & CONDITIONS", pageMargin, termsY);
+
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(termsText, pageMargin, termsY + 5);
+        }
+    
+        doc.save(`Quotation-${selectedQuotation.quotationNumber}.pdf`);
+      };
     
       const handlePrint = () => {
         const node = quotationPrintRef.current;
