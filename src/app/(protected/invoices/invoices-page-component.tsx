@@ -190,7 +190,7 @@ export default function InvoicesPageComponent() {
                 const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber"> = {
                     ...quotationData,
                     userId: user.uid,
-                    status: 'draft',
+                    status: 'draft' as const,
                     dueDate: new Date().toISOString(), 
                     quotationRef: quotationData.id,
                 };
@@ -618,3 +618,5 @@ export default function InvoicesPageComponent() {
       </>
     );
 }
+
+    
