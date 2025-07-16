@@ -140,7 +140,7 @@ export default function TransactionsPage() {
         try {
             if (selectedTransaction) {
                 await updateTransaction(selectedTransaction.id, dataToSave);
-                const updatedTransaction = { ...selectedTransaction, ...dataToSave, date: data.date.toISOString() } as Transaction;
+                const updatedTransaction = { ...selectedTransaction, ...dataToSave } as Transaction;
                 const updatedTransactions = transactions.map((t) =>
                     t.id === selectedTransaction.id ? updatedTransaction : t
                 ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -299,7 +299,7 @@ export default function TransactionsPage() {
                 </DialogHeader>
                 <TransactionForm
                     onSubmit={handleFormSubmit}
-                    defaultValues={selectedTransaction || undefined}
+                    defaultValues={selectedTransaction}
                     clientNames={clientNames}
                 />
             </DialogContent>
