@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import type { VariantProps } from "class-variance-authority"
 import {
   Table,
   TableBody,
@@ -170,7 +171,7 @@ export default function ClientsPageComponent() {
           const finalData = { ...restOfClientData, notes: updatedNotes };
     
           await updateClient(selectedClient.id, finalData);
-          const updatedClientWithNotes = { ...selectedClient, ...finalData } as Client;
+          const updatedClientWithNotes = { ...selectedClient, ...finalData, id: selectedClient.id } as Client;
           setClients(clients.map((c) =>
             c.id === selectedClient.id ? updatedClientWithNotes : c
           ));

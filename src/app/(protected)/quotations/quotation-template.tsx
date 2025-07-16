@@ -44,7 +44,6 @@ export function QuotationTemplate({ quotation }: QuotationTemplateProps) {
   } = quotation;
 
   const currencyCode = currency || 'USD';
-  const currencySymbol = getCurrencySymbol(currencyCode);
 
   const calculateTotals = (q: QuotationTemplateProps['quotation']) => {
     if (!q) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };

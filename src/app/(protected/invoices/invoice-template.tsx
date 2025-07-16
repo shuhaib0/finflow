@@ -2,11 +2,10 @@
 "use client"
 
 import { Icons } from "@/components/icons";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import type { Client, Invoice } from "@/types";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
-import { badgeVariants } from "@/components/ui/badge";
 
 type InvoiceTemplateProps = {
   invoice: (Omit<Invoice, 'clientRef'> & { client?: Client | null }) | null;
@@ -45,7 +44,6 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
   } = invoice;
 
   const currencyCode = currency || 'USD';
-  const currencySymbol = getCurrencySymbol(currencyCode);
 
   const calculateTotals = (inv: InvoiceTemplateProps['invoice']) => {
     if (!inv) return { subtotal: 0, totalDiscount: 0, totalTax: 0 };
@@ -68,7 +66,7 @@ export function InvoiceTemplate({ invoice }: InvoiceTemplateProps) {
 
   const { subtotal, totalDiscount, totalTax } = calculateTotals(invoice);
 
-  const getStatusInfo = (status: Invoice['status']) => {
+  const getStatusInfo = (status: Invoice['status']): { variant: VariantProps<typeof badgeVariants>['variant']; text: string; className: string } => {
     switch (status) {
       case 'paid':
         return { variant: 'default' as const, text: 'Paid', className: 'bg-green-600 text-white' };
