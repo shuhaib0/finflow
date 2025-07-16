@@ -40,7 +40,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
@@ -52,6 +52,7 @@ import { getInvoices, addInvoice, updateInvoice, deleteInvoice } from "@/service
 import { getClients } from "@/services/clientService"
 import { useAuth } from "../auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { VariantProps } from "class-variance-authority"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
     const symbols: { [key: string]: string } = {
@@ -138,7 +139,6 @@ export default function InvoicesPageComponent() {
             id: '', 
             invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
             createdAt: new Date().toISOString(),
-            status: 'draft' as const,
           }
           const newInvoice = await addInvoice(newInvoiceData);
           setInvoices(prev => [...prev, newInvoice]);
@@ -180,8 +180,9 @@ export default function InvoicesPageComponent() {
         if (fromQuotation) {
             try {
                 const quotationData = JSON.parse(decodeURIComponent(fromQuotation));
-                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber" | "status"> = {
+                const newInvoiceData: Omit<Invoice, "id" | "createdAt" | "invoiceNumber"> = {
                     ...quotationData,
+                    status: 'draft' as const,
                     dueDate: new Date().toISOString(), 
                     quotationRef: quotationData.id,
                 };
@@ -197,7 +198,7 @@ export default function InvoicesPageComponent() {
             router.replace('/invoices', { scroll: false });
         }
     
-    }, [searchParams, router, pageLoading, user, toast]);
+    }, [searchParams, router, pageLoading, user, toast, handleFormSubmit]);
   
     const handleAddInvoice = () => {
       setSelectedInvoice(null)
@@ -431,16 +432,16 @@ export default function InvoicesPageComponent() {
         }
       };
 
-    const getStatusVariant = (status: Invoice['status']) => {
+    const getStatusVariant = (status: Invoice['status']): VariantProps<typeof badgeVariants>['variant'] => {
         switch (status) {
           case 'paid':
-            return 'default'
+            return 'default' as const;
           case 'sent':
-            return 'secondary'
+            return 'secondary' as const;
           case 'overdue':
-            return 'destructive'
+            return 'destructive' as const;
           case 'draft':
-            return 'outline'
+            return 'outline' as const;
         }
       }
 
