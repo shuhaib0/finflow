@@ -114,15 +114,16 @@ const parseContactPerson = (contactPerson?: string) => {
 }
 
 const getInitialValues = (defaultValues?: Client | null): ClientFormValues => {
-    const baseValues = {
+    const baseValues: ClientFormValues = {
         name: "",
+        contactPerson: "",
         firstName: "",
         middleName: "",
         lastName: "",
         salutation: "",
         jobTitle: "",
         gender: "",
-        status: "lead" as const,
+        status: "lead",
         opportunityWorth: 0,
         leadType: "",
         requestType: "",
