@@ -116,7 +116,10 @@ const getInitialValues = (defaultValues?: Quotation | null): QuotationFormValues
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
-            billingAddress: defaultValues.billingAddress ? { ...defaultValues.billingAddress } : baseValues.billingAddress
+            billingAddress: {
+                ...baseValues.billingAddress,
+                ...defaultValues.billingAddress
+            }
         };
     }
 

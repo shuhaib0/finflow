@@ -116,7 +116,10 @@ const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => 
             companyTaxId: defaultValues.companyTaxId || '',
             terms: defaultValues.terms || '',
             purchaseOrderNumber: defaultValues.purchaseOrderNumber || '',
-            billingAddress: defaultValues.billingAddress ? { ...defaultValues.billingAddress } : baseValues.billingAddress
+            billingAddress: {
+                ...baseValues.billingAddress,
+                ...defaultValues.billingAddress
+            }
         };
     }
 
