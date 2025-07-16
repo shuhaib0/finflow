@@ -136,6 +136,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
     control: form.control,
     name: "items",
   })
+
+  const { formState: { isDirty, isSubmitting } } = form;
   
   const watchedClientRef = form.watch("clientRef");
 
@@ -178,7 +180,7 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
   const allFormValues = form.watch();
   const { subtotal, totalTax, totalAmount, totalDiscount } = calculateTotals(allFormValues.items, allFormValues.discount, allFormValues.tax);
 
-  const handleFormSubmit = (values: InvoiceFormValues) => {
+  const handleFormSubmit = async (values: InvoiceFormValues) => {
     const { totalAmount: finalTotal } = calculateTotals(values.items, values.discount, values.tax);
     const itemsWithTotal = values.items.map(item => {
         const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
@@ -188,13 +190,14 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
         }
     });
     
-    onSubmit({
+    await onSubmit({
       ...values,
       date: values.date.toISOString(),
       dueDate: values.dueDate.toISOString(),
       items: itemsWithTotal,
       totalAmount: finalTotal,
     })
+    form.reset(values);
   }
 
   const clientMap = clients.reduce((acc, client) => {
@@ -224,8 +227,8 @@ export function InvoiceForm({ onSubmit, defaultValues, clients, isEditing, print
             <header className="p-4 border-b flex-shrink-0 bg-background z-10">
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
-                        <Button type="submit">
-                            {isEditing ? "Save Changes" : "Create Invoice"}
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "Saving..." : (isEditing ? `Save Changes ${isDirty ? '*' : ''}` : "Create Invoice")}
                         </Button>
                         {isEditing && (
                         <>

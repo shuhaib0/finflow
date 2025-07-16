@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
-import type { Income, Expense } from "@/types"
+import type { Transaction } from "@/types"
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"]),
@@ -49,8 +49,6 @@ const formSchema = z.object({
 }, { message: "Category is required for expenses.", path: ["category"]});
 
 export type TransactionFormValues = z.infer<typeof formSchema>
-type Transaction = (Income | Expense) & { type: 'income' | 'expense' };
-
 
 type TransactionFormProps = {
   onSubmit: (values: TransactionFormValues) => void;
