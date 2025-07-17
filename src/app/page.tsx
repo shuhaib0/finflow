@@ -1,13 +1,23 @@
+
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useAuth } from '@/providers/auth-provider';
 import { Icons } from '@/components/icons';
 
 export default function Home() {
   const router = useRouter();
+  const { user, loading } = useAuth();
+
   useEffect(() => {
-    router.replace('/dashboard');
-  }, [router]);
+    if (!loading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [user, loading, router]);
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
