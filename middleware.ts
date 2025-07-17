@@ -2,7 +2,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/firebase/admin'
 
-const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna', '/quotations'];
+const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/transactions', '/reports', '/qna', '/quotations', '/settings'];
 const publicRoutes = ['/login', '/signup'];
 
 export async function middleware(request: NextRequest) {
@@ -69,12 +69,14 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - api/ (API routes)
+     *
+     * This avoids running the middleware on static assets and API routes.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
   ],
   runtime: 'nodejs',
 };
