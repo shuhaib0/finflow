@@ -9,21 +9,9 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const sessionCookie = request.cookies.get('session')?.value;
 
-  // For the root path, redirect based on auth status
+  // Root path is handled by the matcher, this logic is for redirection inside the app.
   if (path === '/') {
-    if (sessionCookie) {
-      try {
-        await auth.verifySessionCookie(sessionCookie, true);
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      } catch (err) {
-        // Invalid cookie, redirect to login
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        response.cookies.delete('session');
-        return response;
-      }
-    }
-    // No cookie, redirect to login
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
@@ -64,18 +52,19 @@ export async function middleware(request: NextRequest) {
 }
 
 // This config specifies which paths the middleware should run on.
-// It also specifies the runtime as 'nodejs', which is required for firebase-admin.
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * This is a more robust pattern that avoids issues with route groups.
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/',
+    '/dashboard/:path*',
+    '/clients/:path*',
+    '/invoices/:path*',
+    '/transactions/:path*',
+    '/reports/:path*',
+    '/qna/:path*',
+    '/quotations/:path*',
+    '/settings/:path*',
+    '/login',
+    '/signup',
   ],
   runtime: 'nodejs',
 };
