@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { subDays, format } from 'date-fns'
 import { DateRange } from 'react-day-picker'
-import { Calendar as CalendarIcon, DollarSign, TrendingUp, TrendingDown, Landmark, Receipt } from 'lucide-react'
+import { Calendar as CalendarIcon, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"

@@ -26,7 +26,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -49,6 +48,8 @@ import {
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
 import { AuthProvider, useAuth } from '@/providers/auth-provider'
+import { Toaster } from "@/components/ui/toaster"
+import { cn } from "@/lib/utils"
 
 const navItems = [
     { 
@@ -228,17 +229,28 @@ function ProtectedLayoutContent({
   )
 }
 
-
-export default function ProtectedLayout({
+export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const pathname = usePathname();
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
+
   return (
-    <AuthProvider>
-      <ProtectedLayoutContent>
-        {children}
-      </ProtectedLayoutContent>
-    </AuthProvider>
-  )
+    <html lang="en">
+      <body className={cn("min-h-screen bg-background font-body antialiased", !isAuthRoute && "overflow-hidden")}>
+        <AuthProvider>
+          {isAuthRoute ? (
+            children
+          ) : (
+            <ProtectedLayoutContent>
+              {children}
+            </ProtectedLayoutContent>
+          )}
+          <Toaster />
+        </AuthProvider>
+      </body>
+    </html>
+  );
 }

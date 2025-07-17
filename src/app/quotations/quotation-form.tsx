@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Trash, X, Download, Printer } from "lucide-react"
 
