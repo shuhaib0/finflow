@@ -51,7 +51,7 @@ import { format } from "date-fns"
 import { getInvoices, addInvoice, updateInvoice, getInvoiceCount, deleteInvoice } from "@/services/invoiceService"
 import { getClients } from "@/services/clientService"
 import { getCompanyDetails } from "@/services/companyService"
-import { useAuth } from "@/app/(protected)/auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const getCurrencySymbol = (currencyCode: string | undefined) => {
@@ -134,7 +134,6 @@ export default function InvoicesPageComponent() {
               title: "Invoice Updated",
               description: "The invoice details have been updated.",
             })
-    
         } else {
           const invoiceCount = await getInvoiceCount(user.uid);
           const newInvoiceData = {
@@ -146,6 +145,7 @@ export default function InvoicesPageComponent() {
           }
           const newInvoice = await addInvoice(newInvoiceData);
           setInvoices(prev => [...prev, newInvoice]);
+          setSelectedInvoice(newInvoice);
           toast({
             title: fromConversion ? "Invoice Converted" : "Invoice Created",
             description: fromConversion 

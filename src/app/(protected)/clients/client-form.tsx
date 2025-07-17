@@ -47,7 +47,7 @@ import type { Client, Note } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useAuth } from "@/app/(protected)/auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 
 const formSchema = z.object({
   // General
@@ -695,4 +695,3 @@ export function ClientForm({ onSubmit, onStatusChange, defaultValues, isEditing 
     </Form>
   )
 }
-

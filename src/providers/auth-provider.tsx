@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!loading && !user && !pathname.startsWith('/login')) {
+    if (!loading && !user && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
       router.push('/login');
     }
   }, [loading, user, router, pathname]);
@@ -41,6 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             <p className="mt-4 text-muted-foreground">Authenticating...</p>
         </div>
     );
+  }
+
+  // Allow access to login/signup pages if not authenticated
+  if (!user && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
+    return <>{children}</>;
   }
 
   if (!user) {

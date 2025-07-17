@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
-import { AuthProvider, useAuth } from './auth-provider'
+import { AuthProvider, useAuth } from '@/providers/auth-provider'
 
 const navItems = [
     { 

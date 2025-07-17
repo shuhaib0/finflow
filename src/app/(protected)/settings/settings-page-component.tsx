@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/app/(protected)/auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 import { useToast } from "@/hooks/use-toast"
 import { getCompanyDetails, updateCompanyDetails, createCompanyDetails } from "@/services/companyService"
 import type { Company } from "@/types"
@@ -323,4 +323,3 @@ function SettingsPageSkeleton() {
         </Card>
     );
 }
-

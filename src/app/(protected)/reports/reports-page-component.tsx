@@ -17,7 +17,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import type { Invoice, Transaction } from '@/types'
 import { getInvoices } from '@/services/invoiceService'
 import { getTransactions } from '@/services/transactionService'
-import { useAuth } from "@/app/(protected)/auth-provider"
+import { useAuth } from '@/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
