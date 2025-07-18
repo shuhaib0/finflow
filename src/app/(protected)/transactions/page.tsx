@@ -46,7 +46,7 @@ import { format } from "date-fns"
 import { TransactionForm, type TransactionFormValues } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
-import { useAuth } from "@/providers/auth-provider" // This import is already using an absolute path, so no change needed.
+import { useAuth } from "../auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionsPage() {
@@ -240,7 +240,7 @@ export default function TransactionsPage() {
                                 </TableCell>
                                 <TableCell>{format(new Date(t.date), 'MMM d, yyyy')}</TableCell>
                                 <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {t.type === 'income' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)}
+                                    {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                     <AlertDialog>

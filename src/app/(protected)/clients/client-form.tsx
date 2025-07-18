@@ -47,7 +47,7 @@ import type { Client, Note } from "@/types"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useAuth } from "@/providers/auth-provider"
+import { useAuth } from "../auth-provider"
 
 const formSchema = z.object({
   // General

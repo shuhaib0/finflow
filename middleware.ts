@@ -9,20 +9,19 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const sessionCookie = request.cookies.get('session')?.value;
 
-  // Root path is handled by the matcher, this logic is for redirection inside the app.
+  // Let the root page handle its own redirection logic
   if (path === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.next();
   }
 
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
 
   let isAuthenticated = false;
-  let userClaims = null;
 
   if (sessionCookie) {
     try {
-      userClaims = await auth.verifySessionCookie(sessionCookie, true);
+      await auth.verifySessionCookie(sessionCookie, true);
       isAuthenticated = true;
     } catch (err) {
       // Session is invalid, clear cookie and redirect if on a protected route
@@ -54,17 +53,13 @@ export async function middleware(request: NextRequest) {
 // This config specifies which paths the middleware should run on.
 export const config = {
   matcher: [
-    '/',
-    '/dashboard/:path*',
-    '/clients/:path*',
-    '/invoices/:path*',
-    '/transactions/(.*)',
-    '/reports/:path*',
-    '/qna/:path*',
-    '/quotations/:path*',
-    '/settings/:path*',
-    '/login',
-    '/signup',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-  runtime: 'nodejs',
 };

@@ -280,4 +280,3 @@ export function TransactionForm({ onSubmit, defaultValues, clientNames }: Transa
     </Form>
   )
 }
-

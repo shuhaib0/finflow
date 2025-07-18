@@ -81,7 +81,7 @@ type InvoiceFormProps = {
 }
 
 const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => {
-    const baseValues: InvoiceFormValues = {
+    const baseValues: Omit<InvoiceFormValues, 'date' | 'dueDate' | 'items'> & { date: Date; dueDate: Date; items: any[] } = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
