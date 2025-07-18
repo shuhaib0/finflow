@@ -1,4 +1,3 @@
-
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/firebase/admin'
 
@@ -9,20 +8,19 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const sessionCookie = request.cookies.get('session')?.value;
 
-  // Root path is handled by the matcher, this logic is for redirection inside the app.
+  // Let the root page handle redirection logic
   if (path === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.next();
   }
 
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
 
   let isAuthenticated = false;
-  let userClaims = null;
 
   if (sessionCookie) {
     try {
-      userClaims = await auth.verifySessionCookie(sessionCookie, true);
+      await auth.verifySessionCookie(sessionCookie, true);
       isAuthenticated = true;
     } catch (err) {
       // Session is invalid, clear cookie and redirect if on a protected route
