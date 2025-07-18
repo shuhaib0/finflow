@@ -43,10 +43,11 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarSeparator,
+  SidebarInset,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/icons"
 import { handleLogout } from "@/app/login/actions"
-import { AuthProvider, useAuth } from './auth-provider'
+import { useAuth } from '@/providers/auth-provider'
 
 const navItems = [
     { 
@@ -78,7 +79,7 @@ const singleNavItems = [
     { href: "/qna", icon: Sparkles, label: "AI Q&A", tooltip: "AI Q&A" },
 ];
 
-function ProtectedLayoutContent({
+export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
@@ -211,32 +212,17 @@ function ProtectedLayoutContent({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
+          <SidebarTrigger className="hidden md:flex" />
+          <div className="flex-1">
+            <h1 className="font-headline text-lg font-semibold">{pageTitle}</h1>
+          </div>
+        </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-            <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6 mb-6">
-                <SidebarTrigger className="hidden md:flex" />
-                <div className="flex-1">
-                    <h1 className="font-headline text-lg font-semibold">{pageTitle}</h1>
-                </div>
-            </header>
-            <div className="px-4 lg:px-6">
-              {children}
-            </div>
+            {children}
         </main>
+      </SidebarInset>
     </SidebarProvider>
-  )
-}
-
-
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <AuthProvider>
-      <ProtectedLayoutContent>
-        {children}
-      </ProtectedLayoutContent>
-    </AuthProvider>
   )
 }

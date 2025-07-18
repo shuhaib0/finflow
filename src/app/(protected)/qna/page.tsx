@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { handleQuestion } from "./actions"
-import { useAuth } from "../auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 
 type Message = {
   role: "user" | "assistant"

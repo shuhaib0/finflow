@@ -28,11 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
+
   useEffect(() => {
-    if (!loading && !user && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+    if (!loading && !user && !isAuthPage) {
       router.push('/login');
     }
-  }, [loading, user, router, pathname]);
+  }, [loading, user, router, pathname, isAuthPage]);
 
   if (loading) {
     return (
@@ -43,9 +45,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Allow access to login/signup pages if not authenticated
-  if (!user && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-    return <>{children}</>;
+  // Render auth pages or redirect if user state is determined
+  if (isAuthPage) {
+      if(user) {
+          router.push('/dashboard');
+          return (
+            <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+              <Icons.logo className="h-12 w-12 animate-pulse text-primary" />
+              <p className="mt-4 text-muted-foreground">Redirecting...</p>
+            </div>
+          );
+      }
+      return <>{children}</>;
   }
 
   if (!user) {

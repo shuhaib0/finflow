@@ -46,7 +46,7 @@ import { format } from "date-fns"
 import { TransactionForm, type TransactionFormValues } from "./transaction-form"
 import { getTransactions, addTransaction, updateTransaction, deleteTransaction } from "@/services/transactionService"
 import { getClients } from "@/services/clientService"
-import { useAuth } from "../auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionsPage() {

@@ -39,7 +39,7 @@ import { ClientForm, type ClientFormValues } from "./client-form"
 import type { Client, Note } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { getClients, addClient, updateClient, deleteClient } from "@/services/clientService"
-import { useAuth } from "../auth-provider"
+import { useAuth } from "@/providers/auth-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 

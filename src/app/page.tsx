@@ -6,8 +6,8 @@ import { useAuth } from '@/providers/auth-provider';
 import { Icons } from '@/components/icons';
 
 export default function Home() {
-  const router = useRouter();
   const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
