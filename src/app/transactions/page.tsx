@@ -240,7 +240,7 @@ export default function TransactionsPage() {
                                 </TableCell>
                                 <TableCell>{format(new Date(t.date), 'MMM d, yyyy')}</TableCell>
                                 <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {t.type === 'income' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)}
+                                    {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                     <AlertDialog>

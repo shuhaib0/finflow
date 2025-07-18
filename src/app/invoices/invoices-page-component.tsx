@@ -205,7 +205,7 @@ export default function InvoicesPageComponent() {
             router.replace('/invoices', { scroll: false });
         }
     
-    }, [searchParams, router, pageLoading, user, toast]);
+    }, [searchParams, router, pageLoading, user, toast, handleFormSubmit]);
   
     const handleAddInvoice = () => {
       if(!user) return;

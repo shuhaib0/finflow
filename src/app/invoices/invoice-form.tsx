@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Trash, Download, Printer, X } from "lucide-react"
 
@@ -81,7 +81,7 @@ type InvoiceFormProps = {
 }
 
 const getInitialValues = (defaultValues?: Invoice | null): InvoiceFormValues => {
-    const baseValues: InvoiceFormValues = {
+    const baseValues: Omit<InvoiceFormValues, 'date' | 'dueDate' | 'items'> & { date: Date; dueDate: Date; items: any[] } = {
         clientRef: "",
         status: "draft" as const,
         date: new Date(),
