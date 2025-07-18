@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Trash, X, Download, Printer } from "lucide-react"
 
@@ -137,7 +137,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
     name: "items",
   })
 
-  const { formState: { isSubmitting } } = form;
+  const { formState: { isDirty, isSubmitting } } = form;
   
   const watchedClientRef = form.watch("clientRef");
 
@@ -227,7 +227,7 @@ export function QuotationForm({ onSubmit, defaultValues, clients, isEditing, pri
                 <div className="flex flex-row items-center justify-end">
                     <div className="flex items-center gap-2">
                         <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? "Saving..." : (isEditing ? "Save Changes" : "Create Quotation")}
+                            {isSubmitting ? "Saving..." : (isEditing ? `Save Changes ${isDirty ? '*' : ''}` : "Create Quotation")}
                         </Button>
                          {isEditing && (
                         <>

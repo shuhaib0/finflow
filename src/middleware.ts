@@ -1,3 +1,4 @@
+
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/firebase/admin'
 
@@ -8,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const sessionCookie = request.cookies.get('session')?.value;
 
-  // Let the root page handle redirection logic
+  // Let the root page handle its own redirection logic
   if (path === '/') {
     return NextResponse.next();
   }
@@ -52,16 +53,13 @@ export async function middleware(request: NextRequest) {
 // This config specifies which paths the middleware should run on.
 export const config = {
   matcher: [
-    '/',
-    '/dashboard/:path*',
-    '/clients/:path*',
-    '/invoices/:path*',
-    '/transactions/:path*',
-    '/reports/:path*',
-    '/qna/:path*',
-    '/quotations/:path*',
-    '/settings/:path*',
-    '/login',
-    '/signup',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

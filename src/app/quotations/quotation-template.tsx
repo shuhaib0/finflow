@@ -195,5 +195,3 @@ export function QuotationTemplate({ quotation, company }: QuotationTemplateProps
     </div>
   )
 }
-
-    
