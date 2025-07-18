@@ -58,7 +58,7 @@ export const config = {
     '/dashboard/:path*',
     '/clients/:path*',
     '/invoices/:path*',
-    '/transactions/:path*',
+    '/transactions/(.*)',
     '/reports/:path*',
     '/qna/:path*',
     '/quotations/:path*',
