@@ -18,10 +18,11 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
 
   let isAuthenticated = false;
+  let userClaims = null;
 
   if (sessionCookie) {
     try {
-      await auth.verifySessionCookie(sessionCookie, true);
+      userClaims = await auth.verifySessionCookie(sessionCookie, true);
       isAuthenticated = true;
     } catch (err) {
       // Session is invalid, clear cookie and redirect if on a protected route
