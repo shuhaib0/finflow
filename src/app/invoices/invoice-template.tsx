@@ -195,3 +195,5 @@ export function InvoiceTemplate({ invoice, company }: InvoiceTemplateProps) {
     </div>
   )
 }
+
+    

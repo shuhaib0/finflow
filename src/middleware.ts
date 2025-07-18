@@ -65,5 +65,4 @@ export const config = {
     '/login',
     '/signup',
   ],
-  runtime: 'nodejs',
 };

@@ -36,3 +36,5 @@ export default function CrmPage() {
         </Suspense>
     )
 }
+
+    
